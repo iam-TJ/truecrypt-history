@@ -96,7 +96,9 @@ EnableDisableButtons (HWND hwndDlg)
 		bEnable = FALSE;
 
 	EnableWindow (hOKButton, bEnable);
-	EnableWindow (hChangeButton, bEnable);
+
+	if (nCurrentShowType != SHOW_UNMOUNT)
+		EnableWindow (hChangeButton, bEnable);
 }
 
 void
@@ -561,6 +563,9 @@ ShowAll (HWND hwndDlg, int nShowType)
 		Hide (hwndDlg, IDC_NO_DRIVES_STATIC);
 	else
 		Show (hwndDlg, IDC_NO_DRIVES_STATIC);
+
+	if (nShowType != SHOW_NOTHING)
+		PostMessage(hwndDlg, WM_USER, 0, 0L);
 
 	nCurrentShowType = nShowType;
 }

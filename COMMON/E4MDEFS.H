@@ -48,7 +48,7 @@
 
 /* version displayed to user */
 
-#define VERSION_STRING                  "V2.0.2"
+#define VERSION_STRING                  "V2.02a"
 
 /* version number to compare against driver */
 
