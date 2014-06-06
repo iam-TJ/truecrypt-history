@@ -1,0 +1,140 @@
+<!doctype html public "-//W30//DTD W3 HTML 2.0//EN">
+
+<HTML>
+
+<!-- This file was generated using SDF 2.001 by
+     Ian Clatworthy (ianc@mincom.com). SDF is freely
+     available from http://www.mincom.com/mtr/sdf. -->
+
+<HEAD>
+<TITLE>How to build Encryption for the Masses A Developers Guide</TITLE>
+</HEAD>
+<BODY>
+
+<DIV CLASS="header">
+<DIV CLASS="navigate">
+</DIV>
+</DIV>
+<DIV CLASS="title">
+<H1 CLASS="doc-title">How to build Encryption for the Masses A Developers Guide</H1>
+<ADDRESS CLASS="doc-author">Paul Le Roux</ADDRESS>
+<ADDRESS CLASS="doc-modified">4 October 2000</ADDRESS>
+<BR CLEAR="All">
+</DIV>
+<DIV CLASS="contents">
+<HR>
+<H2>Table of Contents</H2>
+<UL>
+<A HREF="#Introduction">1. Introduction</A>
+<BR>
+<A HREF="#What you will need">2. What you will need</A>
+<BR>
+<A HREF="#Setup the DDK paths">3. Setup the DDK paths</A>
+<BR>
+<A HREF="#If you plan to debug the product">4. If you plan to debug the product</A>
+<BR>
+<A HREF="#If you want to modify the help files">5. If you want to modify the help files</A>
+<BR>
+<A HREF="#Verifying that you have genuine source code">6. Verifying that you have genuine source code</A>
+<BR>
+<A HREF="#Building the drivers">7. Building the drivers</A>
+<BR>
+<A HREF="#Building volmount, voltest etc">8. Building volmount, voltest etc</A>
+<BR>
+<A HREF="#Setting up the registry entries for the driver">9. Setting up the registry entries for the driver</A>
+<BR>
+<A HREF="#Mkproto - automatically generating function prototypes">10. Mkproto - automatically generating function prototypes</A>
+<BR>
+<A HREF="#GNU Indent - generating beautified code">11. GNU Indent - generating beautified code</A>
+<BR>
+<A HREF="#RAR - packaging the final product">12. RAR - packaging the final product</A></UL>
+</DIV>
+<DIV CLASS="main">
+<P>Copyright (C) 1998-2000 Paul Le Roux. All Rights Reserved.</P>
+<HR>
+<H1><A NAME="Introduction">1. Introduction</A></H1>
+<P>Welcome to the source distribution of E4M. This document briefly describes how to build E4M.</P>
+<P>Firstly E4M does not use the build tool supplied by Microsoft in the NT DDK.</P>
+<P>E4M uses normal makefiles to build everything.</P>
+<P>Extract the files from the zip archive, with &quot;use directories&quot; set on. The source zip contains long names so don't use an older pkunzip.</P>
+<P>For the rest of this document I will assume you installed it into \e4m, but this can be any directory. All paths in the code, and the makefiles are relative.</P>
+<P>The commandline makefiles are the only supported method of building E4M.</P>
+<P>IDE project files for the Visual C++ 5.0 environment are provided as part of the source package, but they are unsupported. These are in the e4m\ide directory.</P>
+<P>The reference compiler for Windows builds is Visual C++ 5.0 (no service packs).</P>
+<P>This is the compiler that the shipping product is built under.</P>
+<HR>
+<H1><A NAME="What you will need">2. What you will need</A></H1>
+<OL>
+<LI>Visual C++ 4.x, 5.0, 6.0 or later
+<LI>MASM 6.11c
+<LI>NT DDK
+<LI>Windows 95 DDK</OL>
+<HR>
+<H1><A NAME="Setup the DDK paths">3. Setup the DDK paths</A></H1>
+<P>In the device driver makefiles, change the variable DDK to the full path of your ddk directories for both the Windows 9x driver, and the NT driver.</P>
+<HR>
+<H1><A NAME="If you plan to debug the product">4. If you plan to debug the product</A></H1>
+<OL>
+<LI>Two computers and a serial cable (laplink cable)
+<LI>The Win32 SDK, or WinDbg alone, which can be downloaded from Microsoft
+<LI>The checked build of Widows NT installed on the second computer
+<LI>For Windows 9x SoftIce 3.24 or later (but don't use the /zi flag).</OL>
+<HR>
+<H1><A NAME="If you want to modify the help files">5. If you want to modify the help files</A></H1>
+<OL>
+<LI>SDF <A HREF="http://www.mincom.com/mtr/sdf/resources/index.html">http://www.mincom.com/mtr/sdf/resources/index.html</A>
+<LI>any Microsoft help compiler
+<LI>any text editor</OL>
+<P><HR WIDTH="80%" ALIGN="Left">
+<STRONG>Note: </STRONG>The Debug format changed between VC4.x and VC5.0. To debug using VC5.0 or later you must download a new WinDbg from Microsoft. With an older VC4.x, try the WinDbg from an old Win32 SDK CD.
+<HR WIDTH="80%" ALIGN="Left"></P>
+<HR>
+<H1><A NAME="Verifying that you have genuine source code">6. Verifying that you have genuine source code</A></H1>
+<P>Follow the instructions given in the E4M help file or in the online documentation for verifying the main program. The source is verified the same way.</P>
+<HR>
+<H1><A NAME="Building the drivers">7. Building the drivers</A></H1>
+<OL>
+<LI>open up a DOS prompt
+<LI>change to the C drive
+<LI>cd to \e4m\ntdriver  or \e4m\windriver
+<LI>run &quot;\progra~1\devstudio\vc\bin\vcvars32.bat&quot; or &quot;vcvars32 x86&quot; for VC4.x this sets up the search path's for your compiler
+<LI>run &quot;nmake&quot; or &quot;nmake RELEASE=1&quot;</OL>
+<P>You should end up with e4mnt4.sys in the ntdriver directory.</P>
+<P>or e4m9x.vxd in the windriver directory.</P>
+<HR>
+<H1><A NAME="Building volmount, voltest etc">8. Building volmount, voltest etc</A></H1>
+<OL>
+<LI>open up a DOS prompt
+<LI>change to the C drive
+<LI>cd to \e4m\volmount, volformat etc
+<LI>run &quot;\progra~1\devstudio\vc\bin\vcvars32.bat&quot; or &quot;vcvars32 x86&quot;
+<LI>run &quot;nmake&quot; or &quot;nmake RELEASE=1&quot;</OL>
+<HR>
+<H1><A NAME="Setting up the registry entries for the driver">9. Setting up the registry entries for the driver</A></H1>
+<P>Don't try this by hand, just install the driver from the binary distribution, then overwrite it with the rebuilt driver.</P>
+<HR>
+<H1><A NAME="Mkproto - automatically generating function prototypes">10. Mkproto - automatically generating function prototypes</A></H1>
+<P>All the function prototypes in E4M (except those in crypto\) are generated using the mkproto tool which you can download from <A HREF="http://www.e4m.net/download.html">http://www.e4m.net/download.html</A></P>
+<P>This tool is used with the following command line option:</P>
+<P>mkproto -s -p -h somefile.c</P>
+<P>the above command produces somefile.h with a prototype line for each function found in somefile.c</P>
+<HR>
+<H1><A NAME="GNU Indent - generating beautified code">11. GNU Indent - generating beautified code</A></H1>
+<P>GNU Indent v1.2 is used to format the code that is distributed.</P>
+<P>This tool is used with the following command line option:</P>
+<P>indent -cli0.4 -bli0 -i8 -ci0 somefile.c</P>
+<P>The IDE tab settings used are the defaults (eg: tab size=4, indent size=4, keep tabs).</P>
+<HR>
+<H1><A NAME="RAR - packaging the final product">12. RAR - packaging the final product</A></H1>
+<P>The shareware tool &quot;rar&quot; v2.50 is used to package the final product, this tool creates both the sfx installation binary, and the zip archive for the source code.</P>
+<P>This tool is available from <A HREF="http://www.rarsoft.com">http://www.rarsoft.com</A></P>
+<P>Enjoy!</P>
+<P>Paul Le Roux</P>
+</DIV>
+<DIV CLASS="footer">
+<DIV CLASS="navigate">
+</DIV>
+</DIV>
+
+</BODY>
+</HTML>

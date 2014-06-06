@@ -1,0 +1,173 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+#include "..\\common\\resource.h"
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_OPENTEMP DIALOG DISCARDABLE  15, 30, 278, 149
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Open Template"
+FONT 8, "Helv"
+BEGIN
+    LTEXT           "File &Name:",1090,127,107,76,10,NOT WS_VISIBLE | 
+                    WS_DISABLED
+    EDITTEXT        1152,117,116,90,12,ES_AUTOHSCROLL | ES_OEMCONVERT | NOT 
+                    WS_VISIBLE | WS_DISABLED
+    LISTBOX         1120,115,121,90,18,LBS_SORT | LBS_OWNERDRAWFIXED | 
+                    LBS_HASSTRINGS | LBS_EXTENDEDSEL | LBS_DISABLENOSCROLL | 
+                    NOT WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "&Directories:",-1,8,7,42,9
+    LTEXT           "",1088,82,7,92,9,SS_NOPREFIX
+    LISTBOX         1121,8,20,166,79,LBS_SORT | LBS_OWNERDRAWFIXED | 
+                    LBS_HASSTRINGS | LBS_DISABLENOSCROLL | WS_VSCROLL | 
+                    WS_TABSTOP
+    LTEXT           "List Files of &Type:",1089,121,105,90,9,NOT WS_VISIBLE | 
+                    WS_DISABLED
+    COMBOBOX        1136,111,108,90,36,CBS_DROPDOWNLIST | CBS_AUTOHSCROLL | 
+                    NOT WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_VSCROLL | 
+                    WS_TABSTOP
+    LTEXT           "Dri&ves:",1091,8,109,92,9
+    COMBOBOX        1137,8,119,92,68,CBS_DROPDOWNLIST | CBS_OWNERDRAWFIXED | 
+                    CBS_AUTOHSCROLL | CBS_SORT | CBS_HASSTRINGS | WS_BORDER | 
+                    WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "OK",IDOK,208,6,66,14,WS_GROUP
+    PUSHBUTTON      "Cancel",IDCANCEL,208,22,66,14,WS_GROUP
+    PUSHBUTTON      "&Help",1038,208,38,66,14,WS_GROUP
+    CONTROL         "&Read Only",1040,"Button",BS_AUTOCHECKBOX | NOT 
+                    WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP,208,54,
+                    53,10
+END
+
+IDD_UNINSTALL DIALOG DISCARDABLE  0, 0, 292, 212
+STYLE DS_SETFOREGROUND | DS_3DLOOK | DS_CENTER | WS_MINIMIZEBOX | WS_POPUP | 
+    WS_CAPTION | WS_SYSMENU
+CAPTION "TITLE"
+CLASS "CustomDlg"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Uninstall fr&om:",IDC_INSTRUCTION,7,7,45,8
+    EDITTEXT        IDC_DESTINATION,7,21,218,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "&Browse",IDC_BROWSE,233,21,50,14
+    LISTBOX         IDC_FILES,7,44,278,102,LBS_NOINTEGRALHEIGHT | LBS_NOSEL | 
+                    WS_VSCROLL
+    DEFPUSHBUTTON   "&Uninstall",IDOK,85,192,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,141,192,50,14
+    LTEXT           "This will remove all files except ""e4msetup.exe"" in your Windows directory. This file you must delete manually. Under NT the Enum\\Root\\LEGACY_xxx entries are NOT deleted as NT prevents even administrators from deleting these keys.",
+                    IDC_STATIC,7,154,278,32
+END
+
+IDD_INSTALL DIALOG DISCARDABLE  0, 0, 405, 254
+STYLE DS_SETFOREGROUND | DS_3DLOOK | DS_CENTER | WS_MINIMIZEBOX | WS_POPUP | 
+    WS_CAPTION | WS_SYSMENU
+CAPTION "TITLE"
+CLASS "CustomDlg"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Install t&o:",IDC_INSTRUCTION,6,4,29,8
+    EDITTEXT        IDC_DESTINATION,6,16,175,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "&Browse",IDC_BROWSE,187,16,50,14
+    LTEXT           "License Agreement",IDC_STATIC,7,34,62,8
+    EDITTEXT        IDC_LICENSE,6,47,392,91,ES_MULTILINE | ES_READONLY | 
+                    WS_VSCROLL | WS_HSCROLL | NOT WS_TABSTOP
+    LISTBOX         IDC_FILES,6,145,392,51,LBS_NOINTEGRALHEIGHT | 
+                    LBS_DISABLENOSCROLL | LBS_NOSEL | WS_VSCROLL
+    CONTROL         "&Associate "".vol"" file type with E4M in registry",
+                    IDC_FILE_TYPE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,6,
+                    205,181,10
+    CONTROL         "Install ""Uninstall"" &support",IDC_UNINSTALL,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,6,218,177,10
+    DEFPUSHBUTTON   "&Install",IDOK,148,233,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,204,233,50,14
+    CONTROL         "A&dd ""E4M"" folder to Start Menu\\Programs",
+                    IDC_PROG_GROUP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,193,
+                    205,204,10
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "#include ""..\\\\common\\\\resource.h""\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""..\\\\common\\\\dlgs.rc""\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_UNINSTALL, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 285
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 207
+    END
+
+    IDD_INSTALL, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 398
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 249
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#include "..\\common\\dlgs.rc"
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

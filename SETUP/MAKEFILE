@@ -1,0 +1,28 @@
+#
+# THIS MAKEFILE WORKS WITH MICROSOFT NMAKE ONLY
+#
+
+BASENAME = e4msetup
+	
+RESOURCES = setup.res
+
+all: $(BASENAME).exe
+
+OBJECTS = setup.obj dir.obj  dlgcode.obj dismount.obj
+
+CFLAGS = $(CFLAGS_G) /DSETUP /YXe4mdefs.h
+
+!include ..\common.ms
+
+$(BASENAME).res : setup.rc ../common/dlgs.rc
+
+$(BASENAME).exe : $(OBJECTS) $(RESOURCES)   
+	$(LINK_G) $(OBJECTS) $(RESOURCES) ole32.lib uuid.lib \
+	/subsystem:windows
+
+dist:
+	rar a -m5 -sfx -zrar.txt -ep1 E4MXXX e4msetup.exe ..\volformat\volformat.exe \
+	..\volmount\volmount.exe ..\voltest\voltest.exe ..\windriver\e4m9x.vxd \
+	..\ntdriver\e4mnt4.sys ..\ntservice\e4mserv.exe ..\doc\license.txt ..\doc\manual.hlp 
+
+
