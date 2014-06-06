@@ -149,7 +149,7 @@ SHA1TRANSFORM (unsigned long state[5], unsigned char buffer[64])
 /* SHA1Init - Initialize new context */
 
 void 
-SHA1Init (SHA1_CTX * context)
+_cdecl SHA1Init (SHA1_CTX * context)
 {
   /* SHA1 initialization constants */
   context->state[0] = 0x67452301;
@@ -164,7 +164,7 @@ SHA1Init (SHA1_CTX * context)
 /* Run your data through this. */
 
 void 
-SHA1Update (SHA1_CTX * context, unsigned char *data, unsigned int len)
+_cdecl SHA1Update (SHA1_CTX * context, unsigned char *data, unsigned int len)
 {
   unsigned int i, j;
 
@@ -191,7 +191,7 @@ SHA1Update (SHA1_CTX * context, unsigned char *data, unsigned int len)
 /* Add padding and return the message digest. */
 
 void 
-SHA1Final (unsigned char digest[20], SHA1_CTX * context)
+_cdecl SHA1Final (unsigned char digest[20], SHA1_CTX * context)
 {
   unsigned long i, j;
   unsigned char finalcount[8];

@@ -1,17 +1,22 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
 #define IDC_ABOUT 0x7fff	/* ID for AboutBox on system menu in wm_user
 				   range */
 
-extern char szHelpFile[E4M_MAX_PATH];
+extern char szHelpFile[TC_MAX_PATH];
 extern HFONT hSmallFont;
 extern HFONT hBoldFont;
 extern HFONT hSmallBoldFont;
 extern HFONT hTitleFont;
 extern HFONT hFixedFont;
+extern HFONT hUserFont;
+extern HFONT hUserUnderlineFont;
+extern HFONT hUserBoldFont;
 extern char *lpszTitle;
 extern int nCurrentOS;
+extern int CurrentOSMajor;
+extern int CurrentOSMinor;
 extern HANDLE hDriver;
 extern HINSTANCE hInst;
 
@@ -67,6 +72,6 @@ int GetAvailableFixedDisks ( HWND hComboBox , char *lpszRootPath );
 int GetAvailableRemovables ( HWND hComboBox , char *lpszRootPath );
 BOOL WINAPI RawDevicesDlgProc ( HWND hwndDlg , UINT msg , WPARAM wParam , LPARAM lParam );
 int DriverAttach ( void );
-void CloseHelpFile ( HWND hwndDlg , BOOL bHelpStarted );
 BOOL BrowseFiles ( HWND hwndDlg , UINT nTitleID , char *lpszFileName );
 void handleError ( HWND hwndDlg , int code );
+void SetDefaultUserFont (HWND hwnd);

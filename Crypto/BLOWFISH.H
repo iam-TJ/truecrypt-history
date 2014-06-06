@@ -83,7 +83,7 @@ typedef struct bf_key_st
 
 #ifndef NOPROTO
  
-void BF_set_key(BF_KEY *key, int len, unsigned char *data);
+void _cdecl BF_set_key(BF_KEY *key, int len, unsigned char *data);
 void BF_ecb_encrypt(unsigned char *in,unsigned char *out,BF_KEY *key,
 	int enc);
 void _cdecl BF_encrypt(BF_LONG *data,BF_KEY *key);

@@ -244,7 +244,7 @@ des_key_schedule schedule;
 	return(0);
 	}
 
-int des_key_sched(key, schedule)
+int _cdecl des_key_sched(key, schedule)
 des_cblock (*key);
 des_key_schedule schedule;
 	{

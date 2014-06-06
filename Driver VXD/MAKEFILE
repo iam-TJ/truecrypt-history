@@ -2,53 +2,63 @@
 # THIS MAKEFILE WORKS WITH MICROSOFT NMAKE ONLY
 #
 
-# This points to the windows ddk
-DDK = c:\ddk95
+# Windows DDK path
+DDK = c:\SDK\WinDDK\Win98
+OS = win98
 
-BASENAME = e4m9x
+BASENAME = truecrypt
+
+CC = cl
+ASM = ml
 
 all: $(BASENAME).vxd
 
-OBJECTS = e4m9x.obj volumes1.obj crypto.obj endian.obj crc.obj pkcs5.obj devdcl.obj \
-       ifshook.obj queue.obj cache.obj
+OBJECTS = Tc9x.obj Volumes.obj Crypto.obj Endian.obj Crc.obj \
+		Pkcs5.obj Ifshook.obj Queue.obj Cache.obj Devdcl.obj
 
-CFLAGS = -D_X86_ -DDEBLEVEL=1  -DBLD_COFF -DDEBUG -DIS_32 -DWIN32 -Gs -Zdpl -Od -YX -W3 -WX \
-      /DWIN9X_DRIVER /I$(DDK)\inc32 /I$(DDK)\BLOCK\INC /YXe4mdefs.h /FAcs /I.
+!IFNDEF RELEASE
 
-LFLAGS = -machine:i386  -out:$@  -def:$*.def -debug -debugtype:map -map:$*.map \
-      -vxd vxdwraps.clb -nodefaultlib /LIBPATH:$(DDK)\lib
+# Debug
+CFLAGS = -D_X86_ -DDEBLEVEL=1  -DBLD_COFF -DDEBUG -nologo -DIS_32 -DWIN32 -Gs -Zdpl -Od -YX -W3 \
+      -DWIN9X_DRIVER -I.. -I$(DDK)\inc\$(OS) -I$(DDK)\src\BLOCK\inc -YXTCdefs.h -FAcs
 
-#
-#These flags are unsafe to use, /zi provides structure & automatic
-#variable support, but will eventually crash windows. I don't know why.
-#Normally these flags can be used with softice to trace through the
-#code until atleast the partfilerequest function. Note older softice
-#versions did not support anything more that /zd. Use softice 3.24 +
-#
+LFLAGS = -machine:i386  -out:$@  -def:../truecrypt.def -debug -debugtype:map -map:$*.map \
+      -vxd vxdwraps.clb -nodefaultlib -ignore:4039,4078 -nologo \
+      -LIBPATH:$(DDK)\lib\$(OS) -LIBPATH:$(DDK)\lib\i386\free
+      
+CRYPTOLIB = ..\..\crypto\debug\crypto.lib
+COPYRELEASE =
 
-#CFLAGS = -D_X86_ -DDEBLEVEL=1 -DBLD_COFF -DDEBUG -DIS_32 -DWIN32 -Gs -Zi -Od -YX -W3 -WX \
-#       /DWIN9X_DRIVER /I$(DDK)\inc32 /I$(DDK)\BLOCK\INC /YXe4mdefs.h /I.
+!ELSE
 
-#LFLAGS = -machine:i386  -out:$@  -def:$*.def -debug -debugtype:cv -pdbtype:con \
-#        -pdb:$*.pdb -vxd vxdwraps.clb -nodefaultlib /LIBPATH:$(DDK)\lib
+# Release
+CFLAGS = -D_X86_ -DDEBLEVEL=1  -DBLD_COFF -DRELEASE -nologo -DIS_32 -DWIN32 -Zdpl -O2 -YX -W3 \
+      -DWIN9X_DRIVER -I.. -I$(DDK)\inc\$(OS) -I$(DDK)\src\BLOCK\inc -YXtcdefs.h -FAcs
 
-!include ..\common.ms
+LFLAGS = -nologo -machine:i386  -out:$@  -def:../truecrypt.def -release \
+      -vxd vxdwraps.clb -nodefaultlib -ignore:4039,4069,4078 -nologo \
+      -LIBPATH:$(DDK)\lib\$(OS) -LIBPATH:$(DDK)\lib\i386\free
 
-ASMFLAGS = /I\$(DDK)\inc32 -coff -DBLD_COFF -DIS_32 -W2 -c -Cx -DMASM6
+CRYPTOLIB = ..\..\crypto\release\crypto.lib
+COPYRELEASE = copy $(BASENAME).vxd "..\..\release\setup files"
 
-$(BASENAME).vxd : $(OBJECTS) crypto.lib
-	link $(LFLAGS) $(OBJECTS) crypto.lib
-#       softice support
-        nmsym /TRANSLATE:SOURCE,PACKAGE,ALWAYS $@
+!ENDIF
 
-devdcl.obj :
-	$(ASM) /I$(DDK)\INC32 $(ASMFLAGS) devdcl.asm
+ASMFLAGS = -I\$(DDK)\inc\$(OS) -coff -DBLD_COFF -DIS_32 -W2 -c -Cx -DMASM6 -nologo
 
-install:
-        copy e4m9x.vxd c:\win95b\system\iosubsys
+{..}.c{}.obj :
+	@$(CC) -c $(CFLAGS) -I..\..\common -I..\..\crypto 	$<
 
-uninstall:
-        del c:\win95b\system\iosubsys\e4m9x.vxd
+{..}.asm{}.obj :
+	@$(ASM) /I.. /I$(DDK)\inc\$(OS) $(ASMFLAGS) $<
 
-verify:
-	fc /b c:\win95b\system\iosubsys\e4m9x.vxd e4m9x.vxd
+{../../common}.c{}.obj :
+	@$(CC) -c $(CFLAGS) -I..\..\common -I..\..\crypto 	$<
+
+
+$(BASENAME).vxd : $(OBJECTS) $(CRYPTOLIB)
+	link $(LFLAGS) $(OBJECTS) $(CRYPTOLIB)
+#   nmsym /TRANSLATE:SOURCE,PACKAGE,ALWAYS $@
+	$(COPYRELEASE)
+		
+

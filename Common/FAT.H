@@ -1,5 +1,5 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
 typedef struct fatparams_t
 {
@@ -60,5 +60,5 @@ struct msdos_boot_sector
 
 void GetFatParams ( fatparams *ft );
 void PutBoot ( fatparams *ft , unsigned char *boot );
-BOOL WriteSector ( HFILE dev , char *sector , char *write_buf , int *write_buf_cnt , int *nSecNo , int *progress , PCRYPTO_INFO cryptoInfo , int nFrequency , diskio_f write );
-int Format ( fatparams *ft , HFILE dev , int nVolType , PCRYPTO_INFO cryptoInfo , int nFrequency , diskio_f write );
+BOOL WriteSector ( HFILE dev , char *sector , char *write_buf , int *write_buf_cnt , __int64 *nSecNo , int *progress , PCRYPTO_INFO cryptoInfo , int nFrequency , diskio_f write );
+int Format (fatparams * ft, HFILE dev, PCRYPTO_INFO cryptoInfo, int nFrequency, diskio_f write, BOOL quickFormat);

@@ -78,8 +78,8 @@ typedef struct cast_key_st
 
 #ifndef NOPROTO
  
-void CAST_set_key(CAST_KEY *key, int len, unsigned char *data);
-void CAST_ecb_encrypt(unsigned char *in,unsigned char *out,CAST_KEY *key,
+void _cdecl CAST_set_key(CAST_KEY *key, int len, unsigned char *data);
+void _cdecl CAST_ecb_encrypt(unsigned char *in,unsigned char *out,CAST_KEY *key,
 	int enc);
 void _cdecl CAST_encrypt(CAST_LONG *data,CAST_KEY *key);
 void _cdecl CAST_decrypt(CAST_LONG *data,CAST_KEY *key);

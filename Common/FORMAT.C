@@ -1,12 +1,12 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 
 #include "crypto.h"
 #include "fat.h"
 #include "format.h"
-#include "volumes1.h"
+#include "volumes.h"
 #include "progress.h"
 #include "apidrvr.h"
 #include "dlgcode.h"
@@ -14,15 +14,15 @@
 int
 FormatVolume (char *lpszFilename,
 	      BOOL bDevice,
-	      long size,
-	      int nVolType,
+	      unsigned __int64 size,
 	      char *lpszPassword,
 	      int cipher,
 	      int pkcs5,
 	      fatparams * ft,
+		  BOOL quickFormat,
 	      HWND hwndDlg)
 {
-	int i, j = 0, nStatus;
+	int nStatus;
 	PCRYPTO_INFO cryptoInfo;
 	void *dev = INVALID_HANDLE_VALUE;
 	OPEN_TEST_STRUCT driver;
@@ -66,34 +66,30 @@ FormatVolume (char *lpszFilename,
 		dev = &win9x_r0;
 	}
 
+	size -= SECTOR_SIZE;	// less the first TC sector
 
-	if (nVolType != SFS_VOLTYPE)
-		size -= SECTOR_SIZE;
-
-	ft->num_sectors = size / SECTOR_SIZE;
+	ft->num_sectors = (int) (size / SECTOR_SIZE);
 	memcpy (ft->volume_name, "           ", 11);
 
-	for (i = 1; i < 128; i <<= 1)
 	{
-		j = ft->num_sectors / i;
-		if (j <= 65535)
-			break;
-
+		// Avoid random init delay before time counters start
+		char tmp[1];
+		RandgetBytes(&tmp, 1);
 	}
 
-	InitProgressBar (j);
+	InitProgressBar (ft->num_sectors);
 
 	/* Calculate the fats, root dir etc, and update ft */
 	GetFatParams (ft);
 
 	/* Copies any header structures into ft->header, but does not do any
 	   disk io */
-	nStatus = VolumeWriteHeader (ft,
-				     ft->header,
-				     nVolType,
+	nStatus = VolumeWriteHeader (ft->header,
 				     cipher,
 				     lpszPassword,
 				     pkcs5,
+					 0,
+					 0,
 				     &cryptoInfo);
 
 	if (nStatus != 0)
@@ -103,7 +99,7 @@ FormatVolume (char *lpszFilename,
 
 	/* This does the disk io, both copying out the header, init the
 	   sectors, and writing the FAT tables etc */
-	nStatus = Format (ft, (HFILE) dev, nVolType, cryptoInfo, i, write);
+	nStatus = Format (ft, (HFILE) dev, cryptoInfo, 1000, write, bDevice==TRUE ? quickFormat:FALSE);
 
 	dwError = GetLastError();
 

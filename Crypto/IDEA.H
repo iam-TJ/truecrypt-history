@@ -15,7 +15,7 @@
 
 /* Routines used to implement the IDEA encryption */
 
-void ideaExpandKey( unsigned char const *userkey, word16 *eKey, word16 *dKey );
-void ideaCrypt( unsigned char const *in, unsigned char *out, word16 const *key );
+void _cdecl ideaExpandKey( unsigned char const *userkey, word16 *eKey, word16 *dKey );
+void _cdecl ideaCrypt( unsigned char const *in, unsigned char *out, word16 const *key );
 
 #endif /* _IDEA_DEFINED */

@@ -1,7 +1,7 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 #include "redtick.h"
 
 LRESULT CALLBACK
@@ -39,7 +39,7 @@ RedTick (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
       GetClientRect (hwnd, &Rect);
 
-      hPen = CreatePen (PS_SOLID, 2, RGB (255, 0, 0));
+      hPen = CreatePen (PS_SOLID, 2, RGB (0, 255, 0));
       if (hPen != NULL)
 	{
 	  HGDIOBJ hObj = SelectObject (hDC, hPen);
@@ -72,6 +72,8 @@ RegisterRedTick (HINSTANCE hInstance)
 {
   WNDCLASS wc;
   ULONG rc;
+
+  memset(&wc, 0 , sizeof wc);
 
   wc.style = CS_HREDRAW | CS_VREDRAW;
   wc.cbClsExtra = 0;

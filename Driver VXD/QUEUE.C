@@ -1,14 +1,14 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 
 #pragma VxD_LOCKED_CODE_SEG
 #pragma VxD_LOCKED_DATA_SEG
 
 #include "crypto.h"
 #include "apidrvr.h"
-#include "e4m9x.h"
+#include "tc9x.h"
 #include "queue.h"
 
 #include "ifshook.h"
@@ -38,7 +38,7 @@ DeQueueIOP (void)
 		dcb = (PDCB) iop->IOP_physical_dcb;
 		cv = (cryptvol *) dcb->DCB_Port_Specific;
 
-		/* Note that in E4M, it isn't necessary to clear IOR_next
+		/* Note that in TC, it isn't necessary to clear IOR_next
 		   Nothing further is called using this IOP */
 
 		cryptproc (iop, cv);

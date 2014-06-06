@@ -1,16 +1,16 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
 /* WARNING: The code for unmounting volumes is ugly for all Windows versions;
    becarefull what you change here as there might be unintended side effects
    in the device drivers */
 
 /* For Windows NT the part of the system that actually unmounts drives is the
-   e4mservice, this is because of NT security. Users don't normally have
-   enough access to open raw partitions, but services do, e4mservice still
+   TrueCryptService, this is because of NT security. Users don't normally have
+   enough access to open raw partitions, but services do, TrueCryptService still
    calls this code however. */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 #include "crypto.h"
 #include "apidrvr.h"
 
@@ -52,7 +52,7 @@ UnmountAllVolumes (HWND hwndDlg, DWORD * os_error, int *err)
 		if ((driver.ulMountedDrives & 1 << i))
 		{
 			UnmountVolume (i, os_error, err);
-			
+
 			if (*err != 0)
 				bOK = FALSE;
 
@@ -67,7 +67,7 @@ UnmountAllVolumes (HWND hwndDlg, DWORD * os_error, int *err)
 BOOL
 UnmountVolume (int nDosDriveNo, DWORD * os_error, int *err)
 {
-	UNMOUNT_STRUCT e4mUnmount;
+	UNMOUNT_STRUCT tcUnmount;
 	char volMountName[32];
 	char dosName[3];
 	DWORD dwResult;
@@ -76,9 +76,9 @@ UnmountVolume (int nDosDriveNo, DWORD * os_error, int *err)
 	*os_error = 0;
 	*err = 0;
 
-	e4mUnmount.nDosDriveNo = nDosDriveNo;
+	tcUnmount.nDosDriveNo = nDosDriveNo;
 
-	dosName[0] = (char) (e4mUnmount.nDosDriveNo + 'A');
+	dosName[0] = (char) (tcUnmount.nDosDriveNo + 'A');
 	dosName[1] = ':';
 	dosName[2] = 0;
 
@@ -87,8 +87,8 @@ UnmountVolume (int nDosDriveNo, DWORD * os_error, int *err)
 	if (DismountVolume (volMountName, os_error, err) == FALSE)
 		return FALSE;
 
-	bResult = DeviceIoControl (hDriver, UNMOUNT, &e4mUnmount,
-				   sizeof (e4mUnmount), &e4mUnmount, sizeof (e4mUnmount), &dwResult, NULL);
+	bResult = DeviceIoControl (hDriver, UNMOUNT, &tcUnmount,
+				   sizeof (tcUnmount), &tcUnmount, sizeof (tcUnmount), &dwResult, NULL);
 
 	if (bResult == FALSE)
 	{
@@ -97,7 +97,7 @@ UnmountVolume (int nDosDriveNo, DWORD * os_error, int *err)
 		return FALSE;
 	}
 
-	if (e4mUnmount.nReturnCode == 0)
+	if (tcUnmount.nReturnCode == 0)
 	{
 		bResult = DefineDosDevice (DDD_REMOVE_DEFINITION, dosName, NULL);
 
@@ -109,7 +109,7 @@ UnmountVolume (int nDosDriveNo, DWORD * os_error, int *err)
 		}
 	}
 	else
-		*err = e4mUnmount.nReturnCode;
+		*err = tcUnmount.nReturnCode;
 
 	return TRUE;
 }

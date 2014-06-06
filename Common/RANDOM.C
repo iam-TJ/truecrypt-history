@@ -1,7 +1,7 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 
 #include <tlhelp32.h>
 
@@ -22,10 +22,10 @@ int nRandIndex = 0;
 
 /* Macro to add a single byte to the pool */
 #define RandaddByte(x) {\
-	if (nRandIndex==POOLSIZE) \
-		Randmix(); \
+	if (nRandIndex==POOLSIZE) nRandIndex = 0;\
 	pRandPool[nRandIndex] = (unsigned char) ((unsigned char)x + pRandPool[nRandIndex]); \
 	nRandIndex++; \
+	Randmix(); \
 	}
 
 /* Macro to add four bytes to the pool */
@@ -63,11 +63,13 @@ Randinit ()
 {
 	HANDLE threadID;
 
+	if(bRandDidInit == TRUE) return 0;
+
 	InitializeCriticalSection (&critRandProt);
 
 	bRandDidInit = TRUE;
 
-	pRandPool = (unsigned char *) e4malloc (RANDOMPOOL_ALLOCSIZE);
+	pRandPool = (unsigned char *) TCalloc (RANDOMPOOL_ALLOCSIZE);
 	if (pRandPool == NULL)
 		goto error;
 	else
@@ -123,7 +125,7 @@ Randfree ()
 	if (pRandPool != NULL)
 	{
 		burn (pRandPool, RANDOMPOOL_ALLOCSIZE);
-		e4mfree (pRandPool);
+		TCfree (pRandPool);
 		pRandPool = NULL;
 	}
 
@@ -160,8 +162,6 @@ Randmix ()
 		SHA1TRANSFORM ((unsigned long *) (pRandPool + i), inputBuffer);
 		memset (inputBuffer, 0, SHA_BLOCKSIZE);
 	}
-
-	nRandIndex = 0;
 }
 
 /* Add a buffer to the pool */
@@ -197,11 +197,12 @@ RandgetBytes (char *buf, int len)
 	{
 		bDidSlowPoll = TRUE;
 
+#ifndef _DEBUG
 		if (nCurrentOS == WIN_NT)
 			SlowPollWinNT ();
 		else
 			SlowPollWin9x ();
-
+#endif
 	}
 	/* Then mix the pool */
 	Randmix ();
@@ -400,7 +401,7 @@ SlowPollWinNT (void)
 			status = RegQueryValueEx (hKey, "ProductType", 0, NULL,
 						  szValue, &dwSize);
 
-			if (status == ERROR_SUCCESS && stricmp ((char *) szValue, "WinNT"))
+			if (status == ERROR_SUCCESS && _stricmp ((char *) szValue, "WinNT"))
 				/* Note: There are (at least) three cases for
 				   ProductType: WinNT = NT Workstation,
 				   ServerNT = NT Server, LanmanNT = NT Server
@@ -484,7 +485,7 @@ SlowPollWinNT (void)
 	}
 
 	/* Get the performance counters */
-	pPerfData = (PPERF_DATA_BLOCK) e4malloc (cbPerfData);
+	pPerfData = (PPERF_DATA_BLOCK) TCalloc (cbPerfData);
 	while (pPerfData)
 	{
 		dwSize = cbPerfData;
@@ -496,7 +497,7 @@ SlowPollWinNT (void)
 			RegCloseKey (HKEY_PERFORMANCE_DATA);
 			if (memcmp (pPerfData->Signature, WIDE ("PERF"), 8) == 0)
 				RandaddBuf (pPerfData, dwSize);
-			e4mfree (pPerfData);
+			TCfree (pPerfData);
 			pPerfData = NULL;
 		}
 		else if (status == ERROR_MORE_DATA)

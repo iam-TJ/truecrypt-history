@@ -42,7 +42,7 @@ Copyright 1993, Dr. James J. Gillogly This code may be freely used in any
     A = temp
 
 void
-ShaTransform0 (unsigned long *hash, unsigned long *data)	/* NIST original */
+_cdecl ShaTransform0 (unsigned long *hash, unsigned long *data)	/* NIST original */
 {
   unsigned long W[80];
 

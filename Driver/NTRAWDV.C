@@ -1,10 +1,10 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 #include "crypto.h"
 #include "fat.h"
-#include "volumes1.h"
+#include "volumes.h"
 
 #include "apidrvr.h"
 #include "ntdriver.h"
@@ -14,7 +14,7 @@
 #pragma warning( disable : 4127 )
 
 NTSTATUS
-E4MSendIRP_RawDevice (PDEVICE_OBJECT DeviceObject,
+TCSendIRP_RawDevice (PDEVICE_OBJECT DeviceObject,
 		      PEXTENSION Extension,
 		      PVOID pUserBuffer,
 		      ULONG uFlags,
@@ -27,7 +27,7 @@ E4MSendIRP_RawDevice (PDEVICE_OBJECT DeviceObject,
 
 	if (uFlags);		/* Remove compiler warning */
 
-	Dump ("Sending IRP...\n");
+//	Dump ("Sending IRP...\n");
 
 	irpSp = IoGetCurrentIrpStackLocation (Irp);
 	irpNextSp = IoGetNextIrpStackLocation (Irp);
@@ -51,9 +51,9 @@ E4MSendIRP_RawDevice (PDEVICE_OBJECT DeviceObject,
 	irpNextSp->Parameters.Read.ByteOffset = irpSp->Parameters.Read.ByteOffset;
 	irpNextSp->Parameters.Read.Key = irpSp->Parameters.Read.Key;
 
-	IoSetCompletionRoutine (Irp, E4MCompletion, pUserBuffer, TRUE, TRUE, TRUE);
+	IoSetCompletionRoutine (Irp, TCCompletion, pUserBuffer, TRUE, TRUE, TRUE);
 	ntStatus = IoCallDriver (Extension->pFsdDevice, Irp);
 
-	Dump ("IRP Sent!\n");
+//	Dump ("IRP Sent!\n");
 	return ntStatus;
 }

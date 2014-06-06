@@ -1094,21 +1094,23 @@ int VXDINLINE ReleaseTimeSlice()
 	}
 
 
-int RestrictedEvent(unsigned int Proc,unsigned int refdata)
-	{
-	_asm
-	{
-
-	mov     eax, 0; 
-	mov     ebx, 0 ;Handle
-	;;mov     ecx, PEF_ALWAYS_SCHED|PEF_RING0_EVENT; 
-	mov     ecx, PEF_ALWAYS_SCHED|PEF_WAIT_CRIT;
-	mov     edx, [refdata]
-	mov     esi, [Proc]
-	mov     edi, 0
-	VxDCall (Call_Restricted_Event)
-	}
-	}
+//%%%
+//int RestrictedEvent(unsigned int Proc,unsigned int refdata)
+//	{
+//	_asm
+//	{
+//
+//	mov     eax, 0; 
+//	mov     ebx, 0 ;Handle
+//	;;mov     ecx, PEF_ALWAYS_SCHED|PEF_RING0_EVENT; 
+//	mov     ecx, PEF_ALWAYS_SCHED|PEF_WAIT_CRIT;
+//	mov     edx, [refdata]
+//	mov     esi, [Proc]
+//	mov     edi, 0
+//	VxDCall (Call_Restricted_Event)
+//	}
+//	return 0; 
+//	}
 
 
 ShellMessageNCB(int flags,char * message,char *caption)

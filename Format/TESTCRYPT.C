@@ -1,7 +1,9 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#pragma warning(disable : 4295)
+ 
+#include "TCdefs.h"
 
 #include <stdlib.h>
 #include <limits.h>
@@ -27,6 +29,8 @@
 #include "password.h"
 
 #include "endian.h"
+#include "pkcs5.h"
+#include "crc.h"
 
 /* IDEA Test Vectors */
 
@@ -1220,13 +1224,15 @@ CipherTestDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			char szTmp[256];
 
+			SetDefaultUserFont (hwndDlg);
+
 			SendMessage(GetDlgItem(hwndDlg, IDC_TESTS_MESSAGE), WM_SETFONT, (WPARAM)hSmallBoldFont, MAKELPARAM(TRUE,0));
 			SendMessage(GetDlgItem(hwndDlg, IDC_KEY), EM_LIMITTEXT, 80,0);
-			SendMessage(GetDlgItem(hwndDlg, IDC_KEY), WM_SETFONT, (WPARAM)hFixedFont, MAKELPARAM(1,0));
+			SendMessage(GetDlgItem(hwndDlg, IDC_KEY), WM_SETFONT, (WPARAM)hSmallFont, MAKELPARAM(1,0));
 			SendMessage(GetDlgItem(hwndDlg, IDC_PLAINTEXT), EM_LIMITTEXT,80,0);
-			SendMessage(GetDlgItem(hwndDlg, IDC_PLAINTEXT), WM_SETFONT, (WPARAM)hFixedFont, MAKELPARAM(1,0));
+			SendMessage(GetDlgItem(hwndDlg, IDC_PLAINTEXT), WM_SETFONT, (WPARAM)hSmallFont, MAKELPARAM(1,0));
 			SendMessage(GetDlgItem(hwndDlg, IDC_CIPHERTEXT), EM_LIMITTEXT,80,0);
-			SendMessage(GetDlgItem(hwndDlg, IDC_CIPHERTEXT), WM_SETFONT, (WPARAM)hFixedFont, MAKELPARAM(1,0));
+			SendMessage(GetDlgItem(hwndDlg, IDC_CIPHERTEXT), WM_SETFONT, (WPARAM)hSmallFont, MAKELPARAM(1,0));
 
 			nCipherChoice = (int) lParam;
 
@@ -1337,6 +1343,11 @@ CipherTestDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			if (Des56TestLoop(des56_ecb_vectors_dp, DES56_TEST_COUNT_DP,1)!=TRUE)
 				bFailed = TRUE;
 			if (Des56TestLoop(des56_ecb_vectors_sb, DES56_TEST_COUNT_SB,1)!=TRUE)
+				bFailed = TRUE;
+
+			if (!test_pkcs5())
+				bFailed = TRUE;
+			if (!crc32_selftest())
 				bFailed = TRUE;
 
 			ShowWindow(GetDlgItem(hwndDlg, IDC_TESTS_MESSAGE), SW_SHOWNORMAL);

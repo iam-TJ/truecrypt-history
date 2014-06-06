@@ -1,7 +1,7 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 
 #include <malloc.h>
 #include <ctype.h>
@@ -18,8 +18,8 @@
 BOOL WINAPI
 CommandHelpDlgProc (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	WORD lw = LOWORD (wParam);
 	if (lParam);		/* remove warning */
+	if (wParam);		/* remove warning */
 
 	switch (msg)
 	{
@@ -29,6 +29,8 @@ CommandHelpDlgProc (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		char tmp2[256];
 		argumentspec *as;
 		int i;
+
+		SetDefaultUserFont (hwndDlg);
 
 		as = (argumentspec*) lParam;
 
@@ -76,7 +78,7 @@ Win32CommandLine (char *lpszCommandLine, char ***lpszArgs)
 			if (k > 0)
 			{
 				szTmp[k] = 0;
-				(*lpszArgs)[x] = strdup (szTmp);
+				(*lpszArgs)[x] = _strdup (szTmp);
 				if ((*lpszArgs)[x] == NULL)
 				{
 					free (*lpszArgs);
@@ -136,7 +138,7 @@ Win32CommandLine (char *lpszCommandLine, char ***lpszArgs)
 	else if (k > 0)
 	{
 		szTmp[k] = 0;
-		(*lpszArgs)[x] = strdup (szTmp);
+		(*lpszArgs)[x] = _strdup (szTmp);
 		if ((*lpszArgs)[x] == NULL)
 		{
 			free (*lpszArgs);

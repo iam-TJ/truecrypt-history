@@ -1,10 +1,10 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 #include "crypto.h"
 #include "fat.h"
-#include "volumes1.h"
+#include "volumes.h"
 
 #include "apidrvr.h"
 #include "ntdriver.h"
@@ -14,16 +14,16 @@
 
 #include "cache.h"
 
-#ifdef _DEBUG
-#define EXTRA_INFO 1
-#endif
+//#ifdef _DEBUG
+//#define EXTRA_INFO 1
+//#endif
 
 #pragma warning( disable : 4127 )
 
 #define FIRST_READ_SIZE SECTOR_SIZE*2
 
 NTSTATUS
-E4MOpenVolume (PDEVICE_OBJECT DeviceObject,
+TCOpenVolume (PDEVICE_OBJECT DeviceObject,
 	       PEXTENSION Extension,
 	       MOUNT_STRUCT * mount,
 	       PWSTR pwszMountVolume,
@@ -42,7 +42,7 @@ E4MOpenVolume (PDEVICE_OBJECT DeviceObject,
 	Extension->pfoDeviceFile = NULL;
 	Extension->hDeviceFile = NULL;
 
-	readBuffer = e4malloc (FIRST_READ_SIZE);
+	readBuffer = TCalloc (FIRST_READ_SIZE);
 	if (readBuffer == NULL)
 	{
 		ntStatus = STATUS_INSUFFICIENT_RESOURCES;
@@ -219,7 +219,7 @@ E4MOpenVolume (PDEVICE_OBJECT DeviceObject,
 			goto error;
 		}
 
-		ntStatus = E4MSendDeviceIoControlRequest (DeviceObject,
+		ntStatus = TCSendDeviceIoControlRequest (DeviceObject,
 				   Extension, IOCTL_DISK_GET_DRIVE_GEOMETRY,
 						 (char *) &dg, sizeof (dg));
 
@@ -232,7 +232,7 @@ E4MOpenVolume (PDEVICE_OBJECT DeviceObject,
 		{
 			PARTITION_INFORMATION pi;
 
-			ntStatus = E4MSendDeviceIoControlRequest (DeviceObject,
+			ntStatus = TCSendDeviceIoControlRequest (DeviceObject,
 				   Extension, IOCTL_DISK_GET_PARTITION_INFO,
 						 (char *) &pi, sizeof (pi));
 
@@ -261,12 +261,7 @@ E4MOpenVolume (PDEVICE_OBJECT DeviceObject,
 		goto error;
 	}
 	else
-		Extension->DiskLength = lDiskLength.LowPart;
-
-	/* Save away the real boot sector, because if this turns out to be an
-	   SFS volume then we need this information later, if this is a E4M
-	   volume the info is not needed */
-	memcpy (Extension->sfs_true_boot_sector, readBuffer, SECTOR_SIZE);
+		Extension->DiskLength = lDiskLength.QuadPart;
 
 	/* Attempt to recognize the volume */
 
@@ -276,7 +271,6 @@ E4MOpenVolume (PDEVICE_OBJECT DeviceObject,
 	mount->nReturnCode = VolumeReadHeaderCache (
 							   mount->bCache,
 							   readBuffer,
-						       &Extension->nVolType,
 							   mount->szPassword,
 						 strlen (mount->szPassword),
 						    &Extension->cryptoInfo);
@@ -285,47 +279,33 @@ E4MOpenVolume (PDEVICE_OBJECT DeviceObject,
 
 	if (mount->nReturnCode == 0)
 	{
-		if (Extension->nVolType == SFS_VOLTYPE)
-		{
-			/* Handle the volume setup for SFS */
+		/* Handle the volume setup for TC */
 
-			/* The boot sector has been decrypted */
-			boot_sector = (struct msdos_boot_sector *) readBuffer;
+		boot_sector = (struct msdos_boot_sector *) (readBuffer + SECTOR_SIZE);
 
-			memcpy (Extension->sfs_fake_boot_sector, boot_sector, SECTOR_SIZE);
+		/* It's in the volume file so we must decrypt it */
+		Extension->cryptoInfo->decrypt_sector ((ULONG *) boot_sector, 1, 1,
+			&Extension->cryptoInfo->ks[0],
+			Extension->cryptoInfo->iv,
+			Extension->cryptoInfo->cipher);
 
-			/* Volume setup end */
-		}
-		else if (isE4M (Extension->nVolType) == TRUE)
-		{
-			/* Handle the volume setup for E4M */
+		/* There's one extra sector than there should be */
+		Extension->DiskLength -= SECTOR_SIZE;
 
-			boot_sector = (struct msdos_boot_sector *) (readBuffer + SECTOR_SIZE);
+		/* Volume setup end */
 
-			/* It's in the volume file so we must decrypt it */
-			Extension->cryptoInfo->decrypt_sector ((ULONG *) boot_sector, 1, 1,
-					      &Extension->cryptoInfo->ks[0],
-						  Extension->cryptoInfo->iv,
-					     Extension->cryptoInfo->cipher);
-
-
-			/* There's one extra sector than there should be */
-			Extension->DiskLength -= SECTOR_SIZE;
-
-			/* Volume setup end */
-		}
-		else
-		{
-			ASSERT (0);
-		}
-
-		Extension->TracksPerCylinder = boot_sector->heads;
-		Extension->SectorsPerTrack = boot_sector->secs_track;
+		//Extension->TracksPerCylinder = boot_sector->heads;
+		//Extension->SectorsPerTrack = boot_sector->secs_track;
+		//Extension->NumberOfCylinders = (ULONG) (Extension->DiskLength / Extension->BytesPerSector /
+		//	Extension->SectorsPerTrack / Extension->TracksPerCylinder);
+		Extension->TracksPerCylinder = 1;
+		Extension->SectorsPerTrack = 1;
 		Extension->BytesPerSector = *((unsigned short *) boot_sector->sector_size);
-		Extension->NumberOfCylinders = Extension->DiskLength / Extension->BytesPerSector /
-			Extension->SectorsPerTrack / Extension->TracksPerCylinder;
+		Extension->NumberOfCylinders = Extension->DiskLength / Extension->BytesPerSector;
+
 		Extension->PartitionType = (UCHAR) ((boot_sector->fs_type[4] == '6') ?
 				       PARTITION_FAT_16 : PARTITION_FAT_12);
+		if(boot_sector->fs_type[3] == '3') Extension->PartitionType = (UCHAR) PARTITION_FAT32;
 
 		Extension->bRawDevice = bRawDevice;
 
@@ -342,7 +322,7 @@ E4MOpenVolume (PDEVICE_OBJECT DeviceObject,
 
 		Extension->mountTime = mount->time;
 
-		e4mfree (readBuffer);
+		TCfree (readBuffer);
 
 		return STATUS_SUCCESS;
 	}
@@ -371,13 +351,13 @@ E4MOpenVolume (PDEVICE_OBJECT DeviceObject,
 
 	/* Free the tmp IO buffer */
 	if (readBuffer != NULL)
-		e4mfree (readBuffer);
+		TCfree (readBuffer);
 
 	return ntStatus;
 }
 
 void
-E4MCloseVolume (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension)
+TCCloseVolume (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension)
 {
 	if (DeviceObject);	/* Remove compiler warning */
 
@@ -393,7 +373,7 @@ E4MCloseVolume (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension)
    they are called at high IRQL */
 
 NTSTATUS
-E4MCompletion (PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID pUserBuffer)
+TCCompletion (PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID pUserBuffer)
 {
 	PIO_STACK_LOCATION irpSp;
 	PEXTENSION Extension;
@@ -449,7 +429,7 @@ E4MCompletion (PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID pUserBuffer)
 		{
 			pNextMdl = pMdl->Next;
 
-			MmUnmapLockedPages (MmGetSystemAddressForMdl (pMdl), pMdl);
+			MmUnmapLockedPages (MmGetSystemAddressForMdlSafe (pMdl, HighPagePriority), pMdl);
 			MmUnlockPages (pMdl);
 			IoFreeMdl (pMdl);
 
@@ -459,38 +439,24 @@ E4MCompletion (PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID pUserBuffer)
 
 	if (NT_SUCCESS (Irp->IoStatus.Status) && irpSp->MajorFunction == IRP_MJ_READ)
 	{
-		ULONG tmpOffset = irpSp->Parameters.Read.ByteOffset.LowPart;
+		__int64 tmpOffset = irpSp->Parameters.Read.ByteOffset.QuadPart;
 		ULONG tmpLength = irpSp->Parameters.Read.Length;
 		PUCHAR CurrentAddress;
 
 		if (Extension->bRawDevice == TRUE)
-			CurrentAddress = MmGetSystemAddressForMdl (Irp->MdlAddress);
+			CurrentAddress = MmGetSystemAddressForMdlSafe (Irp->MdlAddress, HighPagePriority);
 		else
 			CurrentAddress = Irp->UserBuffer;
 
-		if (Extension->nVolType == SFS_VOLTYPE && tmpOffset == 0)
-		{
-			/* Return the fake boot sector back to Windows NT */
-			memcpy (CurrentAddress, Extension->sfs_fake_boot_sector, SECTOR_SIZE);
-			tmpOffset += SECTOR_SIZE;
-			tmpLength -= SECTOR_SIZE;
-			CurrentAddress += SECTOR_SIZE;
-		}
-
 		if (tmpLength > 0)
 		{
-			ULONG secNum;
-
-			secNum = tmpOffset / SECTOR_SIZE;
-
 			/* Decrypt the data on read */
 			Extension->cryptoInfo->decrypt_sector ((ULONG *) CurrentAddress,
-							       secNum,
-						    tmpLength / SECTOR_SIZE,
-					      &Extension->cryptoInfo->ks[0],
-						  Extension->cryptoInfo->iv,
-					     Extension->cryptoInfo->cipher);
-
+				tmpOffset / SECTOR_SIZE,
+				tmpLength / SECTOR_SIZE,
+				&Extension->cryptoInfo->ks[0],
+				Extension->cryptoInfo->iv,
+				Extension->cryptoInfo->cipher);
 		}
 
 		if (Extension->bRawDevice == FALSE)
@@ -498,7 +464,7 @@ E4MCompletion (PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID pUserBuffer)
 			PIRP OldIrp = (PIRP) pUserBuffer;
 			PUCHAR OriginalAddress;
 			CurrentAddress = Irp->UserBuffer;
-			OriginalAddress = MmGetSystemAddressForMdl (OldIrp->MdlAddress);
+			OriginalAddress = MmGetSystemAddressForMdlSafe (OldIrp->MdlAddress, HighPagePriority);
 			memcpy (OriginalAddress, CurrentAddress, Irp->IoStatus.Information);
 		}
 
@@ -511,38 +477,27 @@ E4MCompletion (PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID pUserBuffer)
 
 		if (Extension->bRawDevice == TRUE)
 		{
-			CurrentAddress = MmGetSystemAddressForMdl (Irp->MdlAddress);
-			OriginalAddress = MmGetSystemAddressForMdl ((PMDL) pUserBuffer);
+			CurrentAddress = MmGetSystemAddressForMdlSafe (Irp->MdlAddress, HighPagePriority);
+			OriginalAddress = MmGetSystemAddressForMdlSafe ((PMDL) pUserBuffer, HighPagePriority);
 		}
 		else
 		{
 			PIRP OldIrp = (PIRP) pUserBuffer;
 			CurrentAddress = Irp->UserBuffer;
-			OriginalAddress = MmGetSystemAddressForMdl (OldIrp->MdlAddress);
+			OriginalAddress = MmGetSystemAddressForMdlSafe (OldIrp->MdlAddress, HighPagePriority);
 		}
 
-		if (NT_SUCCESS (Irp->IoStatus.Status))
-		{
-			ULONG tmpOffset = irpSp->Parameters.Read.ByteOffset.LowPart;
-
-			if (Extension->nVolType == SFS_VOLTYPE && tmpOffset == 0)
-			{
-				/* Copy the boot sector Windows NT tried to
-				   write to begin with into the fake boot
-				   sector area, next time Windows NT reads
-				   the boot sector it will actually get the
-				   fake area updated with whatever it tried
-				   to write here! */
-				memcpy (Extension->sfs_fake_boot_sector, OriginalAddress, SECTOR_SIZE);
-			}
-		}
+		//if (NT_SUCCESS (Irp->IoStatus.Status))
+		//{
+		//	__int64 tmpOffset = irpSp->Parameters.Read.ByteOffset.QuadPart;
+		//}
 	}
 
 	if (Extension->bRawDevice == TRUE && irpSp->MajorFunction == IRP_MJ_WRITE)
 	{
-		PUCHAR tmpBuffer = MmGetSystemAddressForMdl (Irp->MdlAddress);
+		PUCHAR tmpBuffer = MmGetSystemAddressForMdlSafe (Irp->MdlAddress, HighPagePriority);
 		/* Free the temp buffer we allocated */
-		e4mfree (tmpBuffer);
+		TCfree (tmpBuffer);
 		/* Free the Mdl we allocated */
 		IoFreeMdl (Irp->MdlAddress);
 		/* Reset the Irp */
@@ -589,7 +544,7 @@ E4MCompletion (PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID pUserBuffer)
 #endif
 
 		if (bFreeBuffer == TRUE)
-			e4mfree (tmpBuffer);
+			TCfree (tmpBuffer);
 
 		ntStatus = STATUS_MORE_PROCESSING_REQUIRED;
 	}
@@ -602,24 +557,21 @@ E4MCompletion (PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID pUserBuffer)
 }
 
 NTSTATUS
-E4MReadWrite (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
+TCReadWrite (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 {
 	PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation (Irp);
 	PUCHAR tmpBuffer = NULL;/* Remove compiler warning */
 	NTSTATUS ntStatus;
 
-	Dump ("E4MReadWrite BEGIN\n");
+//	Dump ("TCReadWrite BEGIN\n");
 
 	/* Check for invalid parameters.  It is an error for the starting
 	   offset + length to go past the end of the buffer, or for the
 	   length to not be a proper multiple of the sector size. Others are
 	   possible, but we don't check them since we trust the file system
 	   and they aren't deadly.  */
-	if (RtlLargeIntegerGreaterThan (RtlLargeIntegerAdd (
-								   RtlConvertUlongToLargeInteger (irpSp->Parameters.Read.ByteOffset.LowPart),
-	     RtlConvertUlongToLargeInteger (irpSp->Parameters.Read.Length)),
-		   RtlConvertUlongToLargeInteger (Extension->DiskLength)) ||
-	  (irpSp->Parameters.Read.Length & (Extension->BytesPerSector - 1)))
+	if (irpSp->Parameters.Read.ByteOffset.QuadPart + irpSp->Parameters.Read.Length > Extension->DiskLength
+		|| (irpSp->Parameters.Read.Length & (Extension->BytesPerSector - 1)))
 	{
 		return COMPLETE_IRP (DeviceObject, Irp, STATUS_INVALID_PARAMETER, 0);
 	}
@@ -660,27 +612,26 @@ E4MReadWrite (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 
 	if (Extension->bRawDevice == FALSE || irpSp->MajorFunction == IRP_MJ_WRITE)
 	{
-		tmpBuffer = e4malloc (irpSp->Parameters.Read.Length);
+		tmpBuffer = TCalloc (irpSp->Parameters.Read.Length);
 		if (tmpBuffer == NULL)
 			return COMPLETE_IRP (DeviceObject, Irp, STATUS_INSUFFICIENT_RESOURCES, 0);
 	}
 
 	if (irpSp->MajorFunction == IRP_MJ_READ)
 	{
-		Dump ("Read: 0x%08x for %lu bytes...\n", irpSp->Parameters.Read.ByteOffset.LowPart,
-		      irpSp->Parameters.Read.Length);
+//		Dump ("Read: 0x%08x for %lu bytes...\n", irpSp->Parameters.Read.ByteOffset.LowPart,
+//		      irpSp->Parameters.Read.Length);
 
 		/* Fixup the parameters to handle this particular volume type */
-		if (isE4M (Extension->nVolType) == TRUE)
-			irpSp->Parameters.Read.ByteOffset.LowPart += SECTOR_SIZE;
+		irpSp->Parameters.Read.ByteOffset.QuadPart += SECTOR_SIZE;  
 
 		if (Extension->bRawDevice == TRUE)
-			ntStatus = E4MSendIRP_RawDevice (DeviceObject, Extension,
+			ntStatus = TCSendIRP_RawDevice (DeviceObject, Extension,
 				     NULL, IRP_READ_OPERATION | IRP_NOCACHE,
 						       irpSp->MajorFunction,
 							 Irp);
 		else
-			ntStatus = E4MSendIRP_FileDevice (DeviceObject, Extension,
+			ntStatus = TCSendIRP_FileDevice (DeviceObject, Extension,
 				tmpBuffer, IRP_READ_OPERATION | IRP_NOCACHE,
 						       irpSp->MajorFunction,
 							  Irp);
@@ -689,46 +640,23 @@ E4MReadWrite (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 	{
 		PUCHAR CurrentAddress;
 
-		Dump ("Write: 0x%08x for %lu bytes...\n", irpSp->Parameters.Read.ByteOffset.LowPart,
-		      irpSp->Parameters.Read.Length);
+//		Dump ("Write: 0x%08x for %lu bytes...\n", irpSp->Parameters.Read.ByteOffset.LowPart,
+//		      irpSp->Parameters.Read.Length);
 
-		CurrentAddress = (PUCHAR) MmGetSystemAddressForMdl (Irp->MdlAddress);
+		CurrentAddress = (PUCHAR) MmGetSystemAddressForMdlSafe (Irp->MdlAddress, HighPagePriority);
 
 		/* Fixup the parameters to handle this particular volume type */
-		if (isE4M (Extension->nVolType) == TRUE)
-			irpSp->Parameters.Read.ByteOffset.LowPart += SECTOR_SIZE;
+		irpSp->Parameters.Read.ByteOffset.QuadPart += SECTOR_SIZE;
 
 		memcpy (tmpBuffer, CurrentAddress, irpSp->Parameters.Read.Length);
 
-		if (Extension->nVolType == SFS_VOLTYPE && irpSp->Parameters.Read.ByteOffset.LowPart == 0)
-		{
-			memcpy (tmpBuffer, Extension->sfs_true_boot_sector, SECTOR_SIZE);
-
-			if (irpSp->Parameters.Read.Length > SECTOR_SIZE)
-			{
-				/* Encrypt the data */
-				Extension->cryptoInfo->encrypt_sector ((ULONG *) (tmpBuffer + SECTOR_SIZE),
-								       (irpSp->Parameters.Read.ByteOffset.LowPart + SECTOR_SIZE) / SECTOR_SIZE,
-								       (irpSp->Parameters.Read.Length - SECTOR_SIZE) / SECTOR_SIZE,
-					      &Extension->cryptoInfo->ks[0],
-						  Extension->cryptoInfo->iv,
-					     Extension->cryptoInfo->cipher);
-			}
-		}
-		else
-		{
-			ULONG secNum;
-
-			secNum = irpSp->Parameters.Read.ByteOffset.LowPart / SECTOR_SIZE;
-
-			/* Encrypt the data */
-			Extension->cryptoInfo->encrypt_sector ((ULONG *) tmpBuffer,
-			secNum, irpSp->Parameters.Read.Length / SECTOR_SIZE,
-					      &Extension->cryptoInfo->ks[0],
-						  Extension->cryptoInfo->iv,
-					     Extension->cryptoInfo->cipher);
-
-		}
+		/* Encrypt the data */
+		Extension->cryptoInfo->encrypt_sector ((ULONG *) tmpBuffer,
+			irpSp->Parameters.Read.ByteOffset.QuadPart / SECTOR_SIZE,
+			irpSp->Parameters.Read.Length / SECTOR_SIZE,
+			&Extension->cryptoInfo->ks[0],
+			Extension->cryptoInfo->iv,
+			Extension->cryptoInfo->cipher);
 
 		if (Extension->bRawDevice == TRUE)
 		{
@@ -737,7 +665,7 @@ E4MReadWrite (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 
 			if (tmpBufferMdl == NULL)
 			{
-				e4mfree (tmpBuffer);
+				TCfree (tmpBuffer);
 				return COMPLETE_IRP (DeviceObject, Irp, STATUS_INSUFFICIENT_RESOURCES, 0);
 			}
 
@@ -749,14 +677,14 @@ E4MReadWrite (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 			Dump ("NEW MDL ADDRESS IS 0x%08x UserBuffer = 0x%08x\n", Irp->MdlAddress, Irp->UserBuffer);
 #endif
 
-			ntStatus = E4MSendIRP_RawDevice (DeviceObject, Extension,
+			ntStatus = TCSendIRP_RawDevice (DeviceObject, Extension,
 				pTrueMdl, IRP_WRITE_OPERATION | IRP_NOCACHE,
 						       irpSp->MajorFunction,
 							 Irp);
 		}
 		else
 		{
-			ntStatus = E4MSendIRP_FileDevice (DeviceObject, Extension,
+			ntStatus = TCSendIRP_FileDevice (DeviceObject, Extension,
 			       tmpBuffer, IRP_WRITE_OPERATION | IRP_NOCACHE,
 						       irpSp->MajorFunction,
 							  Irp);
@@ -764,12 +692,12 @@ E4MReadWrite (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 
 	}
 
-	Dump ("E4MReadWrite END\n");
+//	Dump ("TCReadWrite END\n");
 	return ntStatus;
 }
 
 NTSTATUS
-E4MSendDeviceIoControlRequest (PDEVICE_OBJECT DeviceObject,
+TCSendDeviceIoControlRequest (PDEVICE_OBJECT DeviceObject,
 			       PEXTENSION Extension,
 			       ULONG IoControlCode,
 			       char *OutputBuffer,
@@ -822,15 +750,15 @@ COMPLETE_IRP (PDEVICE_OBJECT DeviceObject,
 	if (!NT_SUCCESS (IrpStatus))
 	{
 		PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation (Irp);
-		Dump ("COMPLETE_IRP FAILING IRP %ls Flags 0x%08x vpb 0x%08x NTSTATUS 0x%08x\n", E4MTranslateCode (irpSp->MajorFunction),
+		Dump ("COMPLETE_IRP FAILING IRP %ls Flags 0x%08x vpb 0x%08x NTSTATUS 0x%08x\n", TCTranslateCode (irpSp->MajorFunction),
 		      (ULONG) DeviceObject->Flags, (ULONG) DeviceObject->Vpb->Flags, IrpStatus);
 	}
-	else
-	{
-		PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation (Irp);
-		Dump ("COMPLETE_IRP SUCCESS IRP %ls Flags 0x%08x vpb 0x%08x NTSTATUS 0x%08x\n", E4MTranslateCode (irpSp->MajorFunction),
-		      (ULONG) DeviceObject->Flags, (ULONG) DeviceObject->Vpb->Flags, IrpStatus);
-	}
+	//else
+	//{
+	//	PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation (Irp);
+	//	Dump ("COMPLETE_IRP SUCCESS IRP %ls Flags 0x%08x vpb 0x%08x NTSTATUS 0x%08x\n", TCTranslateCode (irpSp->MajorFunction),
+	//	      (ULONG) DeviceObject->Flags, (ULONG) DeviceObject->Vpb->Flags, IrpStatus);
+	//}
 #endif
 	IoCompleteRequest (Irp, IO_NO_INCREMENT);
 	return IrpStatus;

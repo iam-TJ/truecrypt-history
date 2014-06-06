@@ -15,7 +15,7 @@ void
 ideaCrypt( unsigned char const *input, unsigned char *output, word16 const *key )
 {
 	_asm {
-	PUSH		EBP
+//%%%%	PUSH		EBP
 	PUSH		EAX
 	PUSH		EBX
 	PUSH		ECX
@@ -154,7 +154,7 @@ _SKIP:
 	POP			ECX
 	POP			EBX
 	POP			EAX
-	POP			EBP
+//%%%%%	POP			EBP
 	}
 }
 

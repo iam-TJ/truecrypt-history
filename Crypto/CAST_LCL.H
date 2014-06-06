@@ -148,11 +148,11 @@
                          *((c)++)=(unsigned char)(((l)>> 8L)&0xff), \
                          *((c)++)=(unsigned char)(((l)     )&0xff))
 
-#if defined(WIN32)
-#define ROTL(a,n)     (_lrotl(a,n))
-#else
+//#if defined(WIN32)
+//#define ROTL(a,n)     (_lrotl(a,n))
+//#else
 #define ROTL(a,n)     (((a)<<(n))|((a)>>(32-(n))))
-#endif
+//#endif
 
 #define C_M    0x3fc
 #define C_0    22L

@@ -1,14 +1,14 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 
 #pragma VxD_LOCKED_CODE_SEG
 #pragma VxD_LOCKED_DATA_SEG
 
 #include "crypto.h"
 #include "apidrvr.h"
-#include "e4m9x.h"
+#include "tc9x.h"
 #include "queue.h"
 #include "ifshook.h"
 
@@ -96,7 +96,7 @@ BroadcastMon (int msg, int wparam, int lparam, int ref)
 			cv = cryptvols[c];
 			if (cv->booted)
 			{
-				Post_message ("Please dismount all E4M drives before attempting to shutdown Windows.", "E4M drives still mounted!");
+				Post_message ("Please dismount all TC drives before attempting to shutdown Windows.", "TC drives still mounted!");
 				return 0;	/* This will NOT stop
 						   WM_ENDSESSION! */
 			}
@@ -118,14 +118,14 @@ installhook (void)
 }
 
 void
-InstallE4MThread (void)
+InstallTCThread (void)
 {
 	if (threadid == -1)
-		threadid = installthread (&E4MRing0Thread);
+		threadid = installthread (&TCRing0Thread);
 }
 
 
-/* called when E4M IO initially queued to wake up our ring 0 thread to handle
+/* called when TC IO initially queued to wake up our ring 0 thread to handle
    the IO for us */
 
 void
@@ -146,11 +146,11 @@ killthread (void)
 }
 
 
-/* This Ring 0 thread handles all E4M IO, rather than schedule on global
+/* This Ring 0 thread handles all TC IO, rather than schedule on global
    events which seem to cause trouble on Win98 */
 
 void
-E4MRing0Thread (void)
+TCRing0Thread (void)
 {
 	nSemaphore = Create_Semaphore (1);	/* task Sleep semaphore */
 

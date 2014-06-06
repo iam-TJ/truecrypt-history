@@ -1,7 +1,7 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 #include "combo.h"
 
 #include <time.h>
@@ -115,7 +115,7 @@ UpdateComboOrder (HWND hComboBox)
 }
 
 void
-LoadCombo (HWND hComboBox, char *lpszSection, char *lpszKey, char *lpszIni)
+LoadCombo (HWND hComboBox, char *lpszKey)
 {
 	int i;
 
@@ -127,7 +127,7 @@ LoadCombo (HWND hComboBox, char *lpszSection, char *lpszKey, char *lpszIni)
 
 		sprintf (szTmp2, "%s%s", lpszKey, "%d");
 		sprintf (szKey, szTmp2, i);
-		GetPrivateProfileString (lpszSection, szKey, "", szTmp, sizeof (szTmp), lpszIni);
+		ReadRegistryString (szKey, "", szTmp, sizeof (szTmp));
 
 		AddComboItem (hComboBox, szTmp);
 	}
@@ -137,13 +137,13 @@ LoadCombo (HWND hComboBox, char *lpszSection, char *lpszKey, char *lpszIni)
 }
 
 void
-DumpCombo (HWND hComboBox, char *lpszSection, char *lpszKey, char *lpszIni)
+DumpCombo (HWND hComboBox, char *lpszKey, int bClear)
 {
 	int i, nComboIdx[SIZEOF_MRU_LIST];
 
 	/* combo list part:- get mru items */
 	for (i = 0; i < SIZEOF_MRU_LIST; i++)
-		nComboIdx[i] = GetOrderComboIdx (hComboBox, &nComboIdx[0], i);
+		nComboIdx[i] = bClear ? CB_ERR : GetOrderComboIdx (hComboBox, &nComboIdx[0], i);
 
 	/* combo list part:- write out mru items */
 	for (i = 0; i < SIZEOF_MRU_LIST; i++)
@@ -158,6 +158,22 @@ DumpCombo (HWND hComboBox, char *lpszSection, char *lpszKey, char *lpszIni)
 		sprintf (szTmp2, "%s%s", lpszKey, "%d");
 		sprintf (szKey, szTmp2, i);
 
-		WritePrivateProfileString (lpszSection, szKey, szTmp, lpszIni);
+		WriteRegistryString (szKey, szTmp);
 	}
+}
+
+void
+ClearCombo (HWND hComboBox)
+{
+	int i;
+	for (i = 0; i < SIZEOF_MRU_LIST; i++)
+	{
+		SendMessage (hComboBox, CB_DELETESTRING, 0, 0);
+	}
+}
+
+int
+IsComboEmpty (HWND hComboBox)
+{
+	return SendMessage (hComboBox, CB_GETCOUNT, 0, 0) < 1;
 }

@@ -1,3 +1,0 @@
-Title=Encryption for the Masses
-Setup=e4msetup.exe
-TempMode=This will install E4M, do you wish to continue?

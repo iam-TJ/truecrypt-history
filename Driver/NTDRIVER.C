@@ -1,7 +1,7 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 #include "crypto.h"
 #include "fat.h"
 
@@ -10,12 +10,17 @@
 #include "ntvol.h"
 #include "ntrawdv.h"
 #include "ntfiledv.h"
-
 #include "cache.h"
+
+#include <tchar.h>
+#include <initguid.h>
+#include <mountmgr.h>
+#include <mountdev.h>
+#include <ntddvol.h>
 
 /* Init section, which is thrown away as soon as DriverEntry returns */
 #pragma alloc_text(INIT,DriverEntry)
-#pragma alloc_text(INIT,E4MCreateRootDeviceObject)
+#pragma alloc_text(INIT,TCCreateRootDeviceObject)
 
 /* Sync. mutex for above password data */
 KMUTEX driverMutex;
@@ -27,26 +32,53 @@ DriverEntry (PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 {
 	if (RegistryPath);	/* Remove warning */
 
-	DriverObject->MajorFunction[IRP_MJ_CREATE] = E4MDispatchQueueIRP;
-	DriverObject->MajorFunction[IRP_MJ_CLOSE] = E4MDispatchQueueIRP;
-	DriverObject->MajorFunction[IRP_MJ_CLEANUP] = E4MDispatchQueueIRP;
-	DriverObject->MajorFunction[IRP_MJ_FLUSH_BUFFERS] = E4MDispatchQueueIRP;
-	DriverObject->MajorFunction[IRP_MJ_SHUTDOWN] = E4MDispatchQueueIRP;
-	DriverObject->MajorFunction[IRP_MJ_READ] = E4MDispatchQueueIRP;
-	DriverObject->MajorFunction[IRP_MJ_WRITE] = E4MDispatchQueueIRP;
-	DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = E4MDispatchQueueIRP;
+	DriverObject->MajorFunction[IRP_MJ_CREATE] = TCDispatchQueueIRP;
+	DriverObject->MajorFunction[IRP_MJ_CLOSE] = TCDispatchQueueIRP;
+	DriverObject->MajorFunction[IRP_MJ_CLEANUP] = TCDispatchQueueIRP;
+	DriverObject->MajorFunction[IRP_MJ_FLUSH_BUFFERS] = TCDispatchQueueIRP;
+	DriverObject->MajorFunction[IRP_MJ_SHUTDOWN] = TCDispatchQueueIRP;
+	DriverObject->MajorFunction[IRP_MJ_READ] = TCDispatchQueueIRP;
+	DriverObject->MajorFunction[IRP_MJ_WRITE] = TCDispatchQueueIRP;
+	DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = TCDispatchQueueIRP;
 
-	DriverObject->DriverUnload = E4MUnloadDriver;
+	DriverObject->DriverUnload = TCUnloadDriver;
 
 	KeInitializeMutex (&driverMutex, 1);
 
-	return E4MCreateRootDeviceObject (DriverObject);
+	return TCCreateRootDeviceObject (DriverObject);
 }
 
-/* E4MDispatchQueueIRP queues any IRP's so that they can be processed later
+#ifdef _DEBUG
+// Dumps a memory region to debug output
+void DumpMem(unsigned char *mem, int len)
+{
+	unsigned char str[20];
+	unsigned char *m = mem;
+	int i,j;
+
+	for (j=0;j<len/8;j++)
+	{
+		memset (str,0,sizeof str);
+		for (i=0;i<8;i++) 
+		{
+			if (m[i] > ' ' && m[i] < '~')
+				str[i]=m[i];
+			else
+				str[i]='.';
+		}
+
+		Dump ("0x%08x  %02x %02x %02x %02x %02x %02x %02x %02x  %s",
+			m, m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], str);
+
+		m+=8;
+	}
+}
+#endif
+
+/* TCDispatchQueueIRP queues any IRP's so that they can be processed later
    by the thread -- or in some cases handles them immediately! */
 NTSTATUS
-E4MDispatchQueueIRP (PDEVICE_OBJECT DeviceObject, PIRP Irp)
+TCDispatchQueueIRP (PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
 	PEXTENSION Extension = (PEXTENSION) DeviceObject->DeviceExtension;
 	PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation (Irp);
@@ -60,13 +92,13 @@ E4MDispatchQueueIRP (PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
 #ifdef _DEBUG
 	if (irpSp->MajorFunction == IRP_MJ_DEVICE_CONTROL)
-		Dump ("E4MDispatchQueueIRP BEGIN MajorFunction = %ls 0x%08x IoControlCode = %ls 0x%08x\n",
-		      E4MTranslateCode (irpSp->MajorFunction), (int) irpSp->MajorFunction,
-		      E4MTranslateCode (irpSp->Parameters.DeviceIoControl.IoControlCode),
+		Dump ("TCDispatchQueueIRP BEGIN MajorFunction = %ls 0x%08x IoControlCode = %ls 0x%08x\n",
+		      TCTranslateCode (irpSp->MajorFunction), (int) irpSp->MajorFunction,
+		      TCTranslateCode (irpSp->Parameters.DeviceIoControl.IoControlCode),
 		      (int) irpSp->Parameters.DeviceIoControl.IoControlCode);
-	else
-		Dump ("E4MDispatchQueueIRP BEGIN MajorFunction = %ls 0x%08x\n",
-		      E4MTranslateCode (irpSp->MajorFunction), (int) irpSp->MajorFunction);
+	//else
+	//	Dump ("TCDispatchQueueIRP BEGIN MajorFunction = %ls 0x%08x\n",
+	//	      TCTranslateCode (irpSp->MajorFunction), (int) irpSp->MajorFunction);
 #endif
 
 	if (Extension->bRootDevice == FALSE)
@@ -87,7 +119,7 @@ E4MDispatchQueueIRP (PDEVICE_OBJECT DeviceObject, PIRP Irp)
 					}
 					ntStatus = Irp->IoStatus.Status;
 					IoCompleteRequest (Irp, IO_NO_INCREMENT);
-					Dump ("E4MDispatchQueueIRP NTSTATUS = 0x%08x END\n", ntStatus);
+					//Dump ("TCDispatchQueueIRP NTSTATUS = 0x%08x END\n", ntStatus);
 #ifdef USE_KERNEL_MUTEX
 					if (Extension->bRootDevice == FALSE)
 						KeReleaseMutex (&Extension->KernelMutex, FALSE);
@@ -105,7 +137,7 @@ E4MDispatchQueueIRP (PDEVICE_OBJECT DeviceObject, PIRP Irp)
 					}
 					ntStatus = Irp->IoStatus.Status;
 					IoCompleteRequest (Irp, IO_NO_INCREMENT);
-					Dump ("E4MDispatchQueueIRP NTSTATUS = 0x%08x END\n", ntStatus);
+					//Dump ("TCDispatchQueueIRP NTSTATUS = 0x%08x END\n", ntStatus);
 #ifdef USE_KERNEL_MUTEX
 					if (Extension->bRootDevice == FALSE)
 						KeReleaseMutex (&Extension->KernelMutex, FALSE);
@@ -134,7 +166,7 @@ E4MDispatchQueueIRP (PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
 				ntStatus = Irp->IoStatus.Status;
 				IoCompleteRequest (Irp, IO_NO_INCREMENT);
-				Dump ("E4MDispatchQueueIRP NTSTATUS = 0x%08x END\n", ntStatus);
+				//Dump ("TCDispatchQueueIRP NTSTATUS = 0x%08x END\n", ntStatus);
 #ifdef USE_KERNEL_MUTEX
 				if (Extension->bRootDevice == FALSE)
 					KeReleaseMutex (&Extension->KernelMutex, FALSE);
@@ -155,7 +187,7 @@ E4MDispatchQueueIRP (PDEVICE_OBJECT DeviceObject, PIRP Irp)
 				}
 				ntStatus = Irp->IoStatus.Status;
 				IoCompleteRequest (Irp, IO_NO_INCREMENT);
-				Dump ("E4MDispatchQueueIRP NTSTATUS = 0x%08x END\n", ntStatus);
+				//Dump ("TCDispatchQueueIRP NTSTATUS = 0x%08x END\n", ntStatus);
 #ifdef USE_KERNEL_MUTEX
 				if (Extension->bRootDevice == FALSE)
 					KeReleaseMutex (&Extension->KernelMutex, FALSE);
@@ -168,7 +200,7 @@ E4MDispatchQueueIRP (PDEVICE_OBJECT DeviceObject, PIRP Irp)
 				Irp->IoStatus.Information = 0;
 				ntStatus = Irp->IoStatus.Status;
 				IoCompleteRequest (Irp, IO_NO_INCREMENT);
-				Dump ("E4MDispatchQueueIRP NTSTATUS = 0x%08x END\n", ntStatus);
+				//Dump ("TCDispatchQueueIRP NTSTATUS = 0x%08x END\n", ntStatus);
 #ifdef USE_KERNEL_MUTEX
 				if (Extension->bRootDevice == FALSE)
 					KeReleaseMutex (&Extension->KernelMutex, FALSE);
@@ -217,7 +249,7 @@ E4MDispatchQueueIRP (PDEVICE_OBJECT DeviceObject, PIRP Irp)
 						   1,
 						   FALSE);
 
-			Dump ("E4MDispatchQueueIRP STATUS_PENDING END\n");
+			//Dump ("TCDispatchQueueIRP STATUS_PENDING END\n");
 #ifdef USE_KERNEL_MUTEX
 			if (Extension->bRootDevice == FALSE)
 				KeReleaseMutex (&Extension->KernelMutex, FALSE);
@@ -226,11 +258,11 @@ E4MDispatchQueueIRP (PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		}
 		else
 		{
-			if (irpSp->Parameters.DeviceIoControl.IoControlCode >= E4M_FIRST_PRIVATE &&
-			    irpSp->Parameters.DeviceIoControl.IoControlCode <= E4M_LAST_PRIVATE)
+			if (irpSp->Parameters.DeviceIoControl.IoControlCode >= TC_FIRST_PRIVATE &&
+			    irpSp->Parameters.DeviceIoControl.IoControlCode <= TC_LAST_PRIVATE)
 			{
-				ntStatus = E4MDeviceControl (DeviceObject, Extension, Irp);
-				Dump ("E4MDispatchQueueIRP NTSTATUS = 0x%08x END\n", ntStatus);
+				ntStatus = TCDeviceControl (DeviceObject, Extension, Irp);
+				//Dump ("TCDispatchQueueIRP NTSTATUS = 0x%08x END\n", ntStatus);
 #ifdef USE_KERNEL_MUTEX
 				if (Extension->bRootDevice == FALSE)
 					KeReleaseMutex (&Extension->KernelMutex, FALSE);
@@ -257,8 +289,8 @@ E4MDispatchQueueIRP (PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	}
 
 #ifdef _DEBUG
-	Dump ("ERROR: Unknown irpSp->MajorFunction in E4MDispatchQueueIRP %ls 0x%08x END\n",
-	E4MTranslateCode (irpSp->MajorFunction), (int) irpSp->MajorFunction);
+	Dump ("ERROR: Unknown irpSp->MajorFunction in TCDispatchQueueIRP %ls 0x%08x END\n",
+	TCTranslateCode (irpSp->MajorFunction), (int) irpSp->MajorFunction);
 #endif
 
 #ifdef USE_KERNEL_MUTEX
@@ -269,7 +301,7 @@ E4MDispatchQueueIRP (PDEVICE_OBJECT DeviceObject, PIRP Irp)
 }
 
 NTSTATUS
-E4MCreateRootDeviceObject (PDRIVER_OBJECT DriverObject)
+TCCreateRootDeviceObject (PDRIVER_OBJECT DriverObject)
 {
 	UNICODE_STRING Win32NameString, ntUnicodeString;
 	WCHAR dosname[32], ntname[32];
@@ -277,7 +309,7 @@ E4MCreateRootDeviceObject (PDRIVER_OBJECT DriverObject)
 	NTSTATUS ntStatus;
 	BOOL *bRootExtension;
 
-	Dump ("E4MCreateRootDeviceObject BEGIN\n");
+	Dump ("TCCreateRootDeviceObject BEGIN\n");
 
 	wcscpy (dosname, (LPWSTR) DOS_ROOT_PREFIX);
 	wcscpy (ntname, (LPWSTR) NT_ROOT_PREFIX);
@@ -287,21 +319,17 @@ E4MCreateRootDeviceObject (PDRIVER_OBJECT DriverObject)
 	Dump ("Creating root device nt=%ls dos=%ls\n", ntname, dosname);
 
 	ntStatus = IoCreateDevice (
-					  DriverObject,	/* Our Driver Object */
-					  sizeof (BOOL),	/* Size of state
-								   information */
-					  &ntUnicodeString,	/* Device name
-								   "\Device\Name" */
+					  DriverObject,		/* Our Driver Object */
+					  sizeof (BOOL),	/* Size of state information */
+					  &ntUnicodeString,	/* Device name "\Device\Name" */
 					  FILE_DEVICE_DISK,	/* Device type */
-					  FILE_REMOVABLE_MEDIA,	/* Device
-								   characteristics */
-					  FALSE,	/* Exclusive device */
-					  &DeviceObject);	/* Returned ptr to
-								   Device Object */
+					  0,				/* Device characteristics */
+					  FALSE,			/* Exclusive device */
+					  &DeviceObject);	/* Returned ptr to Device Object */
 
 	if (!NT_SUCCESS (ntStatus))
 	{
-		Dump ("E4MCreateRootDeviceObject NTSTATUS = 0x%08x END\n", ntStatus);
+		Dump ("TCCreateRootDeviceObject NTSTATUS = 0x%08x END\n", ntStatus);
 		return ntStatus;/* Failed to create DeviceObject */
 	}
 
@@ -316,17 +344,18 @@ E4MCreateRootDeviceObject (PDRIVER_OBJECT DriverObject)
 	ntStatus = IoCreateSymbolicLink (&Win32NameString, &ntUnicodeString);
 	if (!NT_SUCCESS (ntStatus))
 	{
-		Dump ("E4MCreateRootDeviceObject NTSTATUS = 0x%08x END\n", ntStatus);
+		Dump ("TCCreateRootDeviceObject NTSTATUS = 0x%08x END\n", ntStatus);
 		IoDeleteDevice (DeviceObject);
 		return ntStatus;
 	}
+
 	ASSERT (KeGetCurrentIrql ()== PASSIVE_LEVEL);
-	Dump ("E4MCreateRootDeviceObject STATUS_SUCCESS END\n");
+	Dump ("TCCreateRootDeviceObject STATUS_SUCCESS END\n");
 	return STATUS_SUCCESS;
 }
 
 NTSTATUS
-E4MCreateDeviceObject (PDRIVER_OBJECT DriverObject,
+TCCreateDeviceObject (PDRIVER_OBJECT DriverObject,
 		       PDEVICE_OBJECT * ppDeviceObject,
 		       int nDosDriveNo)
 {
@@ -335,31 +364,27 @@ E4MCreateDeviceObject (PDRIVER_OBJECT DriverObject,
 	PEXTENSION Extension;
 	NTSTATUS ntStatus;
 
-	Dump ("E4MCreateDeviceObject BEGIN\n");
+	Dump ("TCCreateDeviceObject BEGIN\n");
 
-	E4MGetDosNameFromNumber (dosname, nDosDriveNo);
-	E4MGetNTNameFromNumber (ntname, nDosDriveNo);
+	TCGetDosNameFromNumber (dosname, nDosDriveNo);
+	TCGetNTNameFromNumber (ntname, nDosDriveNo);
 	RtlInitUnicodeString (&ntUnicodeString, ntname);
 	RtlInitUnicodeString (&Win32NameString, dosname);
 
 	Dump ("Creating device nt=%ls dos=%ls\n", ntname, dosname);
 
 	ntStatus = IoCreateDevice (
-					  DriverObject,	/* Our Driver Object */
-					  sizeof (EXTENSION),	/* Size of state
-								   information */
-					  &ntUnicodeString,	/* Device name
-								   "\Device\Name" */
-					  FILE_DEVICE_DISK,	/* Device type */
-					  FILE_REMOVABLE_MEDIA,	/* Device
-								   characteristics */
-					  FALSE,	/* Exclusive device */
-					  ppDeviceObject);	/* Returned ptr to
-								   Device Object */
+					  DriverObject,			/* Our Driver Object */
+					  sizeof (EXTENSION),	/* Size of state information */
+					  &ntUnicodeString,		/* Device name "\Device\Name" */
+					  FILE_DEVICE_DISK,		/* Device type */
+					  0,					/* Device characteristics */
+					  FALSE,				/* Exclusive device */
+					  ppDeviceObject);		/* Returned ptr to Device Object */
 
 	if (!NT_SUCCESS (ntStatus))
 	{
-		Dump ("E4MCreateDeviceObject NTSTATUS = 0x%08x END\n", ntStatus);
+		Dump ("TCCreateDeviceObject NTSTATUS = 0x%08x END\n", ntStatus);
 		return ntStatus;/* Failed to create DeviceObject */
 	}
 	/* Initialize device object and extension. */
@@ -383,22 +408,23 @@ E4MCreateDeviceObject (PDRIVER_OBJECT DriverObject,
 	InitializeListHead (&Extension->ListEntry);
 
 	ASSERT (KeGetCurrentIrql ()== PASSIVE_LEVEL);
-	Dump ("E4MCreateDeviceObject STATUS_SUCCESS END\n");
+	Dump ("TCCreateDeviceObject STATUS_SUCCESS END\n");
+
 	return STATUS_SUCCESS;
 }
 
-/* E4MDeviceControl handles certain requests from NT, these are needed for NT
+/* TCDeviceControl handles certain requests from NT, these are needed for NT
    to recognize the drive, also this function handles  our device specific
    function codes, such as mount/unmount */
 NTSTATUS
-E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
+TCDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 {
 	PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation (Irp);
 	NTSTATUS ntStatus;
 
 #ifdef _DEBUG
-	Dump ("E4MDeviceControl BEGIN IoControlCode = %ls 0x%08x\n",
-	 E4MTranslateCode (irpSp->Parameters.DeviceIoControl.IoControlCode),
+	 Dump ("TCDeviceControl BEGIN IoControlCode = %ls 0x%08x\n",
+	 TCTranslateCode (irpSp->Parameters.DeviceIoControl.IoControlCode),
 	      irpSp->Parameters.DeviceIoControl.IoControlCode);
 #endif
 
@@ -407,6 +433,115 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 	/* Determine which I/O control code was specified.  */
 	switch (irpSp->Parameters.DeviceIoControl.IoControlCode)
 	{
+
+	case IOCTL_MOUNTDEV_QUERY_DEVICE_NAME:
+		if(irpSp->Parameters.DeviceIoControl.OutputBufferLength < sizeof (MOUNTDEV_NAME))
+		{
+			Irp->IoStatus.Information = sizeof (MOUNTDEV_NAME);
+			Irp->IoStatus.Status = STATUS_BUFFER_OVERFLOW;
+		}
+		else
+		{
+			ULONG outLength;
+			UNICODE_STRING ntUnicodeString;
+			WCHAR ntName[64];
+			PMOUNTDEV_NAME outputBuffer = (PMOUNTDEV_NAME) Irp->AssociatedIrp.SystemBuffer;
+
+			Dump("IOCTL_MOUNTDEV_QUERY_DEVICE_NAME:");
+
+			TCGetNTNameFromNumber (ntName, Extension->nDosDriveNo);
+			RtlInitUnicodeString (&ntUnicodeString, ntName);
+
+			outputBuffer->NameLength = ntUnicodeString.Length;
+			outLength = ntUnicodeString.Length + sizeof(USHORT);
+
+			if (irpSp->Parameters.DeviceIoControl.OutputBufferLength < outLength)
+			{
+				Irp->IoStatus.Information = sizeof (MOUNTDEV_NAME);
+				Irp->IoStatus.Status = STATUS_BUFFER_OVERFLOW;
+
+				break;
+			}
+
+			RtlCopyMemory ((PCHAR)outputBuffer->Name,ntUnicodeString.Buffer, ntUnicodeString.Length);
+
+			Irp->IoStatus.Status = STATUS_SUCCESS;
+			Irp->IoStatus.Information = outLength;
+
+			Dump ("name = %ls\n",ntName);
+		}
+		break;
+
+	case IOCTL_MOUNTDEV_QUERY_UNIQUE_ID:
+		if(irpSp->Parameters.DeviceIoControl.OutputBufferLength < sizeof (MOUNTDEV_UNIQUE_ID))
+		{
+			Irp->IoStatus.Information = sizeof (MOUNTDEV_UNIQUE_ID);
+			Irp->IoStatus.Status = STATUS_BUFFER_OVERFLOW;
+		}
+		else
+		{
+			ULONG outLength;
+			UCHAR volId[128], tmp[] = { 0,0 };
+			PMOUNTDEV_UNIQUE_ID outputBuffer = (PMOUNTDEV_UNIQUE_ID) Irp->AssociatedIrp.SystemBuffer;
+
+			Dump("IOCTL_MOUNTDEV_QUERY_UNIQUE_ID:");
+
+			strcpy (volId, TC_UNIQUE_ID_PREFIX); 
+			tmp[0] = 'A' + Extension->nDosDriveNo;
+			strcat (volId, tmp);
+			
+			outputBuffer->UniqueIdLength = (USHORT) strlen(volId);
+			outLength = strlen(volId) + sizeof(USHORT);
+
+			if (irpSp->Parameters.DeviceIoControl.OutputBufferLength < outLength)
+			{
+				Irp->IoStatus.Information = sizeof (MOUNTDEV_UNIQUE_ID);
+				Irp->IoStatus.Status = STATUS_BUFFER_OVERFLOW;
+				break;
+			}
+
+			RtlCopyMemory ((PCHAR)outputBuffer->UniqueId, volId, strlen(volId));
+
+			Irp->IoStatus.Status = STATUS_SUCCESS;
+			Irp->IoStatus.Information = outLength;
+
+			Dump ("id = %s\n",volId);
+		}
+		break;
+
+		case IOCTL_MOUNTDEV_QUERY_SUGGESTED_LINK_NAME:
+		{
+			ULONG outLength;
+			UNICODE_STRING ntUnicodeString;
+			WCHAR ntName[64];
+			PMOUNTDEV_SUGGESTED_LINK_NAME outputBuffer = (PMOUNTDEV_SUGGESTED_LINK_NAME) Irp->AssociatedIrp.SystemBuffer;
+			
+			Dump("IOCTL_MOUNTDEV_QUERY_SUGGESTED_LINK_NAME:");
+
+			TCGetDosNameFromNumber (ntName, Extension->nDosDriveNo);
+			RtlInitUnicodeString (&ntUnicodeString, ntName);
+
+			outLength = FIELD_OFFSET(MOUNTDEV_SUGGESTED_LINK_NAME,Name) + ntUnicodeString.Length;
+
+			outputBuffer->UseOnlyIfThereAreNoOtherLinks = FALSE;
+			outputBuffer->NameLength = ntUnicodeString.Length;
+
+			if(irpSp->Parameters.DeviceIoControl.OutputBufferLength < outLength)
+			{
+				Irp->IoStatus.Information = sizeof (MOUNTDEV_SUGGESTED_LINK_NAME);
+				Irp->IoStatus.Status = STATUS_BUFFER_OVERFLOW;
+				break;
+			}
+
+			RtlCopyMemory ((PCHAR)outputBuffer->Name,ntUnicodeString.Buffer, ntUnicodeString.Length);
+		
+			Irp->IoStatus.Status = STATUS_SUCCESS;
+			Irp->IoStatus.Information = outLength;
+
+			Dump ("link = %ls\n",ntName);
+		}
+		break;
+
 	case IOCTL_DISK_GET_MEDIA_TYPES:
 	case IOCTL_DISK_GET_DRIVE_GEOMETRY:
 		/* Return the drive geometry for the disk.  Note that we
@@ -422,9 +557,8 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 			PDISK_GEOMETRY outputBuffer = (PDISK_GEOMETRY)
 			Irp->AssociatedIrp.SystemBuffer;
 
-			outputBuffer->MediaType = RemovableMedia;
-			outputBuffer->Cylinders = RtlConvertUlongToLargeInteger (
-					      Extension->NumberOfCylinders);
+			outputBuffer->MediaType = FixedMedia;
+			outputBuffer->Cylinders.QuadPart = Extension->NumberOfCylinders;
 			outputBuffer->TracksPerCylinder = Extension->TracksPerCylinder;
 			outputBuffer->SectorsPerTrack = Extension->SectorsPerTrack;
 			outputBuffer->BytesPerSector = Extension->BytesPerSector;
@@ -434,7 +568,6 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 		break;
 
 	case IOCTL_DISK_GET_PARTITION_INFO:
-		/* Return the information about the partition.  */
 		if (irpSp->Parameters.DeviceIoControl.OutputBufferLength <
 		    sizeof (PARTITION_INFORMATION))
 		{
@@ -451,11 +584,26 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 			outputBuffer->RecognizedPartition = TRUE;
 			outputBuffer->RewritePartition = FALSE;
 			outputBuffer->StartingOffset = RtlConvertUlongToLargeInteger (0);
-			outputBuffer->PartitionLength = RtlConvertUlongToLargeInteger (
-						     Extension->DiskLength);
+			outputBuffer->PartitionLength.QuadPart= Extension->DiskLength;
 			outputBuffer->HiddenSectors = 1L;
 			Irp->IoStatus.Status = STATUS_SUCCESS;
 			Irp->IoStatus.Information = sizeof (PARTITION_INFORMATION);
+		}
+		break;
+	
+	case IOCTL_DISK_GET_LENGTH_INFO:
+		if (irpSp->Parameters.DeviceIoControl.OutputBufferLength < sizeof (GET_LENGTH_INFORMATION))
+		{
+			Irp->IoStatus.Status = STATUS_BUFFER_OVERFLOW;
+			Irp->IoStatus.Information = sizeof (GET_LENGTH_INFORMATION);
+		}
+		else
+		{
+			PGET_LENGTH_INFORMATION outputBuffer = (PGET_LENGTH_INFORMATION) Irp->AssociatedIrp.SystemBuffer;
+
+			outputBuffer->Length.QuadPart = Extension->DiskLength;
+			Irp->IoStatus.Status = STATUS_SUCCESS;
+			Irp->IoStatus.Information = sizeof (GET_LENGTH_INFORMATION);
 		}
 		break;
 
@@ -474,7 +622,6 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 		break;
 
 	case IOCTL_DISK_CHECK_VERIFY:
-	case IOCTL_DISK_GET_DRIVE_LAYOUT:
 		{
 			Irp->IoStatus.Status = STATUS_SUCCESS;
 			Irp->IoStatus.Information = 0;
@@ -488,8 +635,9 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 			else
 				Irp->IoStatus.Status = STATUS_SUCCESS;
 			Irp->IoStatus.Information = 0;
-			break;
+
 		}
+		break;
 
 	case DRIVER_VERSION:
 		if (irpSp->Parameters.DeviceIoControl.OutputBufferLength < 4)
@@ -558,6 +706,11 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 		Irp->IoStatus.Information = 0;
 		break;
 
+	case CACHE_STATUS:
+		Irp->IoStatus.Status = cacheEmpty ? STATUS_PIPE_EMPTY : STATUS_SUCCESS;
+		Irp->IoStatus.Information = 0;
+		break;
+
 #ifdef DEBUG
 	case HALT_SYSTEM:
 		KeBugCheck ((ULONG) 0x5050);
@@ -585,11 +738,50 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 				{
 					list->ulMountedDrives |= (1 << ListExtension->nDosDriveNo);
 					wcscpy (list->wszVolume[ListExtension->nDosDriveNo], ListExtension->wszVolume);
+					list->diskLength[ListExtension->nDosDriveNo] = ListExtension->DiskLength;
+					list->cipher[ListExtension->nDosDriveNo] = ListExtension->cryptoInfo->cipher;
 				}
 			}
 
 			Irp->IoStatus.Status = STATUS_SUCCESS;
 			Irp->IoStatus.Information = sizeof (MOUNT_LIST_STRUCT);
+		}
+		break;
+
+	case VOLUME_PROPERTIES:
+		if (irpSp->Parameters.DeviceIoControl.OutputBufferLength < sizeof (VOLUME_PROPERTIES_STRUCT))
+		{
+			Irp->IoStatus.Status = STATUS_INVALID_PARAMETER;
+			Irp->IoStatus.Information = 0;
+		}
+		else
+		{
+			VOLUME_PROPERTIES_STRUCT *prop = (VOLUME_PROPERTIES_STRUCT *) Irp->AssociatedIrp.SystemBuffer;
+			PDEVICE_OBJECT ListDevice;
+
+			Irp->IoStatus.Status = STATUS_INVALID_PARAMETER;
+			Irp->IoStatus.Information = 0;
+
+			for (ListDevice = DeviceObject->DriverObject->DeviceObject;
+			     ListDevice != (PDEVICE_OBJECT) NULL; ListDevice = ListDevice->NextDevice)
+			{
+
+				PEXTENSION ListExtension = (PEXTENSION) ListDevice->DeviceExtension;
+				if (ListExtension->bRootDevice == FALSE && ListExtension->nDosDriveNo == prop->driveNo)
+				{
+					wcscpy (prop->wszVolume, ListExtension->wszVolume);
+					prop->diskLength = ListExtension->DiskLength;
+					prop->cipher = ListExtension->cryptoInfo->cipher;
+					prop->pkcs5 = ListExtension->cryptoInfo->pkcs5;
+					prop->pkcs5Iterations = ListExtension->cryptoInfo->noIterations;
+					prop->volumeCreationTime = ListExtension->cryptoInfo->volume_creation_time;
+					prop->headerCreationTime = ListExtension->cryptoInfo->header_creation_time;
+
+					Irp->IoStatus.Status = STATUS_SUCCESS;
+					Irp->IoStatus.Information = sizeof (VOLUME_PROPERTIES_STRUCT);
+					break;
+				}
+			}
 		}
 		break;
 
@@ -632,7 +824,7 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 						{
 							Dump ("Deleting DeviceObject with ref count %ld\n", ListDevice->ReferenceCount);
 							ListDevice->ReferenceCount = 0;
-							E4MDeleteDeviceObject (ListDevice, (PEXTENSION) ListDevice->DeviceExtension);
+							TCDeleteDeviceObject (ListDevice, (PEXTENSION) ListDevice->DeviceExtension);
 							unmount->nReturnCode = 0;
 							break;
 						}
@@ -680,7 +872,7 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 				break;
 			}
 
-			ntStatus = E4MCreateDeviceObject (DeviceObject->DriverObject, &NewDeviceObject,
+			ntStatus = TCCreateDeviceObject (DeviceObject->DriverObject, &NewDeviceObject,
 							mount->nDosDriveNo);
 			if (!NT_SUCCESS (ntStatus))
 			{
@@ -692,20 +884,20 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 			else
 			{
 				PEXTENSION NewExtension = (PEXTENSION) NewDeviceObject->DeviceExtension;
-				ntStatus = E4MStartThread (NewDeviceObject, NewExtension, mount);
+				ntStatus = TCStartThread (NewDeviceObject, NewExtension, mount);
 				if (!NT_SUCCESS (ntStatus))
 				{
 					Dump ("Mount FAILURE NT ERROR, ntStatus = 0x%08x\n", ntStatus);
 					Irp->IoStatus.Information = 0;
 					Irp->IoStatus.Status = ntStatus;
-					E4MDeleteDeviceObject (NewDeviceObject, NewExtension);
+					TCDeleteDeviceObject (NewDeviceObject, NewExtension);
 					break;
 				}
 				else
 				{
 					if (mount->nReturnCode == 0)
 					{
-						Dump ("Mount SUCCESS E4M code = 0x%08x READ-ONLY = %d\n", mount->nReturnCode,
+						Dump ("Mount SUCCESS TC code = 0x%08x READ-ONLY = %d\n", mount->nReturnCode,
 						   NewExtension->bReadOnly);
 						if (NewExtension->bReadOnly == TRUE)
 							NewDeviceObject->Characteristics |= FILE_READ_ONLY_DEVICE;
@@ -713,8 +905,8 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 					}
 					else
 					{
-						Dump ("Mount FAILURE E4M code = 0x%08x\n", mount->nReturnCode);
-						E4MDeleteDeviceObject (NewDeviceObject, NewExtension);
+						Dump ("Mount FAILURE TC code = 0x%08x\n", mount->nReturnCode);
+						TCDeleteDeviceObject (NewDeviceObject, NewExtension);
 					}
 					Irp->IoStatus.Information = sizeof (mount->nReturnCode);
 					Irp->IoStatus.Status = STATUS_SUCCESS;
@@ -728,14 +920,14 @@ E4MDeviceControl (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, PIRP Irp)
 	/* Finish the I/O operation by simply completing the packet and
 	   returning the same NTSTATUS as in the packet itself.  */
 	ntStatus = COMPLETE_IRP (DeviceObject, Irp, Irp->IoStatus.Status, Irp->IoStatus.Information);
-	Dump ("E4MDeviceControl NTSTATUS = 0x%08x END\n", ntStatus);
+	Dump ("TCDeviceControl NTSTATUS = 0x%08x END\n", ntStatus);
 	return ntStatus;
 }
 
 NTSTATUS
-E4MStartThread (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, MOUNT_STRUCT * mount)
+TCStartThread (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, MOUNT_STRUCT * mount)
 {
-	PTHREAD_BLOCK pThreadBlock = e4malloc (sizeof (THREAD_BLOCK));
+	PTHREAD_BLOCK pThreadBlock = TCalloc (sizeof (THREAD_BLOCK));
 	HANDLE hThread;
 	NTSTATUS ntStatus;
 
@@ -758,13 +950,13 @@ E4MStartThread (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, MOUNT_STRUCT 
 					 NULL,
 					 NULL,
 					 NULL,
-					 E4MThreadIRP,
+					 TCThreadIRP,
 					 pThreadBlock);
 
 	if (!NT_SUCCESS (ntStatus))
 	{
 		Dump ("PsCreateSystemThread Failed END\n");
-		e4mfree (pThreadBlock);
+		TCfree (pThreadBlock);
 		return ntStatus;
 	}
 
@@ -786,12 +978,12 @@ E4MStartThread (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension, MOUNT_STRUCT 
 
 	Dump ("Waiting completed! Thread returns 0x%08x\n", pThreadBlock->ntCreateStatus);
 	ntStatus = pThreadBlock->ntCreateStatus;
-	e4mfree (pThreadBlock);
+	TCfree (pThreadBlock);
 	return ntStatus;
 }
 
 void
-E4MStopThread (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension)
+TCStopThread (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension)
 {
 	NTSTATUS ntStatus;
 
@@ -821,10 +1013,10 @@ E4MStopThread (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension)
 	Dump ("Thread exited!\n");
 }
 
-/* E4MThreadIRP does all the work of processing IRP's, and dispatching them
+/* TCThreadIRP does all the work of processing IRP's, and dispatching them
    to either the ReadWrite function or the DeviceControl function */
 VOID
-E4MThreadIRP (PVOID Context)
+TCThreadIRP (PVOID Context)
 {
 	PTHREAD_BLOCK pThreadBlock = (PTHREAD_BLOCK) Context;
 	PDEVICE_OBJECT DeviceObject = pThreadBlock->DeviceObject;
@@ -861,7 +1053,7 @@ E4MThreadIRP (PVOID Context)
 	Dump ("Mount THREAD request for File %ls DriveNumber %d Device = %d\n",
 	      pThreadBlock->wszMountVolume, pThreadBlock->mount->nDosDriveNo, bDevice);
 
-	pThreadBlock->ntCreateStatus = E4MOpenVolume (DeviceObject,
+	pThreadBlock->ntCreateStatus = TCOpenVolume (DeviceObject,
 						      Extension,
 						      pThreadBlock->mount,
 					       pThreadBlock->wszMountVolume,
@@ -903,7 +1095,7 @@ E4MThreadIRP (PVOID Context)
 					      FALSE, NULL);
 #endif
 
-			Dump ("DRIVER THREAD PROCESSING DEVICEOBJECT 0x%08x \n", DeviceObject);
+		//	Dump ("DRIVER THREAD PROCESSING DEVICEOBJECT 0x%08x \n", DeviceObject);
 
 			for (;;)
 			{
@@ -925,12 +1117,12 @@ E4MThreadIRP (PVOID Context)
 				{
 				case IRP_MJ_READ:
 				case IRP_MJ_WRITE:
-					E4MReadWrite (DeviceObject, Extension, Irp);
+					TCReadWrite (DeviceObject, Extension, Irp);
 					break;
 
 				case IRP_MJ_FLUSH_BUFFERS:
 					if (Extension->bRawDevice == FALSE)
-						E4MSendIRP_FileDevice (DeviceObject, Extension, NULL, Irp->Flags, IRP_MJ_FLUSH_BUFFERS, Irp);
+						TCSendIRP_FileDevice (DeviceObject, Extension, NULL, Irp->Flags, IRP_MJ_FLUSH_BUFFERS, Irp);
 					else
 					{
 						COMPLETE_IRP (DeviceObject, Irp, STATUS_SUCCESS, 0);
@@ -943,13 +1135,13 @@ E4MThreadIRP (PVOID Context)
 
 				case IRP_MJ_DEVICE_CONTROL:
 					if (irpSp->Parameters.DeviceIoControl.IoControlCode != IOCTL_DISK_CHECK_VERIFY)
-						E4MDeviceControl (DeviceObject, Extension, Irp);
+						TCDeviceControl (DeviceObject, Extension, Irp);
 					else
 					{
 						if (Extension->bRawDevice == TRUE)
-							E4MSendIRP_RawDevice (DeviceObject, Extension, NULL, 0, IRP_MJ_DEVICE_CONTROL, Irp);
+							TCSendIRP_RawDevice (DeviceObject, Extension, NULL, 0, IRP_MJ_DEVICE_CONTROL, Irp);
 						else
-							E4MDeviceControl (DeviceObject, Extension, Irp);
+							TCDeviceControl (DeviceObject, Extension, Irp);
 					}
 					break;
 				}	/* end of switch on
@@ -962,24 +1154,24 @@ E4MThreadIRP (PVOID Context)
 
 			if (Extension->bThreadShouldQuit)
 			{
-				Dump ("END PROCESSING DEVICEOBJECT THREAD ENDING 0x%08x Number = %d\n",
-				      DeviceObject, Extension->nDosDriveNo);
+			//	Dump ("END PROCESSING DEVICEOBJECT THREAD ENDING 0x%08x Number = %d\n",
+			//	      DeviceObject, Extension->nDosDriveNo);
 				Dump ("Closing volume along with Thread!\n");
-				E4MCloseVolume (DeviceObject, Extension);
+				TCCloseVolume (DeviceObject, Extension);
 				PsTerminateSystemThread (STATUS_SUCCESS);
 			}
-			else
-			{
-				Dump ("END PROCESSING DEVICEOBJECT 0x%08x Number = %d\n",
-				      DeviceObject, Extension->nDosDriveNo);
-			}
+			//else
+			//{
+			//	Dump ("END PROCESSING DEVICEOBJECT 0x%08x Number = %d\n",
+			//	      DeviceObject, Extension->nDosDriveNo);
+			//}
 		}
 
 	}			/* outermost for */
 }
 
 void
-E4MGetNTNameFromNumber (LPWSTR ntname, int nDriveNo)
+TCGetNTNameFromNumber (LPWSTR ntname, int nDriveNo)
 {
 	WCHAR tmp[3] =
 	{0, ':', 0};
@@ -991,7 +1183,7 @@ E4MGetNTNameFromNumber (LPWSTR ntname, int nDriveNo)
 }
 
 void
-E4MGetDosNameFromNumber (LPWSTR dosname, int nDriveNo)
+TCGetDosNameFromNumber (LPWSTR dosname, int nDriveNo)
 {
 	WCHAR tmp[3] =
 	{0, ':', 0};
@@ -1004,19 +1196,47 @@ E4MGetDosNameFromNumber (LPWSTR dosname, int nDriveNo)
 
 #ifdef _DEBUG
 LPWSTR
-E4MTranslateCode (ULONG ulCode)
+TCTranslateCode (ULONG ulCode)
 {
-	if (ulCode == IOCTL_DISK_GET_DRIVE_GEOMETRY)
+	if (ulCode ==			 IOCTL_DISK_GET_DRIVE_GEOMETRY)
 		return (LPWSTR) _T ("IOCTL_DISK_GET_DRIVE_GEOMETRY");
-	else if (ulCode == IOCTL_DISK_GET_PARTITION_INFO)
+	else if (ulCode ==		 IOCTL_DISK_GET_DRIVE_GEOMETRY_EX)
+		return (LPWSTR) _T ("IOCTL_DISK_GET_DRIVE_GEOMETRY_EX");
+	else if (ulCode ==		 IOCTL_MOUNTDEV_QUERY_DEVICE_NAME)
+		return (LPWSTR) _T ("IOCTL_MOUNTDEV_QUERY_DEVICE_NAME");
+	else if (ulCode ==		 IOCTL_MOUNTDEV_QUERY_SUGGESTED_LINK_NAME)
+		return (LPWSTR) _T ("IOCTL_MOUNTDEV_QUERY_SUGGESTED_LINK_NAME");
+	else if (ulCode ==		 IOCTL_MOUNTDEV_QUERY_UNIQUE_ID)
+		return (LPWSTR) _T ("IOCTL_MOUNTDEV_QUERY_UNIQUE_ID");
+	else if (ulCode ==		 IOCTL_MOUNTDEV_UNIQUE_ID_CHANGE_NOTIFY)
+		return (LPWSTR) _T ("IOCTL_MOUNTDEV_UNIQUE_ID_CHANGE_NOTIFY");
+	else if (ulCode ==		 IOCTL_VOLUME_ONLINE)
+		return (LPWSTR) _T ("IOCTL_VOLUME_ONLINE");
+	else if (ulCode ==		 IOCTL_MOUNTDEV_LINK_CREATED)
+		return (LPWSTR) _T ("IOCTL_MOUNTDEV_LINK_CREATED");
+	else if (ulCode ==		 IOCTL_MOUNTDEV_LINK_DELETED)
+		return (LPWSTR) _T ("IOCTL_MOUNTDEV_LINK_DELETED");
+	else if (ulCode ==		 IOCTL_MOUNTMGR_QUERY_POINTS)
+		return (LPWSTR) _T ("IOCTL_MOUNTMGR_QUERY_POINTS");
+	else if (ulCode ==		 IOCTL_MOUNTMGR_VOLUME_MOUNT_POINT_CREATED)
+		return (LPWSTR) _T ("IOCTL_MOUNTMGR_VOLUME_MOUNT_POINT_CREATED");
+	else if (ulCode ==		 IOCTL_MOUNTMGR_VOLUME_MOUNT_POINT_DELETED)
+		return (LPWSTR) _T ("IOCTL_MOUNTMGR_VOLUME_MOUNT_POINT_DELETED");
+	else if (ulCode ==		 IOCTL_DISK_GET_LENGTH_INFO)
+		return (LPWSTR) _T ("IOCTL_DISK_GET_LENGTH_INFO");
+	else if (ulCode ==		 IOCTL_STORAGE_GET_DEVICE_NUMBER)
+		return (LPWSTR) _T ("IOCTL_STORAGE_GET_DEVICE_NUMBER");
+	else if (ulCode ==		 IOCTL_DISK_GET_PARTITION_INFO)
 		return (LPWSTR) _T ("IOCTL_DISK_GET_PARTITION_INFO");
-	else if (ulCode == IOCTL_DISK_SET_PARTITION_INFO)
+	else if (ulCode ==		 IOCTL_DISK_GET_PARTITION_INFO_EX)
+		return (LPWSTR) _T ("IOCTL_DISK_GET_PARTITION_INFO_EX");
+	else if (ulCode ==		 IOCTL_DISK_SET_PARTITION_INFO)
 		return (LPWSTR) _T ("IOCTL_DISK_SET_PARTITION_INFO");
-	else if (ulCode == IOCTL_DISK_GET_DRIVE_LAYOUT)
+	else if (ulCode ==		 IOCTL_DISK_GET_DRIVE_LAYOUT)
 		return (LPWSTR) _T ("IOCTL_DISK_GET_DRIVE_LAYOUT");
-	else if (ulCode == IOCTL_DISK_SET_DRIVE_LAYOUT)
-		return (LPWSTR) _T ("IOCTL_DISK_SET_DRIVE_LAYOUT");
-	else if (ulCode == IOCTL_DISK_VERIFY)
+	else if (ulCode ==		 IOCTL_DISK_SET_DRIVE_LAYOUT_EX)
+		return (LPWSTR) _T ("IOCTL_DISK_SET_DRIVE_LAYOUT_EX");
+	else if (ulCode ==		 IOCTL_DISK_VERIFY)
 		return (LPWSTR) _T ("IOCTL_DISK_VERIFY");
 	else if (ulCode == IOCTL_DISK_FORMAT_TRACKS)
 		return (LPWSTR) _T ("IOCTL_DISK_FORMAT_TRACKS");
@@ -1068,6 +1288,8 @@ E4MTranslateCode (ULONG ulCode)
 		return (LPWSTR) _T ("IOCTL_DISK_FIND_NEW_DEVICES");
 	else if (ulCode == IOCTL_DISK_GET_MEDIA_TYPES)
 		return (LPWSTR) _T ("IOCTL_DISK_GET_MEDIA_TYPES");
+	else if (ulCode == IOCTL_STORAGE_SET_HOTPLUG_INFO)
+		return (LPWSTR) _T ("IOCTL_STORAGE_SET_HOTPLUG_INFO");
 	else if (ulCode == IRP_MJ_READ)
 		return (LPWSTR) _T ("IRP_MJ_READ");
 	else if (ulCode == IRP_MJ_WRITE)
@@ -1084,31 +1306,34 @@ E4MTranslateCode (ULONG ulCode)
 		return (LPWSTR) _T ("IRP_MJ_SHUTDOWN");
 	else if (ulCode == IRP_MJ_DEVICE_CONTROL)
 		return (LPWSTR) _T ("IRP_MJ_DEVICE_CONTROL");
-	else if (ulCode == E4M_MOUNT)
-		return (LPWSTR) _T ("E4M_MOUNT");
-	else if (ulCode == E4M_UNMOUNT)
-		return (LPWSTR) _T ("E4M_UNMOUNT");
-	else if (ulCode == E4M_MOUNT_LIST)
-		return (LPWSTR) _T ("E4M_MOUNT_LIST");
-	else if (ulCode == E4M_OPEN_TEST)
-		return (LPWSTR) _T ("E4M_OPEN_TEST");
-	else if (ulCode == E4M_UNMOUNT_PENDING)
-		return (LPWSTR) _T ("E4M_UNMOUNT_PENDING");
+	else if (ulCode == MOUNT)
+		return (LPWSTR) _T ("MOUNT");
+	else if (ulCode == UNMOUNT)
+		return (LPWSTR) _T ("UNMOUNT");
+	else if (ulCode == MOUNT_LIST)
+		return (LPWSTR) _T ("MOUNT_LIST");
+	else if (ulCode == OPEN_TEST)
+		return (LPWSTR) _T ("OPEN_TEST");
+	else if (ulCode == UNMOUNT_PENDING)
+		return (LPWSTR) _T ("UNMOUNT_PENDING");
 	else
+	{
+		Dump("Unknown IOCTL recieved: DeviceType = 0x%x Function = 0x%x", (int)(ulCode>>16), (int)((ulCode&0x1FFF)>>2));
 		return (LPWSTR) _T ("UNKNOWN");
+	}
 }
 
 #endif
 
 PDEVICE_OBJECT
-E4MDeleteDeviceObject (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension)
+TCDeleteDeviceObject (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension)
 {
 	PDEVICE_OBJECT OldDeviceObject = DeviceObject;
 	UNICODE_STRING Win32NameString;
 	WCHAR dosname[32];
 	NTSTATUS ntStatus;
 
-	Dump ("E4MDeleteDeviceObject BEGIN\n");
+	Dump ("TCDeleteDeviceObject BEGIN\n");
 
 	if (Extension->bRootDevice == TRUE)
 	{
@@ -1117,8 +1342,8 @@ E4MDeleteDeviceObject (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension)
 	else
 	{
 		if (Extension->peThread != NULL)
-			E4MStopThread (DeviceObject, Extension);
-		E4MGetDosNameFromNumber (dosname, Extension->nDosDriveNo);
+			TCStopThread (DeviceObject, Extension);
+		TCGetDosNameFromNumber (dosname, Extension->nDosDriveNo);
 		RtlInitUnicodeString (&Win32NameString, dosname);
 	}
 
@@ -1131,23 +1356,23 @@ E4MDeleteDeviceObject (PDEVICE_OBJECT DeviceObject, PEXTENSION Extension)
 	DeviceObject = DeviceObject->NextDevice;
 	IoDeleteDevice (OldDeviceObject);
 
-	Dump ("E4MDeleteDeviceObject END\n");
+	Dump ("TCDeleteDeviceObject END\n");
 	return DeviceObject;
 }
 
 VOID
-E4MUnloadDriver (PDRIVER_OBJECT DriverObject)
+TCUnloadDriver (PDRIVER_OBJECT DriverObject)
 {
 	PDEVICE_OBJECT DeviceObject = DriverObject->DeviceObject;
 
-	Dump ("E4MUnloadDriver BEGIN\n");
+	Dump ("TCUnloadDriver BEGIN\n");
 
 	/* Now walk the list of driver objects and get rid of them */
 	while (DeviceObject != (PDEVICE_OBJECT) NULL)
 	{
-		DeviceObject = E4MDeleteDeviceObject (DeviceObject,
+		DeviceObject = TCDeleteDeviceObject (DeviceObject,
 				(PEXTENSION) DeviceObject->DeviceExtension);
 	}
 
-	Dump ("E4MUnloadDriver END\n");
+	Dump ("TCUnloadDriver END\n");
 }

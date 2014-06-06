@@ -46,7 +46,7 @@ static word16 mulInv( word16 x )
 
 /* Expand the 128-bit user key into the encryption and decryption keys */
 
-void ideaExpandKey( unsigned char const *userkey, word16 *eKey, word16 *dKey )
+void _cdecl ideaExpandKey( unsigned char const *userkey, word16 *eKey, word16 *dKey )
 	{
 	word16 *eKeyPtr = eKey;
 	int i, j, k, p, r;
@@ -133,7 +133,7 @@ void ideaExpandKey( unsigned char const *userkey, word16 *eKey, word16 *dKey )
 /* Encrypt/decrypt a block of data with IDEA */
 
 #if 0
-void ideaCrypt( unsigned char const *in, unsigned char *out, word16 const *key )
+void _cdecl ideaCrypt( unsigned char const *in, unsigned char *out, word16 const *key )
 	{
 	register word16 x1, x2, x3, x4, s2, s3;
 	word16 *inPtr, *outPtr;

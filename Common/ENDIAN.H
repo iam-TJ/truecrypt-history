@@ -1,5 +1,5 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
 #define mputLong(memPtr,data) \
 	*memPtr++ = ( unsigned char ) ( ( ( data ) >> 24 ) & 0xFF ), \
@@ -24,16 +24,15 @@
    in user code */
 
 #define mgetLong(memPtr) 		\
-	( ( ( unsigned long ) memPtr[ 0 ] << 24 ) | ( ( unsigned long ) memPtr[ 1 ] << 16 ) | \
-	  ( ( unsigned long ) memPtr[ 2 ] << 8 ) | ( unsigned long ) memPtr[ 3 ] ); \
-	memPtr += 4
+	( memPtr += 4, ( ( unsigned long ) memPtr[ -4 ] << 24 ) | ( ( unsigned long ) memPtr[ -3 ] << 16 ) | \
+	  ( ( unsigned long ) memPtr[ -2 ] << 8 ) | ( unsigned long ) memPtr[ -1 ] )
 
 #define mgetWord(memPtr) 		\
-	( ( unsigned short ) memPtr[ 0 ] << 8 ) | ( ( unsigned short ) memPtr[ 1 ] ); \
-	memPtr += 2
+	( memPtr += 2, ( unsigned short ) memPtr[ -2 ] << 8 ) | ( ( unsigned short ) memPtr[ -1 ] ) 
 
 #define mgetByte(memPtr)		\
 	( ( unsigned char ) *memPtr++ )
+
 
 #define LITTLE_ENDIAN 1
 

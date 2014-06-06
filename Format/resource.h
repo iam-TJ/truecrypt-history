@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by volformat.rc
+// Microsoft Visual C++ generated include file.
+// Used by Format.rc
 //
 #define IDS_CIPHER_TITLE                15
 #define IDS_SIZE_TITLE                  16
@@ -13,10 +13,10 @@
 #define IDS_OPEN_TITLE                  23
 #define IDS_FILE_TITLE                  24
 #define IDS_FILE_HELP0                  25
+#define IDS_SIZE_PARTITION_HELP         26
 #define IDS_FILE_HELP1                  27
-#define IDS_VOLTYPE_HELP0               30
-#define IDS_VOLTYPE_HELP1               31
-#define IDS_VOLTYPE_TITLE               32
+#define IDS_FORMAT_ABORT                28
+#define IDS_WARN_QUICK_FORMAT           29
 #define IDS_FORMAT_TITLE                33
 #define IDS_PASSWORD_TITLE              34
 #define IDS_PREV                        42
@@ -59,14 +59,13 @@
 #define IDS_TEST_PLAINTEXT_SIZE         92
 #define IDS_TEST_CIPHERTEXT_SIZE        93
 #define IDD_MKFS_DLG                    102
-#define IDD_VOLTYPE_PAGE_DLG            111
 #define IDD_CIPHER_PAGE_DLG             112
 #define IDD_SIZE_PAGE_DLG               113
 #define IDD_PASSWORD_PAGE_DLG           114
 #define IDD_FILE_PAGE_DLG               115
 #define IDD_FORMAT_PAGE_DLG             116
 #define IDD_VOLSTATS_DLG                117
-#define IDB_E4M2                        119
+#define IDB_TRUECRYPT                   122
 #define IDD_CIPHER_TEST_DLG             145
 #define IDC_KEY                         1001
 #define IDC_PLAINTEXT                   1002
@@ -82,13 +81,13 @@
 #define IDC_NO_HISTORY                  1017
 #define IDC_MB                          1018
 #define IDC_PROGRESS_BAR                1019
-#define IDC_E4M_VOLTYPE2                1020
 #define IDC_STATS_BOX                   1021
-#define IDC_SFS_VOLTYPE                 1021
 #define IDC_CANCEL_BAR                  1022
 #define IDC_SHA1                        1024
 #define IDC_MD5                         1025
+#define IDC_RIPEMD160                   1025
 #define IDC_KEY_SALT                    1026
+#define IDC_MD6                         1026
 #define IDC_DISK_KEY                    1027
 #define IDC_RANDOM_BYTES                1028
 #define IDC_CIPHER_TEST                 1029
@@ -96,6 +95,15 @@
 #define IDC_PLAINTEXT_SIZE              1033
 #define IDC_REDTICK                     1035
 #define IDC_TESTS_MESSAGE               1036
+#define IDC_QUICKFORMAT                 1037
+#define IDC_BYTESWRITTEN                1038
+#define IDC_STATIC9                     1039
+#define IDC_WRITESPEED                  1039
+#define IDC_BYTESWRITTEN3               1041
+#define IDC_TIMEREMAIN                  1041
+#define IDC_COMBO1                      1042
+#define IDC_CLUSTERSIZE                 1042
+#define IDC_SPIN1                       1043
 #define IDC_RESET                       1104
 #define IDC_AUTO                        1105
 #define IDC_DECRYPT                     1112
@@ -109,9 +117,10 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        121
+#define _APS_NO_MFC                     1
+#define _APS_NEXT_RESOURCE_VALUE        123
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1037
+#define _APS_NEXT_CONTROL_VALUE         1045
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

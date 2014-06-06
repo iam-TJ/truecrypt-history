@@ -1,13 +1,12 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#define SZSERVICENAME        "e4mservice"
-#define SZSERVICEDISPLAYNAME "E4M service"
+#define SZSERVICENAME        "TrueCryptService"
+#define SZSERVICEDISPLAYNAME "TrueCrypt Service"
 #define SZDEPENDENCIES       ""
 
 /* Everything below this line is automatically updated by the -mkproto-tool- */
 
-void _CRTAPI1 main ( int argc , char **argv );
 void WINAPI service_main ( DWORD dwArgc , LPSTR *lpszArgv );
 void WINAPI service_ctrl ( DWORD dwCtrlCode );
 BOOL ReportStatusToSCMgr ( DWORD dwCurrentState , DWORD dwWin32ExitCode , DWORD dwWaitHint );

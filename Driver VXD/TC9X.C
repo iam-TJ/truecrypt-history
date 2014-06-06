@@ -1,20 +1,20 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com majority
-   of this code originally Copyright (C) 1998/9 by Aman. Used with
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> 
+   Majority of this code originally Copyright (C) 1998/9 by Aman. Used with
    permission. Other parts originally Copyright (C) 1995 by Walter Oney used
    with implied permission. */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 
 #pragma VxD_LOCKED_CODE_SEG
 #pragma VxD_LOCKED_DATA_SEG
 
 #include "crypto.h"
 #include "fat.h"
-#include "volumes1.h"
+#include "volumes.h"
 #include "cache.h"
 #include "apidrvr.h"
-#include "e4m9x.h"
+#include "tc9x.h"
 #include "queue.h"
 
 #include "ifshook.h"
@@ -314,7 +314,7 @@ DWORD
 OnDeviceIoControl (PDIOCPARAMETERS p)
 {
 	installhook ();		/* make sure hook is installed */
-	InstallE4MThread ();
+	InstallTCThread ();
 
 	/* select on IOCTL code */
 	switch (p->dwIoControlCode)
@@ -345,6 +345,9 @@ OnDeviceIoControl (PDIOCPARAMETERS p)
 	case WIPE_CACHE:
 		WipeCache ();
 		break;
+
+	case CACHE_STATUS:
+		return cacheEmpty ? ERROR_GEN_FAILURE : 0;
 
 	case DISKIO:		/* Call to read and write sectors from
 				   application */
@@ -522,7 +525,9 @@ OnDeviceIoControl (PDIOCPARAMETERS p)
 				list->ulMountedDrives |= 1 << nDosDriveNo;
 
 				if (strlen (cv->mounted_file_name) < 64)
+				{
 					strcpy ((char *) list->wszVolume[nDosDriveNo], cv->mounted_file_name);
+				}
 				else
 				{
 					memcpy ((char *) list->wszVolume[nDosDriveNo], cv->mounted_file_name, 60);
@@ -531,10 +536,76 @@ OnDeviceIoControl (PDIOCPARAMETERS p)
 					((char *) list->wszVolume[nDosDriveNo])[62] = '.';
 					((char *) list->wszVolume[nDosDriveNo])[63] = 0;
 				}
+
+				list->cipher[nDosDriveNo] = cv->cryptoInfo->cipher;
+
+				if(!cv->mountfilehandle)
+					list->diskLength[nDosDriveNo] = (cv->cryptsectorlast - cv->cryptsectorfirst) * 512I64;
+				else
+					list->diskLength[nDosDriveNo] = 0;
+
+				list->cipher[nDosDriveNo] = cv->cryptoInfo->cipher;
+
 			}
 
 			break;
 		}
+
+	case VOLUME_PROPERTIES:
+		{
+			VOLUME_PROPERTIES_STRUCT *prop = (VOLUME_PROPERTIES_STRUCT *) p->lpvInBuffer;
+			cryptvol *cv;
+			int c;
+
+			if (prop == NULL)
+				return ERROR_GEN_FAILURE;
+
+			for (c = 0; c < NUMSLOTS; c++)
+			{
+				int nDosDriveNo;
+
+				cv = cryptvols[c];
+
+				if ((cv->booted == 0) && (cv->physdevDCB == 0))
+					continue;
+
+				nDosDriveNo = cv->drive;
+
+				if (nDosDriveNo != prop->driveNo)
+					continue;
+
+				if (strlen (cv->mounted_file_name) < 64)
+				{
+					strcpy ((char *) prop->wszVolume, cv->mounted_file_name);
+				}
+				else
+				{
+					memcpy ((char *) prop->wszVolume, cv->mounted_file_name, 60);
+					((char *) prop->wszVolume)[60] = '.';
+					((char *) prop->wszVolume)[61] = '.';
+					((char *) prop->wszVolume)[62] = '.';
+					((char *) prop->wszVolume)[63] = 0;
+				}
+
+				prop->cipher = cv->cryptoInfo->cipher;
+
+				if(!cv->mountfilehandle)
+					prop->diskLength = (cv->cryptsectorlast - cv->cryptsectorfirst) * 512I64;
+				else
+					prop->diskLength = 0;
+
+				prop->cipher = cv->cryptoInfo->cipher;
+				prop->pkcs5 = cv->cryptoInfo->pkcs5;
+				prop->pkcs5Iterations = cv->cryptoInfo->noIterations;
+				prop->volumeCreationTime = cv->cryptoInfo->volume_creation_time;
+				prop->headerCreationTime = cv->cryptoInfo->header_creation_time;
+
+				return 0;
+			}
+
+			return ERROR_GEN_FAILURE;
+		}
+
 
 	default:
 		return ERROR_INVALID_FUNCTION;
@@ -590,7 +661,7 @@ closeCrDevice (cryptvol * cv, int mode)
 				_VolFlush (cv->drive, 0);	/* flush stuff out
 								   before the
 								   dismount... */
-				NotifyVolumeRemoval (cv->drive);
+				//%% NotifyVolumeRemoval (cv->drive);
 			}
 			return 0;
 		}
@@ -1060,22 +1131,14 @@ trymountfile (PDCB dcb, cryptvol * cv, MOUNT_STRUCT * mf)
 		myior = &myiop->IOP_ior;
 		myior->IOR_private_client = offset;
 
-		readBuffer = e4malloc (FIRST_READ_SIZE);
+		readBuffer = TCalloc (FIRST_READ_SIZE);
 		if (readBuffer == NULL)
 			goto error;
 
 		dophysblock (myiop, cv->cryptsectorfirst, FIRST_READ_SIZE / 512, readBuffer, cv, IOR_READ);
 
-		status = VolumeReadHeaderCache (mf->bCache, readBuffer, &cv->nVolType, mf->szPassword,
+		status = VolumeReadHeaderCache (mf->bCache, readBuffer, mf->szPassword,
 					 mf->nPasswordLen, &cv->cryptoInfo);
-
-		/* SFS volumes are not handled by this driver, they must be
-		   mounted using the SFS driver */
-		if (status == 0 && cv->nVolType == SFS_VOLTYPE)
-		{
-			crypto_close (cv->cryptoInfo);
-			status = ERR_VOL_FORMAT_BAD;
-		}
 
 		if (status != 0)
 		{
@@ -1101,7 +1164,7 @@ trymountfile (PDCB dcb, cryptvol * cv, MOUNT_STRUCT * mf)
 
 	      error:
 		if (readBuffer != NULL)
-			e4mfree (readBuffer);
+			TCfree (readBuffer);
 
 		IspDeallocMem ((PVOID) ((DWORD) myior - myior->IOR_private_client));
 		return mounted;
@@ -1411,9 +1474,9 @@ MapDosError (int error)
 
 char fileerrorstr[]=
 {
-	"E4M has encountered an error reading a host file which\n"
+	"TC has encountered an error reading a host file which\n"
 	"it is using for a currently open scrambled disk volume.\n\n"
-	"You should immediately dismount the file using the E4M mount\n"
+	"You should immediately dismount the file using the TC mount\n"
    "application, correct the error, and re mount the disk image file.\n\n\n"
       "The related disk will be unavailable, until you do, and you should\n"
 	"save your work elsewhere."
@@ -1446,7 +1509,7 @@ dophysblock2 (PIOP iop, int sector, int numsectors, char *buffr, cryptvol * cv, 
 
 			if (cv->booted <= 2 && (cv->booted))
 			{
-				Post_message (fileerrorstr, "E4M: Mounted file error");
+				Post_message (fileerrorstr, "TC: Mounted file error");
 				cv->booted = 256;
 			}
 		}
@@ -1565,7 +1628,8 @@ readlogical (PIOP iop, int temp_block, int num_sectors, char *buffer, cryptvol *
 	_Debug_Printf_Service ("0x%08x\n", *((int *) buffer));
 #endif
 
-	cv->cryptoInfo->decrypt_sector ((unsigned long *) buffer, secNum, num_sectors,
+	cv->cryptoInfo->decrypt_sector ((unsigned long *) buffer,
+					(unsigned __int64) secNum, num_sectors,
 					&cv->cryptoInfo->ks[0],
 					cv->cryptoInfo->iv,
 					cv->cryptoInfo->cipher);
@@ -1580,7 +1644,7 @@ void
 writelogical (PIOP iop, int temp_block, int num_sectors, char *buffer, cryptvol * cv)
 {
 	int secNum;
-
+	
 	secNum = temp_block;
 
 #if EXTRA_INFO
@@ -1588,7 +1652,7 @@ writelogical (PIOP iop, int temp_block, int num_sectors, char *buffer, cryptvol 
 #endif
 
 	cv->cryptoInfo->encrypt_sector ((unsigned long *) buffer,
-					secNum, num_sectors,
+					(unsigned __int64) secNum, num_sectors,
 					&cv->cryptoInfo->ks[0],
 					cv->cryptoInfo->iv,
 					cv->cryptoInfo->cipher);
@@ -2095,7 +2159,7 @@ tryvol (PDCB dcb, PIOP myiop, partitionrec * pr, MOUNT_STRUCT * mf, cryptvol ** 
 	char *readBuffer;
 	int mounted = 0;
 
-	readBuffer = e4malloc (FIRST_READ_SIZE);
+	readBuffer = TCalloc (FIRST_READ_SIZE);
 	if (readBuffer == NULL)
 		goto error;
 
@@ -2107,16 +2171,8 @@ tryvol (PDCB dcb, PIOP myiop, partitionrec * pr, MOUNT_STRUCT * mf, cryptvol ** 
 
 			dophysblock (myiop, cv->cryptsectorfirst, FIRST_READ_SIZE / 512, readBuffer, cv, IOR_READ);
 
-			status = VolumeReadHeaderCache (mf->bCache, readBuffer, &cv->nVolType, mf->szPassword,
+			status = VolumeReadHeaderCache (mf->bCache, readBuffer, mf->szPassword,
 					 mf->nPasswordLen, &cv->cryptoInfo);
-
-			/* SFS volumes are not handled by this driver, they
-			   must be mounted using the SFS driver */
-			if (status == 0 && cv->nVolType == SFS_VOLTYPE)
-			{
-				crypto_close (cv->cryptoInfo);
-				status = ERR_VOL_FORMAT_BAD;
-			}
 
 			if (status != 0)
 			{
@@ -2153,7 +2209,7 @@ tryvol (PDCB dcb, PIOP myiop, partitionrec * pr, MOUNT_STRUCT * mf, cryptvol ** 
 
       error:
 	if (readBuffer != NULL)
-		e4mfree (readBuffer);
+		TCfree (readBuffer);
 
 	*pcv = cv;
 
@@ -2319,6 +2375,7 @@ unlockdrive (cryptvol * cv)
 	myior->IOR_private_client = offset;
 	lockdrive (dcb, myiop, 0);	/* unlock it! */
 	IspDeallocMem ((PVOID) ((DWORD) myior - myior->IOR_private_client));
+	return 1;
 }
 
 int

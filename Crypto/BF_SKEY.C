@@ -66,7 +66,7 @@
 
 #pragma warning( disable : 4131 )
 
-void BF_set_key(key,len,data)
+void _cdecl BF_set_key(key,len,data)
 BF_KEY *key;
 int len;
 unsigned char *data;

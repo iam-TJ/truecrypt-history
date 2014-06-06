@@ -1,7 +1,7 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 
 #include <memory.h>
 #include "sha1.h"
@@ -91,7 +91,7 @@ void
 derive_u_sha (char *pwd, int pwd_len, char *salt, int salt_len, int iterations, char *u, int b)
 {
 	char j[SHA_DIGESTSIZE], k[SHA_DIGESTSIZE];
-	char init[64];
+	char init[128];
 	char counter[4];
 	int c, i;
 
@@ -211,7 +211,7 @@ void
 derive_u_md5 (char *pwd, int pwd_len, char *salt, int salt_len, int iterations, char *u, int b)
 {
 	char j[MD5_DIGESTSIZE], k[MD5_DIGESTSIZE];
-	char init[64];
+	char init[128];
 	char counter[4];
 	int c, i;
 
@@ -267,7 +267,6 @@ derive_md5_key (char *pwd, int pwd_len, char *salt, int salt_len, int iterations
 
 
 
-#if 0
 /* rfc2104 & 2202 */
 
 char *hmac_test_keys[3] =
@@ -359,47 +358,3 @@ test_pkcs5 ()
 
 }
 
-int
-pkcs5main ()
-{
-	char digest[20];
-	int i, n;
-
-	printf ("\nsha1\n");
-	for (i = 0; i < 3; i++)
-	{
-		hmac_sha (hmac_test_keys[i], strlen (hmac_test_keys[i]), hmac_test_data[i], strlen (hmac_test_data[i]), digest, SHA_DIGESTSIZE);
-		printf ("\nvector=");
-		for (n = 0; n < SHA_DIGESTSIZE; n++)
-			printf ("%02x", (unsigned char) hmac_sha_test_vectors[i][n]);
-		printf ("\ndigest=");
-		for (n = 0; n < SHA_DIGESTSIZE; n++)
-			printf ("%02x", (unsigned char) digest[n]);
-
-		if (memcmp (digest, hmac_sha_test_vectors[i], SHA_DIGESTSIZE))
-			printf (" fail\n");
-		else
-			printf (" pass\n");
-	}
-
-	printf ("\nmd5\n");
-	for (i = 0; i < 3; i++)
-	{
-		int x = strlen (hmac_test_keys[i]);
-		hmac_md5 (hmac_test_data[i], strlen (hmac_test_data[i]), hmac_test_keys[i], x > MD5_DIGESTSIZE ? MD5_DIGESTSIZE : x, digest);
-		printf ("\nvector=");
-		for (n = 0; n < MD5_DIGESTSIZE; n++)
-			printf ("%02x", (unsigned char) hmac_md5_test_vectors[i][n]);
-		printf ("\ndigest=");
-		for (n = 0; n < MD5_DIGESTSIZE; n++)
-			printf ("%02x", (unsigned char) digest[n]);
-
-		if (memcmp (digest, hmac_md5_test_vectors[i], MD5_DIGESTSIZE))
-			printf (" fail\n");
-		else
-			printf (" pass\n");
-	}
-
-}
-
-#endif

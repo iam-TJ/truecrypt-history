@@ -1,7 +1,7 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 
 #include <sys\types.h>
 #include <sys\stat.h>
@@ -84,7 +84,7 @@ mkfulldir_internal (char *path)
 	{
 		int x;
 		strcat (trail, token);
-		x = mkdir (trail);
+		x = _mkdir (trail);
 		strcat (trail, "\\");
 		token = strtok (NULL, "\\/");
 	}

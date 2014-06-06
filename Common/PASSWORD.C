@@ -1,12 +1,12 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 
 #include "crypto.h"
 #include "fat.h"
 #include "format.h"
-#include "volumes1.h"
+#include "volumes.h"
 #include "password.h"
 #include "apidrvr.h"
 #include "dlgcode.h"
@@ -18,7 +18,7 @@
 void
 VerifyPasswordAndUpdate (HWND hwndDlg, HWND hButton, HWND hPassword,
 			 HWND hVerify, char *szPassword,
-			 char *szVerify, int nVolType)
+			 char *szVerify)
 {
 	char szTmp1[MAX_PASSWORD + 1];
 	char szTmp2[MAX_PASSWORD + 1];
@@ -34,22 +34,10 @@ VerifyPasswordAndUpdate (HWND hwndDlg, HWND hButton, HWND hPassword,
 		bEnable = FALSE;
 	else
 	{
-		if (isE4M (nVolType) == TRUE)
-		{
-			if (k >= 8)
-				bEnable = TRUE;
-			else
-				bEnable = FALSE;
-		}
-		if (nVolType == SFS_VOLTYPE)
-		{
-			char *lpszTmp = strchr (szTmp1, ' ');
-			int x = k - (lpszTmp - &szTmp1[0]);
-			if (k >= 10 && lpszTmp && x > 1)
-				bEnable = TRUE;
-			else
-				bEnable = FALSE;
-		}
+		if (k >= MIN_PASSWORD)
+			bEnable = TRUE;
+		else
+			bEnable = FALSE;
 	}
 
 	if (szPassword != NULL)
@@ -67,17 +55,19 @@ VerifyPasswordAndUpdate (HWND hwndDlg, HWND hButton, HWND hPassword,
 int
 ChangePwd (char *lpszVolume, char *lpszOldPassword, char *lpszPassword)
 {
-	int nDosLinkCreated = 0, nStatus, nVolType;
-	char szDiskFile[E4M_MAX_PATH], szCFDevice[E4M_MAX_PATH];
-	char szDosDevice[E4M_MAX_PATH];
+	int nDosLinkCreated = 0, nStatus;
+	char szDiskFile[TC_MAX_PATH], szCFDevice[TC_MAX_PATH];
+	char szDosDevice[TC_MAX_PATH];
 	char buffer[SECTOR_SIZE], boot[SECTOR_SIZE];
-	PCRYPTO_INFO cryptoInfo = NULL;
+	PCRYPTO_INFO cryptoInfo = NULL, ci = NULL;
 	void *dev = INVALID_HANDLE_VALUE;
 	OPEN_TEST_STRUCT driver;
 	DISKIO_STRUCT win9x_r0;
 	diskio_f write, read;
 	DWORD dwError;
 	BOOL bDevice;
+	
+	if (Randinit ()) return 1;
 
 	CreateFullVolumePath (szDiskFile, lpszVolume, &bDevice);
 
@@ -142,87 +132,50 @@ ChangePwd (char *lpszVolume, char *lpszOldPassword, char *lpszPassword)
 	memcpy (boot, buffer, SECTOR_SIZE);
 
 	/* Parse header */
-	nStatus = VolumeReadHeader (buffer, &nVolType, lpszOldPassword, &cryptoInfo);
+	nStatus = VolumeReadHeader (buffer, lpszOldPassword, &cryptoInfo);
 	if (nStatus != 0)
 	{
 		cryptoInfo = NULL;
 		goto error;
 	}
 
-	if (nVolType == E4M_OLD_VOLTYPE)
+	/* Change password now */ 
+
+	if (dev != &win9x_r0)
 	{
-		nStatus = ERR_PASSWORD_CHANGE_VOL_VERSION;
-	}
-	else if (nVolType != E4M_VOLTYPE2)
-	{
-		nStatus = ERR_PASSWORD_CHANGE_VOL_TYPE;
-	}
-	else
-	{
-		/* Change password now */
+		nStatus = _llseek ((HFILE) dev, 0, FILE_BEGIN);
 
-		char dk[256];
-		unsigned short x;
-		char encrKey[E4M_DISKKEY_SIZE + sizeof (short)];
-		char *tmp;
-		int i, j;
-
-		if (dev != &win9x_r0)
+		if (nStatus != 0)
 		{
-			nStatus = _llseek ((HFILE) dev, 0, FILE_BEGIN);
-
-			if (nStatus != 0)
-			{
-				nStatus = ERR_VOL_SEEKING;
-				goto error;
-			}
-		}
-
-		win9x_r0.mode = 1;
-		win9x_r0.sectorstart -= 1;
-
-		/* use pkcs5 to derive the key */
-		if (cryptoInfo->pkcs5 == 0)
-			derive_sha_key (lpszPassword, strlen (lpszPassword), cryptoInfo->key_salt,
-				     20, cryptoInfo->noIterations, dk, 256);
-		else
-			derive_md5_key (lpszPassword, strlen (lpszPassword), cryptoInfo->key_salt,
-				     20, cryptoInfo->noIterations, dk, 256);
-
-		/* Init with derived user key and encrypt master disk key */
-		init_cipher (cryptoInfo->cipher, dk, cryptoInfo->ks);
-
-		memcpy (encrKey, cryptoInfo->master_decrypted_key, E4M_DISKKEY_SIZE);
-
-		j = get_block_size (cryptoInfo->cipher);
-		for (i = 0; i < E4M_DISKKEY_SIZE; i += j)
-		{
-			tmp = &encrKey[i];
-			encipher_block (cryptoInfo->cipher, tmp, cryptoInfo->ks);
-		}
-
-		/* Extract out a key check word */
-		x = *(unsigned short *) &dk[254];
-		tmp = &encrKey[E4M_DISKKEY_SIZE];
-		mputWord (tmp, x);
-
-		memcpy (boot + cryptoInfo->master_key_offset, encrKey, sizeof (encrKey));
-
-		/* Write out new encrypted key + key check */
-		nStatus = (*write) ((HFILE) dev, boot, SECTOR_SIZE);
-
-		burn (dk, sizeof (dk));
-		burn (encrKey, sizeof (encrKey));
-
-		if (nStatus != SECTOR_SIZE)
-		{
-			nStatus = ERR_VOL_WRITING;
+			nStatus = ERR_VOL_SEEKING;
 			goto error;
 		}
-
-		/* That's it done... */
-		nStatus = 0;
 	}
+
+	win9x_r0.mode = 1;
+	win9x_r0.sectorstart -= 1;
+
+	VolumeWriteHeader (boot,
+		cryptoInfo->cipher,
+		lpszPassword,
+		cryptoInfo->pkcs5,
+		cryptoInfo->master_decrypted_key,
+		cryptoInfo->volume_creation_time,
+		&ci);
+
+	crypto_close (ci);
+
+	/* Write out new encrypted key + key check */
+	nStatus = (*write) ((HFILE) dev, boot, SECTOR_SIZE);
+
+	if (nStatus != SECTOR_SIZE)
+	{
+		nStatus = ERR_VOL_WRITING;
+		goto error;
+	}
+
+	/* That's it done... */
+	nStatus = 0;
 
       error:
 

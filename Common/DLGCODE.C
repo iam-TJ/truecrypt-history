@@ -1,7 +1,7 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 
 #include <stdlib.h>
 
@@ -10,14 +10,21 @@
 #include "apidrvr.h"
 #include "dlgcode.h"
 
-char szHelpFile[E4M_MAX_PATH];
+char szHelpFile[TC_MAX_PATH];
 HFONT hSmallFont = NULL;
 HFONT hBoldFont = NULL;
 HFONT hSmallBoldFont = NULL;
 HFONT hTitleFont = NULL;
 HFONT hFixedFont = NULL;
+
+HFONT hUserFont = NULL;
+HFONT hUserUnderlineFont = NULL;
+HFONT hUserBoldFont = NULL;
+
 char *lpszTitle = NULL;
 int nCurrentOS = 0;
+int CurrentOSMajor = 0;
+int CurrentOSMinor = 0;
 
 /* Handle to the device driver */
 HANDLE hDriver = INVALID_HANDLE_VALUE;
@@ -31,8 +38,8 @@ ATOM hDlgClass, hSplashClass;
 #define WINDOWS_DIALOG_CLASS "#32770"
 
 /* Custom class names */
-#define E4M_DLG_CLASS "CustomDlg"
-#define E4M_SPLASH_CLASS "SplashDlg"
+#define TC_DLG_CLASS "CustomDlg"
+#define TC_SPLASH_CLASS "SplashDlg"
 
 void
 cleanup ()
@@ -48,11 +55,17 @@ cleanup ()
 		DeleteObject (hSmallBoldFont);
 	if (hTitleFont != NULL)
 		DeleteObject (hTitleFont);
+	if (hUserFont != NULL)
+		DeleteObject (hUserFont);
+	if (hUserUnderlineFont != NULL)
+		DeleteObject (hUserUnderlineFont);
+	if (hUserBoldFont != NULL)
+		DeleteObject (hUserBoldFont);
 	/* Cleanup our dialog class */
 	if (hDlgClass)
-		UnregisterClass (E4M_DLG_CLASS, hInst);
+		UnregisterClass (TC_DLG_CLASS, hInst);
 	if (hSplashClass)
-		UnregisterClass (E4M_SPLASH_CLASS, hInst);
+		UnregisterClass (TC_SPLASH_CLASS, hInst);
 	/* Close the device driver handle */
 	if (hDriver != INVALID_HANDLE_VALUE)
 	{
@@ -104,17 +117,10 @@ CreateFullVolumePath (char *lpszDiskFile, char *lpszFileName, BOOL * bDevice)
 
 	if (memcmp (lpszDiskFile, "\\DEVICE", sizeof (char) * 7) == 0)
 	{
-		strcpy (lpszDiskFile, lpszFileName);
 		*bDevice = TRUE;
 	}
-	else if (strstr (lpszDiskFile, ".") == 0)
-	{
-		strcpy (lpszDiskFile, lpszFileName);	/* Normal file
-							   no-extension */
-		strcat (lpszDiskFile, ".vol");
-	}
-	else
-		strcpy (lpszDiskFile, lpszFileName);	/* File with extension */
+
+	strcpy (lpszDiskFile, lpszFileName);
 
 #if _DEBUG
 	OutputDebugString ("CreateFullVolumePath: ");
@@ -128,8 +134,7 @@ int
 FakeDosNameForDevice (char *lpszDiskFile, char *lpszDosDevice, char *lpszCFDevice, BOOL bNameOnly)
 {
 	BOOL bDosLinkCreated = TRUE;
-
-	sprintf (lpszDosDevice, "e4mformat%lu", GetCurrentProcessId ());
+	sprintf (lpszDosDevice, "truecrypt%lu", GetCurrentProcessId ());
 
 	if (bNameOnly == FALSE)
 		bDosLinkCreated = DefineDosDevice (DDD_RAW_TARGET_PATH, lpszDosDevice, lpszDiskFile);
@@ -194,11 +199,11 @@ AbortProcess (UINT nID)
 void *
 err_malloc (size_t size)
 {
-	void *z = (void *) e4malloc (size);
+	void *z = (void *) TCalloc (size);
 	if (z)
 		return z;
 	AbortProcess (IDS_OUTOFMEMORY);
-	return NULL;
+	return 0;
 }
 
 char *
@@ -254,15 +259,37 @@ AboutDlgProc (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	switch (msg)
 	{
+
 	case WM_INITDIALOG:
-		return 1;
+		{
+			char szTmp[32];
+
+			SetDefaultUserFont (hwndDlg);
+			SendMessage (GetDlgItem (hwndDlg, ID_WEBSITE), WM_SETFONT, (WPARAM) hUserUnderlineFont, 0);
+			SendMessage (GetDlgItem (hwndDlg, IDT_ABOUT_VERSION), WM_SETFONT, (WPARAM) hUserBoldFont, 0);
+
+			sprintf (szTmp, "TrueCrypt %s", VERSION_STRING);
+			SetDlgItemText (hwndDlg, IDT_ABOUT_VERSION, szTmp);
+			return 1;
+		}
+
 	case WM_COMMAND:
 		if (lw == IDOK || lw == IDCANCEL)
 		{
 			EndDialog (hwndDlg, 0);
 			return 1;
 		}
+
+		if (lw == ID_WEBSITE)
+		{
+			ArrowWaitCursor ();
+			ShellExecute (NULL, "open", "http://www.truecrypt.org", NULL, NULL, SW_SHOWNORMAL);
+			Sleep (200);
+			NormalCursor ();
+			return 1;
+		}
 		return 0;
+
 	case WM_CLOSE:
 		EndDialog (hwndDlg, 0);
 		return 1;
@@ -283,6 +310,7 @@ WarningDlgProc (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 	case WM_INITDIALOG:
+		SetDefaultUserFont (hwndDlg);
 		SetWindowText (GetDlgItem (hwndDlg, IDC_WARNING_TEXT), (char*) lParam);
 		return 1;
 	case WM_COMMAND:
@@ -417,8 +445,8 @@ InitDialog (HWND hwndDlg)
 
 	nHeight = -((16 * GetDeviceCaps (hDC, LOGPIXELSY)) / 72);
 	lf.lfHeight = nHeight;
-	lf.lfWeight = FW_ULTRALIGHT;
-	strcpy (lf.lfFaceName, "Impact");
+	lf.lfWeight = FW_BOLD;
+	strcpy (lf.lfFaceName, "Times");
 	hBoldFont = CreateFontIndirect (&lf);
 	if (hBoldFont == NULL)
 	{
@@ -436,7 +464,7 @@ InitDialog (HWND hwndDlg)
 		AbortProcess (IDS_NOFONT);
 	}
 
-	nHeight = -((10 * GetDeviceCaps (hDC, LOGPIXELSY)) / 72);
+	nHeight = -((9 * GetDeviceCaps (hDC, LOGPIXELSY)) / 72);
 	lf.lfHeight = nHeight;
 	lf.lfWidth = 0;
 	lf.lfEscapement = 0;
@@ -450,7 +478,7 @@ InitDialog (HWND hwndDlg)
 	lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
 	lf.lfQuality = PROOF_QUALITY;
 	lf.lfPitchAndFamily = FF_DONTCARE;
-	strcpy (lf.lfFaceName, "Courier");
+	strcpy (lf.lfFaceName, "Lucida Console");
 	hFixedFont = CreateFontIndirect (&lf);
 	if (hFixedFont == NULL)
 	{
@@ -495,48 +523,36 @@ PaintBitmap (HDC pdcMem, int x, int y, int nWidth, int nHeight, HDC hDC)
 LRESULT CALLBACK
 SplashDlgProc (HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-#if 0
-	static HDC dcMem;
-#endif
 
-	if (uMsg == WM_ERASEBKGND)
-	{
-		HDC hDC = (HDC) wParam;
-		char szTmp[64];
-		HGDIOBJ obj;
-		WORD bx = LOWORD (GetDialogBaseUnits ());
-		WORD by = HIWORD (GetDialogBaseUnits ());
-
-#if 0
-		RECT rect;
-#endif
-
-		DefDlgProc (hwnd, uMsg, wParam, lParam);
+	//if (uMsg == WM_ERASEBKGND)
+	//{
+	//	NONCLIENTMETRICS metric;
+	//	HFONT font;
 
 
-#if 0
-		if (dcMem == 0)
-		{
-			dcMem = CreateMemBitmap (GET_INSTANCE (hwnd), hwnd, MAKEINTRESOURCE (IDB_E4M));
-		}
+	//	HDC hDC = (HDC) wParam;
+	//	char szTmp[64];
+	//	HGDIOBJ obj;
+	//	WORD bx = LOWORD (GetDialogBaseUnits ());
+	//	WORD by = HIWORD (GetDialogBaseUnits ());
 
-		GetClientRect (hwnd, &rect);
-		PaintBitmap (dcMem, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, hDC);
-#endif
 
-		SetBkMode (hDC, TRANSPARENT);
-		SetTextColor (hDC, RGB (255, 0, 0));
-		obj = SelectObject (hDC, hSmallFont);
+	//	DefDlgProc (hwnd, uMsg, wParam, lParam);
 
-		sprintf (szTmp, "Version %s", VERSION_STRING);
-		TextOut (hDC, (65 * bx) / 4, (40 * by) / 8, szTmp, strlen (szTmp));
+	//	SetBkMode (hDC, TRANSPARENT);
+	//	SetTextColor (hDC, RGB (0, 0, 100));
+	//	obj = SelectObject (hDC, hTitleFont);
 
-		strcpy (szTmp, "http://www.e4m.net  paulca@rocketmail.com");
-		TextOut (hDC, (15 * bx) / 4, (45 * by) / 8, szTmp, strlen (szTmp));
+	//	metric.cbSize = sizeof (NONCLIENTMETRICS);
+	//	SystemParametersInfo (SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &metric, 0);
+	//	font = CreateFontIndirect (&metric.lfMessageFont);
+	//	obj = SelectObject (hDC, font);
 
-		SelectObject (hDC, obj);
-		return TRUE;
-	}
+	//	TextOut (hDC, (12 * bx) / 4, (70 * by) / 8, szTmp, strlen (szTmp));
+
+	//	SelectObject (hDC, obj);
+	//	return TRUE;
+	//}
 
 	return DefDlgProc (hwnd, uMsg, wParam, lParam);
 }
@@ -610,12 +626,20 @@ InitApp (HINSTANCE hInstance)
 		nCurrentOS = WIN_98;
 	}
 
+	CurrentOSMajor = os.dwMajorVersion;
+	CurrentOSMinor = os.dwMinorVersion;
+
 	/* Get the attributes for the standard dialog class */
 	if ((GetClassInfo (hInst, WINDOWS_DIALOG_CLASS, &wc)) == 0)
 		AbortProcess (IDS_INIT_REGISTER);
 
-	wc.hIcon = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_E4M));
-	wc.lpszClassName = E4M_DLG_CLASS;
+#ifndef SETUP
+	wc.hIcon = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_TRUECRYPT_ICON));
+#else
+#include "../setup/resource.h"
+	wc.hIcon = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_SETUP));
+#endif
+	wc.lpszClassName = TC_DLG_CLASS;
 	wc.lpfnWndProc = &CustomDlgProc;
 	wc.hCursor = LoadCursor (NULL, IDC_ARROW);
 	wc.cbWndExtra = DLGWINDOWEXTRA;
@@ -624,7 +648,7 @@ InitApp (HINSTANCE hInstance)
 	if (hDlgClass == 0)
 		AbortProcess (IDS_INIT_REGISTER);
 
-	wc.lpszClassName = E4M_SPLASH_CLASS;
+	wc.lpszClassName = TC_SPLASH_CLASS;
 	wc.lpfnWndProc = &SplashDlgProc;
 	wc.hCursor = LoadCursor (NULL, IDC_ARROW);
 	wc.cbWndExtra = DLGWINDOWEXTRA;
@@ -637,7 +661,7 @@ InitApp (HINSTANCE hInstance)
 	lpszTmp = strrchr (szHelpFile, '\\');
 	if (lpszTmp)
 	{
-		strcpy (++lpszTmp, "MANUAL.hlp");
+		strcpy (++lpszTmp, "TrueCrypt User Guide.pdf");
 	}
 
 	hMutex = CreateMutex (NULL, TRUE, lpszTitle);
@@ -649,7 +673,16 @@ InitApp (HINSTANCE hInstance)
 
 	if (GetLastError ()== ERROR_ALREADY_EXISTS)
 	{
-		AbortProcess (IDS_TWO_INSTANCES);
+		// If executed twice, just top the first instance and exit
+		HWND h = FindWindow (0, lpszTitle);
+		if (h != 0)
+		{
+			ShowWindow (h, SW_SHOWNORMAL);
+			SetForegroundWindow (h);
+			exit (1);
+		}
+		else
+			AbortProcess (IDS_TWO_INSTANCES);
 	}
 
 #ifndef SETUP
@@ -673,7 +706,7 @@ InstallService (SC_HANDLE schSCManager, char *SZSERVICENAME, char *SZSERVICEDISP
 					   SERVICE_WIN32_OWN_PROCESS,	/* service type */
 					   SERVICE_AUTO_START,	/* start type */
 					   SERVICE_ERROR_NORMAL,	/* error control type */
-					   "e4mserv.exe",	/* service's binary */
+					   "TrueCryptService.exe",	/* service's binary */
 					   NULL,	/* no load ordering
 							   group */
 					   NULL,	/* no tag identifier */
@@ -693,6 +726,7 @@ InstallService (SC_HANDLE schSCManager, char *SZSERVICENAME, char *SZSERVICEDISP
 BOOL
 CheckService ()
 {
+
 	SC_HANDLE schService = NULL;
 	SC_HANDLE schSCManager = NULL;
 	BOOL bInstall = FALSE;
@@ -727,9 +761,9 @@ CheckService ()
 		goto error;
 
 	if (bAdmin == TRUE)
-		schService = OpenService (schSCManager, "e4mservice", SERVICE_ALL_ACCESS);
+		schService = OpenService (schSCManager, "TrueCryptService", SERVICE_ALL_ACCESS);
 	else
-		schService = OpenService (schSCManager, "e4mservice", SERVICE_QUERY_STATUS);
+		schService = OpenService (schSCManager, "TrueCryptService", SERVICE_QUERY_STATUS);
 
 	if (schService == NULL)
 	{
@@ -751,12 +785,12 @@ CheckService ()
 
 		bInstall = TRUE;
 
-		bOK = InstallService (schSCManager, "e4mservice", "E4M service");
+		bOK = InstallService (schSCManager, "TrueCryptService", "TrueCrypt Service");
 
 		if (bOK == FALSE)
 			goto error;
 
-		schService = OpenService (schSCManager, "e4mservice", SERVICE_ALL_ACCESS);
+		schService = OpenService (schSCManager, "TrueCryptService", SERVICE_ALL_ACCESS);
 	}
 
 	if (schService != NULL)
@@ -898,21 +932,122 @@ int
 GetAvailableFixedDisks (HWND hComboBox, char *lpszRootPath)
 {
 	int i, n;
+	int line = 0;
+
 	for (i = 0; i < 64; i++)
 	{
-		for (n = 1; n < 5; n++)
+		BOOL drivePresent = FALSE;
+
+		for (n = 1; n <= 32; n++)
 		{
-			char szTmp[E4M_MAX_PATH];
+			char szTmp[TC_MAX_PATH], item1[100]={0}, item2[100]={0};
 			OPEN_TEST_STRUCT driver;
 
 			sprintf (szTmp, lpszRootPath, i, n);
 			if (OpenDevice (szTmp, &driver) == TRUE)
 			{
-				LPARAM lReturn = SendMessage (hComboBox, CB_ADDSTRING, 0, (LPARAM) szTmp);
-				lReturn = lReturn;
+				int nDosLinkCreated;
+				HANDLE dev;
+				DWORD dwResult;
+				BOOL bResult;
+				PARTITION_INFORMATION diskInfo;
+				
+				LVITEM LvItem;
+
+				char szDosDevice[TC_MAX_PATH], szCFDevice[TC_MAX_PATH];
+
+				if(!drivePresent)
+				{
+					LVITEM LvItem;
+					memset(&LvItem,0,sizeof(LvItem));
+					LvItem.mask=LVIF_TEXT;
+					LvItem.iItem= line++;
+
+					sprintf(szDosDevice, " Harddisk %d:", i);
+					LvItem.pszText = szDosDevice;
+					SendMessage(hComboBox, LVM_INSERTITEM, 0, (LPARAM)&LvItem);
+				}
+				drivePresent = TRUE;
+
+				if (nCurrentOS == WIN_NT)
+				{
+					nDosLinkCreated = FakeDosNameForDevice (szTmp, szDosDevice,
+						szCFDevice, FALSE);
+
+					dev = CreateFile (szCFDevice, GENERIC_READ, FILE_SHARE_WRITE , NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
+
+					bResult = DeviceIoControl (dev, IOCTL_DISK_GET_PARTITION_INFO, NULL, 0,
+						&diskInfo, sizeof (diskInfo), &dwResult, NULL);
+
+					RemoveFakeDosName(szTmp, szDosDevice);
+					CloseHandle(dev);
+
+					if (bResult == TRUE)
+					{
+						char partType[100];
+
+						switch(diskInfo.PartitionType)
+						{
+						case PARTITION_ENTRY_UNUSED:	strcpy(partType, "Empty"); break;
+						case PARTITION_EXTENDED:		strcpy(partType, "Extended"); break;
+						case PARTITION_HUGE:			strcpy(partType, "FAT"); break;
+						case PARTITION_FAT_12:			strcpy(partType, "FAT12"); break;
+						case PARTITION_FAT_16:			strcpy(partType, "FAT16"); break;
+						case PARTITION_FAT32:		
+						case PARTITION_FAT32_XINT13:	strcpy(partType, "FAT32"); break;
+						case 0x11:
+						case 0x14:
+						case 0x16:
+						case 0x1b:
+						case 0x1c:
+						case 0x1e:						strcpy(partType, "Hidden FAT"); break;
+						case PARTITION_IFS:				strcpy(partType, "NTFS"); break;
+						case 0x17:						strcpy(partType, "Hidden NTFS"); break;
+						case PARTITION_LDM:				strcpy(partType, "LDM"); break;
+						case PARTITION_UNIX:			strcpy(partType, "UNIX"); break;
+						case 0x83:						strcpy(partType, "Linux"); break;
+						case 0x82:						strcpy(partType, "Linux Swap"); break;
+
+						default:						sprintf(partType, "Unknown (0x%02x)", diskInfo.PartitionType); break;
+						}
+
+						if(diskInfo.PartitionLength.QuadPart > 1024I64*1024*1024)
+							sprintf (item1,"%.1f GB",(double)(diskInfo.PartitionLength.QuadPart/1024.0/1024/1024));
+						else
+							sprintf (item1,"%d MB", diskInfo.PartitionLength.QuadPart/1024/1024);
+
+						strcpy (item2, partType);
+					}
+				}
+
+				memset(&LvItem,0,sizeof(LvItem));
+				LvItem.mask=LVIF_TEXT;   
+				LvItem.iItem= line++;   
+
+				LvItem.pszText=szTmp;
+				SendMessage(hComboBox,LVM_INSERTITEM,0,(LPARAM)&LvItem);
+
+				LvItem.iSubItem=1;
+				LvItem.pszText=item1;
+				SendMessage(hComboBox,LVM_SETITEM,0,(LPARAM)&LvItem); 
+
+				LvItem.iSubItem=2;
+				LvItem.pszText=item2;
+				SendMessage(hComboBox,LVM_SETITEM,0,(LPARAM)&LvItem); 
 			}
 			else
 			{
+				if(drivePresent)
+				{
+					LVITEM LvItem;
+					memset(&LvItem,0,sizeof(LvItem));
+					LvItem.mask=LVIF_TEXT;   
+					LvItem.iItem= line++;   
+
+					LvItem.pszText="";
+					SendMessage(hComboBox,LVM_INSERTITEM,0,(LPARAM)&LvItem);
+				}
+
 				if (n == 1)
 					i = 64;
 				break;
@@ -920,12 +1055,9 @@ GetAvailableFixedDisks (HWND hComboBox, char *lpszRootPath)
 		}
 	}
 
-	i = SendMessage (hComboBox, CB_GETCOUNT, 0, 0);
+	i = SendMessage (hComboBox, LVM_GETITEMCOUNT, 0, 0);
 	if (i != CB_ERR)
-	{
-		SendMessage (hComboBox, CB_SETCURSEL, 1, 0);
 		return i;
-	}
 	else
 		return 0;
 }
@@ -933,30 +1065,33 @@ GetAvailableFixedDisks (HWND hComboBox, char *lpszRootPath)
 int
 GetAvailableRemovables (HWND hComboBox, char *lpszRootPath)
 {
-	char szTmp[E4M_MAX_PATH];
+	char szTmp[TC_MAX_PATH];
 	int i;
+	LVITEM LvItem;
 
 	if (lpszRootPath);	/* Remove unused parameter warning */
-
 
 	if (nCurrentOS != WIN_NT)
 		return 0;
 
+	memset(&LvItem,0,sizeof(LvItem));
+	LvItem.mask = LVIF_TEXT;   
+	LvItem.iItem = SendMessage (hComboBox, LVM_GETITEMCOUNT, 0, 0)+1;   
+
 	if (QueryDosDevice ("A:", szTmp, sizeof (szTmp)) != 0)
 	{
-		SendMessage (hComboBox, CB_ADDSTRING, 0, (LPARAM) "Floppy (A:)");
+		LvItem.pszText="Floppy (A:)";
+		SendMessage(hComboBox,LVM_INSERTITEM,0,(LPARAM)&LvItem);
 	}
 	if (QueryDosDevice ("B:", szTmp, sizeof (szTmp)) != 0)
 	{
-		SendMessage (hComboBox, CB_ADDSTRING, 0, (LPARAM) "Floppy (B:)");
+		LvItem.pszText="Floppy (B:)";
+		SendMessage(hComboBox,LVM_INSERTITEM,0,(LPARAM)&LvItem);
 	}
 
-	i = SendMessage (hComboBox, CB_GETCOUNT, 0, 0);
+	i = SendMessage (hComboBox, LVM_GETITEMCOUNT, 0, 0);
 	if (i != CB_ERR)
-	{
-		SendMessage (hComboBox, CB_SETCURSEL, 1, 0);
 		return i;
-	}
 	else
 		return 0;
 }
@@ -966,7 +1101,6 @@ RawDevicesDlgProc (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static char *lpszFileName;
 	WORD lw = LOWORD (wParam);
-	WORD hw = HIWORD (wParam);
 
 	if (lParam);		/* remove warning */
 
@@ -975,11 +1109,34 @@ RawDevicesDlgProc (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_INITDIALOG:
 		{
 			int nCount;
+			LVCOLUMN LvCol;
+			HWND hList = GetDlgItem (hwndDlg, IDC_DEVICELIST);
 
-			nCount = GetAvailableFixedDisks (GetDlgItem (hwndDlg, IDC_DEVICE),
-				       "\\Device\\Harddisk%d\\Partition%d");
-			nCount += GetAvailableRemovables (GetDlgItem (hwndDlg, IDC_DEVICE),
-						      "\\Device\\Floppy%d");
+			SetDefaultUserFont (hwndDlg);
+
+			SendMessage(hList,LVM_SETEXTENDEDLISTVIEWSTYLE,0,
+				LVS_EX_FULLROWSELECT|LVS_EX_HEADERDRAGDROP|LVS_EX_TWOCLICKACTIVATE 
+				); 
+
+			memset(&LvCol,0,sizeof(LvCol));               
+			LvCol.mask = LVCF_TEXT|LVCF_WIDTH|LVCF_SUBITEM|LVCF_FMT;  
+			LvCol.pszText = "Device";                           
+			LvCol.cx =160;
+			LvCol.fmt = LVCFMT_LEFT;
+			SendMessage(hList,LVM_INSERTCOLUMN,0,(LPARAM)&LvCol);
+
+			LvCol.pszText = "Size";  
+			LvCol.cx = 64;           
+			LvCol.fmt = LVCFMT_RIGHT;
+			SendMessage(hList,LVM_INSERTCOLUMN,1,(LPARAM)&LvCol);
+
+			LvCol.pszText = "Type";  
+			LvCol.cx = 92;
+			LvCol.fmt = LVCFMT_LEFT;
+			SendMessage(hList,LVM_INSERTCOLUMN,2,(LPARAM)&LvCol);
+
+			nCount = GetAvailableFixedDisks (hList, "\\Device\\Harddisk%d\\Partition%d");
+			nCount += GetAvailableRemovables (hList, "\\Device\\Floppy%d");
 
 			if (nCount == 0)
 			{
@@ -993,12 +1150,41 @@ RawDevicesDlgProc (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 
 	case WM_COMMAND:
-		if (lw == IDOK || (hw == CBN_DBLCLK && lw == IDC_DEVICE))
+	case WM_NOTIFY:
+
+		// catch non-device line selected
+		if (msg == WM_NOTIFY && ((LPNMHDR) lParam)->code == LVN_ITEMCHANGED && (((LPNMLISTVIEW) lParam)->uNewState & LVIS_FOCUSED ))
 		{
-			GetWindowText (GetDlgItem (hwndDlg, IDC_DEVICE), lpszFileName, E4M_MAX_PATH);
+			LVITEM LvItem;
+			memset(&LvItem,0,sizeof(LvItem));
+			LvItem.mask = LVIF_TEXT;   
+			LvItem.iItem = ((LPNMLISTVIEW) lParam)->iItem;
+			LvItem.pszText = lpszFileName;
+			LvItem.cchTextMax = TC_MAX_PATH;
+
+			SendMessage (GetDlgItem (hwndDlg, IDC_DEVICELIST), LVM_GETITEMTEXT, LvItem.iItem, (LPARAM) &LvItem);
+			EnableWindow (GetDlgItem ((HWND) hwndDlg, IDOK), lpszFileName[0] != 0 && lpszFileName[0] != ' ');
+			return 1;
+		}
+
+		if (msg == WM_COMMAND && lw == IDOK || msg == WM_NOTIFY && ((NMHDR *)lParam)->code == LVN_ITEMACTIVATE)
+		{
+			LVITEM LvItem;
+			memset(&LvItem,0,sizeof(LvItem));
+			LvItem.mask = LVIF_TEXT;   
+			LvItem.iItem =  SendMessage (GetDlgItem (hwndDlg, IDC_DEVICELIST), LVM_GETSELECTIONMARK, 0, 0);
+			LvItem.pszText = lpszFileName;
+			LvItem.cchTextMax = TC_MAX_PATH;
+
+			SendMessage (GetDlgItem (hwndDlg, IDC_DEVICELIST), LVM_GETITEMTEXT, LvItem.iItem, (LPARAM) &LvItem);
+
+			if(lpszFileName[0]==0 || lpszFileName[0]==' ')
+				break; // non-device line selected
+
 			EndDialog (hwndDlg, IDOK);
 			return 0;
 		}
+
 		if (lw == IDCANCEL)
 		{
 			EndDialog (hwndDlg, IDCANCEL);
@@ -1025,6 +1211,7 @@ DriverAttach (void)
 	{
 		return ERR_OS_ERROR;
 	}
+#ifndef SETUP // Don't check version during setup to allow removal of older version
 	else
 	{
 		LONG driver = 0;
@@ -1038,6 +1225,7 @@ DriverAttach (void)
 		else if (driver != VERSION_NUM)
 			return ERR_DRIVER_VERSION;
 	}
+#endif
 
 	if (nCurrentOS == WIN_98)
 	{
@@ -1048,33 +1236,27 @@ DriverAttach (void)
 	return 0;
 }
 
-void
-CloseHelpFile (HWND hwndDlg, BOOL bHelpStarted)
-{
-	if (bHelpStarted == TRUE)
-		WinHelp (hwndDlg, szHelpFile, HELP_QUIT, 0);
-}
-
 BOOL
 BrowseFiles (HWND hwndDlg, UINT nTitleID, char *lpszFileName)
 {
 	OPENFILENAME ofn;
+	char szFileTitle[TC_MAX_PATH];
+	ZeroMemory (&ofn, sizeof (OPENFILENAME));
 
-	char szFileTitle[E4M_MAX_PATH];
 	*szFileTitle = *lpszFileName = 0;
-	ofn.lStructSize = sizeof (OPENFILENAME);
+	ofn.lStructSize = OPENFILENAME_SIZE_VERSION_400; //sizeof (OPENFILENAME);
 	ofn.hwndOwner = hwndDlg;
-	ofn.lpstrFilter = "E4M Files (*.vol)\0*.vol\0All Files (*.*)\0*.*\0";
+	ofn.lpstrFilter = "All Files (*.*)\0*.*\0TrueCrypt Volumes (*.tc)\0*.tc\0";
 	ofn.lpstrCustomFilter = NULL;
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFile = lpszFileName;
-	ofn.nMaxFile = E4M_MAX_PATH;
+	ofn.nMaxFile = TC_MAX_PATH;
 	ofn.lpstrFileTitle = szFileTitle;
-	ofn.nMaxFileTitle = E4M_MAX_PATH;
+	ofn.nMaxFileTitle = TC_MAX_PATH;
 	ofn.lpstrInitialDir = NULL;
 	ofn.lpstrTitle = getstr (nTitleID);
 	ofn.Flags = OFN_HIDEREADONLY | OFN_PATHMUSTEXIST;
-	ofn.lpstrDefExt = "vol";
+	//ofn.lpstrDefExt = "tc";
 
 	if (!GetOpenFileName (&ofn))
 		return FALSE;
@@ -1097,7 +1279,7 @@ handleError (HWND hwndDlg, int code)
 		MessageBox (hwndDlg, getstr (IDS_OUTOFMEMORY), lpszTitle, ICON_HAND);
 		break;
 	case ERR_PASSWORD_WRONG:
-		MessageBox (hwndDlg, getstr (IDS_PASSWORD_WRONG), lpszTitle, ICON_HAND);
+		MessageBox (hwndDlg, getstr (IDS_PASSWORD_WRONG), lpszTitle, MB_ICONEXCLAMATION);
 		break;
 	case ERR_VOL_FORMAT_BAD:
 		MessageBox (hwndDlg, getstr (IDS_VOL_FORMAT_BAD), lpszTitle, ICON_HAND);
@@ -1135,7 +1317,6 @@ handleError (HWND hwndDlg, int code)
 	case ERR_VOL_READING:
 		MessageBox (hwndDlg, getstr (IDS_VOL_READING), lpszTitle, ICON_HAND);
 		break;
-
 	case ERR_VOL_ALREADY_MOUNTED:
 		MessageBox (hwndDlg, getstr (IDS_VOL_ALREADY_MOUNTED), lpszTitle, ICON_HAND);
 		break;
@@ -1143,7 +1324,7 @@ handleError (HWND hwndDlg, int code)
 		MessageBox (hwndDlg, getstr (IDS_FILE_OPEN_FAILED), lpszTitle, ICON_HAND);
 		break;
 	case ERR_VOL_MOUNT_FAILED:
-		MessageBox (hwndDlg, getstr (IDS_VOL_MOUNT_FAILED), lpszTitle, ICON_HAND);
+		MessageBox (hwndDlg, getstr (IDS_VOL_MOUNT_FAILED), lpszTitle, MB_ICONEXCLAMATION);
 		break;
 	case ERR_NO_FREE_SLOTS:
 		MessageBox (hwndDlg, getstr (IDS_NO_FREE_SLOTS), lpszTitle, ICON_HAND);
@@ -1163,9 +1344,41 @@ handleError (HWND hwndDlg, int code)
 		MessageBox (hwndDlg, szTmp, lpszTitle, ICON_HAND);
 		break;
 
+	case ERR_NEW_VERSION_REQUIRED:
+		MessageBox (hwndDlg, getstr (IDS_NEW_VERSION_REQUIRED), lpszTitle, ICON_HAND);
+		break;
+
 	default:
 		sprintf (szTmp, getstr (IDS_UNKNOWN), code);
 		MessageBox (hwndDlg, szTmp, lpszTitle, ICON_HAND);
 
 	}
+}
+
+static BOOL CALLBACK SetDefaultUserFontEnum( HWND hwnd, LPARAM font)
+{
+	SendMessage (hwnd, WM_SETFONT, (WPARAM) font, 0);
+	return TRUE;
+}
+
+void SetDefaultUserFont (HWND hwnd)
+{
+	NONCLIENTMETRICS metric;
+
+	if (hUserFont == 0)
+	{
+		metric.cbSize = sizeof (NONCLIENTMETRICS);
+		SystemParametersInfo (SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &metric, 0);
+
+		hUserFont = CreateFontIndirect (&metric.lfMessageFont);
+
+		metric.lfMessageFont.lfUnderline = TRUE;
+		hUserUnderlineFont = CreateFontIndirect (&metric.lfMessageFont);
+
+		metric.lfMessageFont.lfUnderline = FALSE;
+		metric.lfMessageFont.lfWeight = FW_BOLD;
+		hUserBoldFont = CreateFontIndirect (&metric.lfMessageFont);
+	}
+
+	EnumChildWindows (hwnd, SetDefaultUserFontEnum, (LPARAM) hUserFont);
 }

@@ -1,7 +1,7 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 
 #include <stdlib.h>
 #include <limits.h>
@@ -14,11 +14,12 @@
 #include "apidrvr.h"
 #include "dlgcode.h"
 #include "combo.h"
+#include "registry.h"
 #include "../common/resource.h"
 #include "random.h"
 #include "fat.h"
 #include "resource.h"
-#include "volformat.h"
+#include "TCFormat.h"
 #include "uncroot.h"
 #include "format.h"
 #include "password.h"
@@ -29,10 +30,12 @@
 #include "cmdline.h"
 
 #define WM_THREAD_ENDED		0x7ffe	/* WM_USER range message */
+#define WM_FORMAT_FINISHED	0x7ffe+1	
+
+#define RANDOM_SHOW_TIMER	30		// Refresh interval for Random pool display
 
 enum wizard_pages
 {
-	VOLTYPE_PAGE,
 	FILE_PAGE,
 	CIPHER_PAGE,
 	SIZE_PAGE,
@@ -42,20 +45,17 @@ enum wizard_pages
 
 HWND hCurPage = NULL;		/* Handle to current wizard page */
 int nCurPageNo = -1;		/* The current wizard page */
-int nVolCipher = TRIPLEDES;	/* Default cipher = 3des */
-int pkcs5 = 1;			/* Which key derivation to use,
-				   default=HMAC-MD5 */
-__int64 nFileSize = 0;		/* The volume size */
-int nMultiplier = 1024;		/* Was the size selection in KB or MB */
-char szFileName[E4M_MAX_PATH];	/* The file selected by the user */
-char szDiskFile[E4M_MAX_PATH];	/* Fully qualified name derived from
-				   szFileName */
-int nVolType = E4M_VOLTYPE2;	/* The selected vol. format default =
-				   E4M_VOLTYPE */
+int nVolCipher = BLOWFISH;	/* Default cipher = Blowfish */
+int pkcs5 = SHA1;			/* Which key derivation to use,
+				   default=HMAC-SHA1 */
+unsigned __int64 nFileSize = 0;		/* The volume size */
+int nMultiplier = 1024*1024;		/* Was the size selection in KB or MB */
+char szFileName[TC_MAX_PATH];	/* The file selected by the user */
+char szDiskFile[TC_MAX_PATH];	/* Fully qualified name derived from szFileName */
+
 BOOL bThreadCancel = FALSE;	/* If the user cancels the volume formatting;
 				   this is set */
 BOOL bThreadRunning = FALSE;	/* Is the thread running */
-BOOL bHelpStarted = FALSE;	/* TRUE if help has been started */
 
 BOOL bDevice = FALSE;		/* Is this a partition volume ? */
 
@@ -71,6 +71,8 @@ BOOL bHistoryCmdLine = FALSE; /* History control is always disabled */
 
 int nPbar = 0;			/* Control ID of progress bar:- for format
 				   code */
+
+volatile BOOL quickFormat = FALSE;
 
 void
 localcleanup (void)
@@ -95,62 +97,44 @@ localcleanup (void)
 void
 LoadSettings (HWND hwndDlg)
 {
-	BOOL tmp;
+	bHistory = ReadRegistryInt ("SaveMountedVolumesHistory", FALSE);
 
 	if (hwndDlg != NULL)
 	{
-		LoadCombo (GetDlgItem (hwndDlg, IDC_COMBO_BOX), "LastRun", "last_volume",
-		   "e4m.ini");
-
+		LoadCombo (GetDlgItem (hwndDlg, IDC_COMBO_BOX), "LastMountedVolume");
 		return;
 	}
 
 	if (bHistoryCmdLine == TRUE)
 		return;
-
-	tmp = GetPrivateProfileInt ("LastRun", "never_save_history",
-					  TRUE, "e4m.ini");
-
-	if (tmp == TRUE)
-		bHistory = FALSE;
-	else
-		bHistory = TRUE;
-	
 }
 
 void
 SaveSettings (HWND hwndDlg)
 {
 	if (hwndDlg != NULL)
-		DumpCombo (GetDlgItem (hwndDlg, IDC_COMBO_BOX), "LastRun", "last_volume",
-		   "e4m.ini");
+		DumpCombo (GetDlgItem (hwndDlg, IDC_COMBO_BOX), "LastMountedVolume", !bHistory);
 
-	WritePrivateProfileString ("LastRun", "never_save_history", "0", "e4m.ini");
-
+	WriteRegistryInt ("SaveMountedVolumesHistory", bHistory);
 }
 
 void
 EndMainDlg (HWND hwndDlg)
 {
-	if (nCurPageNo == VOLTYPE_PAGE)
-	{
-		if (IsWindow(GetDlgItem(hCurPage, IDC_NO_HISTORY)))
-			bHistory = !IsButtonChecked (GetDlgItem (hCurPage, IDC_NO_HISTORY));
-	}
 
 	if (nCurPageNo == FILE_PAGE)
 	{
+		if (IsWindow(GetDlgItem(hCurPage, IDC_NO_HISTORY)))
+			bHistory = !IsButtonChecked (GetDlgItem (hCurPage, IDC_NO_HISTORY));
+
 		MoveEditToCombo (GetDlgItem (hCurPage, IDC_COMBO_BOX));
-		if (bHistory == TRUE)
-			SaveSettings (hCurPage);
+		SaveSettings (hCurPage);
 	}
 	else 
 	{
-		if (bHistory == TRUE)
-			SaveSettings (NULL);
+		SaveSettings (NULL);
 	}
 
-	CloseHelpFile (hwndDlg, bHelpStarted);
 	EndDialog (hwndDlg, 0);
 }
 
@@ -174,13 +158,6 @@ ComboSelChangeCipher (HWND hwndDlg)
 
 		switch (nIndex)
 		{
-		case MDCSHA:
-			nID[0] = IDS_MDCSHA_HELP0;
-			nID[1] = IDS_MDCSHA_HELP1;
-			nID[2] = IDS_MDCSHA_HELP2;
-			nID[3] = IDS_MDCSHA_HELP3;
-			SetWindowText (GetDlgItem (hwndDlg, IDC_BOX_HELP), getmultilinestr (nID));
-			break;
 		case DES56:
 			nID[0] = IDS_DES_HELP0;
 			nID[1] = IDS_DES_HELP1;
@@ -275,12 +252,15 @@ formatThreadFunction (void *hwndDlg)
 {
 	fatparams ft;
 	int nStatus;
-	char szDosDevice[E4M_MAX_PATH];
-	char szCFDevice[E4M_MAX_PATH];
+	char szDosDevice[TC_MAX_PATH];
+	char szCFDevice[TC_MAX_PATH];
 	DWORD dwWin32FormatError, dwThen, dwNow;
 	int nDosLinkCreated = -1;
 
 	ArrowWaitCursor ();
+
+	ft.cluster_size = SendMessage (GetDlgItem (hCurPage, IDC_CLUSTERSIZE), CB_GETITEMDATA
+					,SendMessage (GetDlgItem (hCurPage, IDC_CLUSTERSIZE), CB_GETCURSEL, 0, 0) , 0);
 
 	if (bDevice == FALSE)
 	{
@@ -295,7 +275,7 @@ formatThreadFunction (void *hwndDlg)
 				nID = IDS_OVERWRITEPROMPT;
 
 			sprintf (szTmp, getstr (nID), szDiskFile);
-			x = MessageBox (hwndDlg, szTmp, lpszTitle, YES_NO);
+			x = MessageBox (hwndDlg, szTmp, lpszTitle, YES_NO|MB_ICONWARNING|MB_DEFBUTTON2);
 
 			if (x != IDYES)
 				goto cancel;
@@ -321,7 +301,7 @@ formatThreadFunction (void *hwndDlg)
 		int x;
 
 		sprintf (szTmp, getstr (IDS_OVERWRITEPROMPT_DEVICE), szFileName);
-		x = MessageBox (hwndDlg, szTmp, lpszTitle, YES_NO);
+		x = MessageBox (hwndDlg, szTmp, lpszTitle, YES_NO|MB_ICONWARNING|MB_DEFBUTTON2);
 		if (x != IDYES)
 			goto cancel;
 
@@ -344,13 +324,14 @@ formatThreadFunction (void *hwndDlg)
 
 	nStatus = FormatVolume (szCFDevice,
 				bDevice,
-				((long) nFileSize) * nMultiplier,
-				nVolType,
+				nFileSize * nMultiplier,
 				szPassword,
 				nVolCipher,
 				pkcs5,
 				&ft,
-				hwndDlg);
+				quickFormat,
+				hwndDlg
+				);
 
 	dwNow = GetTickCount ();
 
@@ -412,22 +393,27 @@ formatThreadFunction (void *hwndDlg)
 
 		}
 
-		sprintf (szMsg, getmultilinestr (nID), ft.heads, ft.secs_track,
-			 (int) (ft.media), ft.num_sectors, (int) (ft.fats), ft.size_fat,
-			 (int) (ft.cluster_size), (int) (ft.fat_length), ft.cluster_count,
-			 (int) ft.dir_entries, ft.create_time, szLabel, dwNow - dwThen);
+		sprintf (szMsg, getmultilinestr (nID), ft.num_sectors, ((__int64) ft.num_sectors*512)/1024/1024, ft.size_fat
+			 , (int) (512*ft.fats*ft.fat_length),
+			 (int) (512*ft.cluster_size), ft.cluster_count,
+			 (dwNow - dwThen)/1000);
+
+		NormalCursor ();
 
 		/* Create the volstats dialog box */
 		DialogBoxParam (hInst, MAKEINTRESOURCE (IDD_VOLSTATS_DLG), hwndDlg,
 			    (DLGPROC) VolstatsDlgProc, (LPARAM) & szMsg[0]);
-		EndMainDlg (hwndDlg);
+
+		SetTimer (hwndDlg, 0xff, RANDOM_SHOW_TIMER, NULL);
+		PostMessage (hwndDlg, WM_FORMAT_FINISHED, 0, 0);
 		bThreadRunning = FALSE;
+		NormalCursor ();
 		_endthread ();
 	}
 
       cancel:
 
-	SetTimer (hwndDlg, 0xff, 100, NULL);
+	SetTimer (hwndDlg, 0xff, RANDOM_SHOW_TIMER, NULL);
 
 	PostMessage (hwndDlg, WM_THREAD_ENDED, 0, 0);
 	bThreadRunning = FALSE;
@@ -438,10 +424,14 @@ formatThreadFunction (void *hwndDlg)
 void
 OpenPageHelp (HWND hwndDlg, int nPage)
 {
+	int r = (int)ShellExecute (NULL, "open", szHelpFile, NULL, NULL, SW_SHOWNORMAL);
 	if (nPage);		/* Remove warning */
 
-	if (WinHelp (hwndDlg, szHelpFile, HELP_CONTENTS, 0) == TRUE)
-		bHelpStarted = TRUE;
+	if (r == ERROR_FILE_NOT_FOUND)
+		MessageBox (hwndDlg, getstr (IDS_HELP_ERROR), lpszTitle, MB_ICONERROR);
+
+	if (r == SE_ERR_NOASSOC)
+		MessageBox (hwndDlg, getstr (IDS_HELP_READER_ERROR), lpszTitle, MB_ICONERROR);
 }
 
 void
@@ -462,20 +452,17 @@ LoadPage (HWND hwndDlg, int nPageNo)
 
 	switch (nPageNo)
 	{
-	case VOLTYPE_PAGE:
-		hCurPage = CreateDialog (hInst, MAKEINTRESOURCE (IDD_VOLTYPE_PAGE_DLG), hwndDlg,
-					 (DLGPROC) PageDialogProc);
+	case FILE_PAGE:
 
+		hCurPage = CreateDialog (hInst, MAKEINTRESOURCE (IDD_FILE_PAGE_DLG), hwndDlg,
+					 (DLGPROC) PageDialogProc);
+		
 		if (bHistoryCmdLine == TRUE)
 			EnableWindow (GetDlgItem(hCurPage, IDC_NO_HISTORY),  FALSE);
 		else
 			EnableWindow (GetDlgItem(hCurPage, IDC_NO_HISTORY),  TRUE);
+		break;
 
-		break;
-	case FILE_PAGE:
-		hCurPage = CreateDialog (hInst, MAKEINTRESOURCE (IDD_FILE_PAGE_DLG), hwndDlg,
-					 (DLGPROC) PageDialogProc);
-		break;
 	case CIPHER_PAGE:
 		hCurPage = CreateDialog (hInst, MAKEINTRESOURCE (IDD_CIPHER_PAGE_DLG), hwndDlg,
 					 (DLGPROC) PageDialogProc);
@@ -494,8 +481,8 @@ LoadPage (HWND hwndDlg, int nPageNo)
 		break;
 	}
 
-	rD.left = 119;
-	rD.top = 45;
+	rD.left = 162;
+	rD.top = 25;
 	rD.right = 0;
 	rD.bottom = 0;
 	MapDialogRect (hwndDlg, &rD);
@@ -518,6 +505,7 @@ VolstatsDlgProc (HWND hwndDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 	case WM_INITDIALOG:
+		SetDefaultUserFont (hwndDlg);
 		SetWindowText (GetDlgItem (hwndDlg, IDC_STATS_BOX), (char *) lParam);
 		return 1;
 
@@ -538,7 +526,7 @@ PrintFreeSpace (HWND hwndTextBox, char *lpszDrive, PLARGE_INTEGER lDiskFree)
 {
 	UINT nResourceString;
 	int nMultiplier;
-	char szTmp2[128];
+	char szTmp2[256];
 
 	if (lDiskFree->QuadPart < BYTES_PER_KB)
 		nMultiplier = 1;
@@ -574,7 +562,7 @@ PrintFreeSpace (HWND hwndTextBox, char *lpszDrive, PLARGE_INTEGER lDiskFree)
 void
 DisplaySizingErrorText (HWND hwndTextBox)
 {
-	char szTmp[128];
+	char szTmp[256];
 
 	if (nCurrentOS == WIN_NT)
 	{
@@ -616,11 +604,11 @@ QueryFreeSpace (HWND hwndDlg, HWND hwndTextBox)
 {
 	if (bDevice == FALSE)
 	{
-		char szTmp[E4M_MAX_PATH];
-		DWORD j, k, l, m;
+		char szTmp[TC_MAX_PATH];
+		ULARGE_INTEGER free;
 		BOOL bResult;
 
-		bResult = GetDiskFreeSpace (MakeRootName (szTmp, szFileName), &j, &k, &l, &m);
+		bResult = GetDiskFreeSpaceEx (MakeRootName (szTmp, szFileName), &free, 0, 0);
 
 		if (bResult == FALSE)
 		{
@@ -630,14 +618,14 @@ QueryFreeSpace (HWND hwndDlg, HWND hwndTextBox)
 		else
 		{
 			LARGE_INTEGER lDiskFree;
-			lDiskFree.QuadPart = ((__int64) j * k * l);
+			lDiskFree.QuadPart = free.QuadPart;
 			PrintFreeSpace (hwndTextBox, szTmp, &lDiskFree);
 			return TRUE;
 		}
 	}
 	else if (nCurrentOS == WIN_NT)
 	{
-		char szDosDevice[E4M_MAX_PATH], szCFDevice[E4M_MAX_PATH];
+		char szDosDevice[TC_MAX_PATH], szCFDevice[TC_MAX_PATH];
 		int nDosLinkCreated;
 		HANDLE dev;
 
@@ -676,13 +664,6 @@ QueryFreeSpace (HWND hwndDlg, HWND hwndTextBox)
 			bResult = DeviceIoControl (dev, IOCTL_DISK_GET_DRIVE_GEOMETRY, NULL, 0,
 			   &driveInfo, sizeof (driveInfo), &dwResult, NULL);
 
-			if (bResult == TRUE && driveInfo.Cylinders.HighPart != 0)
-			{
-				SetWindowText (hwndTextBox, getstr (IDS_DRIVE_TOO_BIG));
-				CloseHandle (dev);
-				return FALSE;
-			}
-
 			if (driveInfo.MediaType == FixedMedia)
 			{
 				PARTITION_INFORMATION diskInfo;
@@ -715,7 +696,7 @@ QueryFreeSpace (HWND hwndDlg, HWND hwndTextBox)
 			{
 				LARGE_INTEGER lDiskFree;
 
-				lDiskFree.QuadPart = (__int64) driveInfo.Cylinders.LowPart * driveInfo.BytesPerSector *
+				lDiskFree.QuadPart = driveInfo.Cylinders.QuadPart * driveInfo.BytesPerSector *
 				    driveInfo.SectorsPerTrack * driveInfo.TracksPerCylinder;
 
 				nMultiplier = PrintFreeSpace (hwndTextBox, szDiskFile, &lDiskFree);
@@ -758,12 +739,12 @@ QueryFreeSpace (HWND hwndDlg, HWND hwndTextBox)
 }
 
 void
-AddCipher (HWND hComboBox, char *lpszCipher, int nCipher)
+AddComboPair (HWND hComboBox, char *lpszItem, int value)
 {
 	LPARAM nIndex;
 
-	nIndex = SendMessage (hComboBox, CB_ADDSTRING, 0, (LPARAM) lpszCipher);
-	nIndex = SendMessage (hComboBox, CB_SETITEMDATA, nIndex, (LPARAM) nCipher);
+	nIndex = SendMessage (hComboBox, CB_ADDSTRING, 0, (LPARAM) lpszItem);
+	nIndex = SendMessage (hComboBox, CB_SETITEMDATA, nIndex, (LPARAM) value);
 }
 
 void
@@ -803,41 +784,11 @@ PageDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	switch (uMsg)
 	{
 	case WM_INITDIALOG:
+
+		SetDefaultUserFont (hwndDlg);
+
 		switch (nCurPageNo)
 		{
-		case VOLTYPE_PAGE:
-			{
-				UINT nID[4];
-
-				LoadSettings (NULL);
-
-				nID[0] = IDS_VOLTYPE_HELP0;
-				nID[1] = IDS_VOLTYPE_HELP1;
-				nID[2] = 0;
-				nID[3] = 0;
-
-				SetWindowText (GetDlgItem (GetParent (hwndDlg), IDC_BOX_TITLE), getstr (IDS_VOLTYPE_TITLE));
-				SetWindowText (GetDlgItem (hwndDlg, IDC_BOX_HELP), getmultilinestr (nID));
-
-				SetWindowText (GetDlgItem (GetParent (hwndDlg), IDC_NEXT), getstr (IDS_NEXT));
-				SetWindowText (GetDlgItem (GetParent (hwndDlg), IDC_PREV), getstr (IDS_PREV));
-				EnableWindow (GetDlgItem (GetParent (hwndDlg), IDC_PREV), FALSE);
-				EnableWindow (GetDlgItem (GetParent (hwndDlg), IDC_NEXT), TRUE);
-
-				if (nVolType == E4M_VOLTYPE2)
-				{
-					SendMessage (GetDlgItem (hwndDlg, IDC_E4M_VOLTYPE2), BM_SETCHECK, BST_CHECKED, 0);
-					SetFocus (GetDlgItem (hwndDlg, IDC_E4M_VOLTYPE2));
-				}
-
-				if (nVolType == SFS_VOLTYPE)
-				{
-					SendMessage (GetDlgItem (hwndDlg, IDC_SFS_VOLTYPE), BM_SETCHECK, BST_CHECKED, 0);
-					SetFocus (GetDlgItem (hwndDlg, IDC_SFS_VOLTYPE));
-				}
-			}
-			break;
-
 		case FILE_PAGE:
 			{
 				UINT nID[4];
@@ -847,9 +798,11 @@ PageDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 				SendMessage (GetDlgItem (hwndDlg, IDC_COMBO_BOX), CB_RESETCONTENT, 0, 0);
 
-				SendMessage (GetDlgItem (hwndDlg, IDC_COMBO_BOX), CB_LIMITTEXT, E4M_MAX_PATH, 0);
+				SendMessage (GetDlgItem (hwndDlg, IDC_COMBO_BOX), CB_LIMITTEXT, TC_MAX_PATH, 0);
 
 				LoadSettings (hwndDlg);
+
+				SendMessage (GetDlgItem (hwndDlg, IDC_NO_HISTORY), BM_SETCHECK, bHistory ? BST_UNCHECKED : BST_CHECKED, 0);
 
 				SetWindowText (GetDlgItem (GetParent (hwndDlg), IDC_BOX_TITLE), getstr (IDS_FILE_TITLE));
 				SetWindowText (GetDlgItem (hwndDlg, IDC_BOX_HELP), getmultilinestr (nID));
@@ -858,7 +811,7 @@ PageDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 				SetWindowText (GetDlgItem (GetParent (hwndDlg), IDC_NEXT), getstr (IDS_NEXT));
 				SetWindowText (GetDlgItem (GetParent (hwndDlg), IDC_PREV), getstr (IDS_PREV));
-				EnableWindow (GetDlgItem (GetParent (hwndDlg), IDC_PREV), TRUE);
+				EnableWindow (GetDlgItem (GetParent (hwndDlg), IDC_PREV), FALSE);
 
 				AddComboItem (GetDlgItem (hwndDlg, IDC_COMBO_BOX), szFileName);
 
@@ -870,51 +823,28 @@ PageDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		case CIPHER_PAGE:
 			{
+				int cipher;
 				SendMessage (GetDlgItem (hwndDlg, IDC_COMBO_BOX), CB_RESETCONTENT, 0, 0);
-
 				SetWindowText (GetDlgItem (GetParent (hwndDlg), IDC_BOX_TITLE), getstr (IDS_CIPHER_TITLE));
 
-				if (nVolType == SFS_VOLTYPE)
+				for (cipher = 1; cipher <= LAST_CIPHER_ID; cipher++)
 				{
-					AddCipher (GetDlgItem (hwndDlg, IDC_COMBO_BOX), "MDC/SHA", MDCSHA);
-
-#ifdef _DEBUG
-					AddCipher (GetDlgItem (hwndDlg, IDC_COMBO_BOX), "NONE", NONE);
-#endif
-
-				}
-				else
-				{
-					AddCipher (GetDlgItem (hwndDlg, IDC_COMBO_BOX), "Triple-DES", TRIPLEDES);
-					AddCipher (GetDlgItem (hwndDlg, IDC_COMBO_BOX), "IDEA", IDEA);
-					AddCipher (GetDlgItem (hwndDlg, IDC_COMBO_BOX), "DES", DES56);
-					AddCipher (GetDlgItem (hwndDlg, IDC_COMBO_BOX), "Blowfish", BLOWFISH);
-					AddCipher (GetDlgItem (hwndDlg, IDC_COMBO_BOX), "CAST", CAST);
+					AddComboPair (GetDlgItem (hwndDlg, IDC_COMBO_BOX), get_cipher_name (cipher), cipher);
 				}
 
 				SelectCipher (GetDlgItem (hwndDlg, IDC_COMBO_BOX), &nVolCipher);
-
 				ComboSelChangeCipher (hwndDlg);
-
 				SetFocus (GetDlgItem (hwndDlg, IDC_COMBO_BOX));
 
-				if (pkcs5 == 0)
-					CheckButton (GetDlgItem (hwndDlg, IDC_SHA1));
-
-				if (pkcs5 == 1)
-					CheckButton (GetDlgItem (hwndDlg, IDC_MD5));
-
-
-				if (nVolType == SFS_VOLTYPE)
+				switch (pkcs5)
 				{
-					EnableWindow (GetDlgItem (hwndDlg, IDC_SHA1), FALSE);
-					EnableWindow (GetDlgItem (hwndDlg, IDC_MD5), FALSE);
+				case SHA1:		CheckButton (GetDlgItem (hwndDlg, IDC_SHA1)); break;
+				case RIPEMD160:	CheckButton (GetDlgItem (hwndDlg, IDC_RIPEMD160)); break;
+				default:		pkcs5 = SHA1; CheckButton (GetDlgItem (hwndDlg, IDC_SHA1)); break;
 				}
-				else
-				{
-					EnableWindow (GetDlgItem (hwndDlg, IDC_SHA1), TRUE);
-					EnableWindow (GetDlgItem (hwndDlg, IDC_MD5), TRUE);
-				}
+
+				EnableWindow (GetDlgItem (hwndDlg, IDC_SHA1), TRUE);
+				EnableWindow (GetDlgItem (hwndDlg, IDC_RIPEMD160), FALSE);
 
 				SetWindowText (GetDlgItem (GetParent (hwndDlg), IDC_NEXT), getstr (IDS_NEXT));
 				SetWindowText (GetDlgItem (GetParent (hwndDlg), IDC_PREV), getstr (IDS_PREV));
@@ -933,13 +863,24 @@ PageDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				nID[2] = 0;
 				nID[3] = 0;
 
-				SendMessage (GetDlgItem (hwndDlg, IDC_SPACE_LEFT), WM_SETFONT, (WPARAM) hSmallBoldFont, (LPARAM) TRUE);
-
-				QueryFreeSpace (hwndDlg, GetDlgItem (hwndDlg, IDC_SPACE_LEFT));
-
-				SendMessage (GetDlgItem (hwndDlg, IDC_SIZEBOX), EM_LIMITTEXT, 7, 0);
-
 				if (bDevice == TRUE)
+				{
+					nID[0] = IDS_SIZE_PARTITION_HELP;
+					nID[1] = 0;
+				}
+				SendMessage (GetDlgItem (hwndDlg, IDC_SPACE_LEFT), WM_SETFONT, (WPARAM) hSmallBoldFont, (LPARAM) TRUE);
+				SendMessage (GetDlgItem (hwndDlg, IDC_SIZEBOX), EM_LIMITTEXT, 10, 0);
+
+				if(!QueryFreeSpace (hwndDlg, GetDlgItem (hwndDlg, IDC_SPACE_LEFT)))
+				{
+					nFileSize=0;
+					SetWindowText (GetDlgItem (hwndDlg, IDC_SIZEBOX), "UNKNOWN");
+					EnableWindow (GetDlgItem (hwndDlg, IDC_SIZEBOX), FALSE);
+					EnableWindow (GetDlgItem (hwndDlg, IDC_KB), FALSE);
+					EnableWindow (GetDlgItem (hwndDlg, IDC_MB), FALSE);
+
+				}
+				else if (bDevice == TRUE)
 				{
 					EnableWindow (GetDlgItem (hwndDlg, IDC_SIZEBOX), FALSE);
 					EnableWindow (GetDlgItem (hwndDlg, IDC_KB), FALSE);
@@ -1006,7 +947,7 @@ PageDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				VerifyPasswordAndUpdate (hwndDlg, GetDlgItem (GetParent (hwndDlg), IDC_NEXT),
 					 GetDlgItem (hwndDlg, IDC_PASSWORD),
 					   GetDlgItem (hwndDlg, IDC_VERIFY),
-						      NULL, NULL, nVolType);
+						      NULL, NULL);
 
 			}
 			break;
@@ -1020,7 +961,7 @@ PageDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				nID[2] = IDS_FORMAT_HELP2;
 				nID[3] = 0;
 
-				SetTimer (GetParent (hwndDlg), 0xff, 100, NULL);
+				SetTimer (GetParent (hwndDlg), 0xff, RANDOM_SHOW_TIMER, NULL);
 
 				hDiskKey = GetDlgItem (hwndDlg, IDC_DISK_KEY);
 				hKeySalt = GetDlgItem (hwndDlg, IDC_KEY_SALT);
@@ -1033,6 +974,21 @@ PageDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				SetWindowText (GetDlgItem (hwndDlg, IDC_BOX_HELP), getmultilinestr (nID));
 				SetWindowText (GetDlgItem (GetParent (hwndDlg), IDC_BOX_TITLE), getstr (IDS_FORMAT_TITLE));
 
+				EnableWindow (GetDlgItem (hwndDlg, IDC_QUICKFORMAT), bDevice);
+
+				SendMessage (GetDlgItem (hwndDlg, IDC_CLUSTERSIZE), CB_RESETCONTENT, 0, 0);
+				AddComboPair (GetDlgItem (hwndDlg, IDC_CLUSTERSIZE), "Default", 0);
+				AddComboPair (GetDlgItem (hwndDlg, IDC_CLUSTERSIZE), "0.5 KB", 1);
+				AddComboPair (GetDlgItem (hwndDlg, IDC_CLUSTERSIZE), "1 KB", 2);
+				AddComboPair (GetDlgItem (hwndDlg, IDC_CLUSTERSIZE), "2 KB", 4);
+				AddComboPair (GetDlgItem (hwndDlg, IDC_CLUSTERSIZE), "4 KB", 8);
+				AddComboPair (GetDlgItem (hwndDlg, IDC_CLUSTERSIZE), "8 KB", 16);
+				AddComboPair (GetDlgItem (hwndDlg, IDC_CLUSTERSIZE), "16 KB", 32);
+				AddComboPair (GetDlgItem (hwndDlg, IDC_CLUSTERSIZE), "32 KB", 64);
+				AddComboPair (GetDlgItem (hwndDlg, IDC_CLUSTERSIZE), "64 KB", 128);
+				SendMessage (GetDlgItem (hwndDlg, IDC_CLUSTERSIZE), CB_SETCURSEL, 0, 0);
+
+				EnableWindow (GetDlgItem (hwndDlg, IDC_CLUSTERSIZE), TRUE);
 				EnableWindow (GetDlgItem (hwndDlg, IDC_CANCEL_BAR), FALSE);
 
 				SetWindowText (GetDlgItem (GetParent (hwndDlg), IDC_NEXT), getstr (IDS_FINISH));
@@ -1055,7 +1011,8 @@ PageDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_COMMAND:
 		if (lw == IDC_CANCEL_BAR && nCurPageNo == FORMAT_PAGE)
 		{
-			bThreadCancel = TRUE;
+			if (MessageBox (hwndDlg, getstr (IDS_FORMAT_ABORT), lpszTitle, MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2 ) == IDYES)
+				bThreadCancel = TRUE;
 			return 1;
 		}
 
@@ -1069,7 +1026,6 @@ PageDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				GetParent (hwndDlg), (DLGPROC) CipherTestDialogProc, (LPARAM)nVolCipher );
 			return 1;
 		}
-
 
 		if (hw == CBN_EDITCHANGE && nCurPageNo == FILE_PAGE)
 		{
@@ -1107,7 +1063,7 @@ PageDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			VerifyPasswordAndUpdate (hwndDlg, GetDlgItem (GetParent (hwndDlg), IDC_NEXT),
 					 GetDlgItem (hwndDlg, IDC_PASSWORD),
 					   GetDlgItem (hwndDlg, IDC_VERIFY),
-						 NULL, NULL, nVolType);
+						 NULL, NULL);
 			return 1;
 		}
 		
@@ -1151,6 +1107,14 @@ PageDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			ComboSelChangeCipher (hwndDlg);
 			return 1;
 		}
+
+		if (lw == IDC_QUICKFORMAT && IsButtonChecked (GetDlgItem (hCurPage, IDC_QUICKFORMAT)))
+		{
+			MessageBox (hwndDlg, getstr (IDS_WARN_QUICK_FORMAT), lpszTitle, MB_OK | MB_ICONEXCLAMATION);
+			return 1;
+		}
+
+
 		return 0;
 	}
 
@@ -1173,17 +1137,14 @@ MainDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			/* Call the common dialog init code */
 			InitDialog (hwndDlg);
+			LoadSettings (hwndDlg);
 
 			SendMessage (GetDlgItem (hwndDlg, IDC_BOX_TITLE), WM_SETFONT, (WPARAM) hTitleFont, (LPARAM) TRUE);
 			SetWindowText (hwndDlg, lpszTitle);
 
 			ExtractCommandLine (hwndDlg, (char *) lParam);
 
-			LoadPage (hwndDlg, VOLTYPE_PAGE);
-
-			SendMessage (GetDlgItem (hCurPage, IDC_NO_HISTORY), BM_SETCHECK, bHistory == FALSE
-				     ? BST_CHECKED : BST_UNCHECKED, 0);
-
+			LoadPage (hwndDlg, FILE_PAGE);
 		}
 		return 0;
 
@@ -1219,10 +1180,28 @@ MainDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			return 1;
 		}
 
+	case WM_FORMAT_FINISHED:
+		EnableWindow (GetDlgItem (hwndDlg, IDC_PREV), TRUE);
+		EnableWindow (GetDlgItem (hwndDlg, IDHELP), TRUE);
+		EnableWindow (GetDlgItem (hwndDlg, IDCANCEL), TRUE);
+		EnableWindow (GetDlgItem (hCurPage, IDC_QUICKFORMAT), bDevice);
+		EnableWindow (GetDlgItem (hCurPage, IDC_CLUSTERSIZE), TRUE);
+		EnableWindow (GetDlgItem (hCurPage, IDC_CANCEL_BAR), FALSE);
+		EnableWindow (GetDlgItem (hwndDlg, IDC_NEXT), TRUE);
+		SendMessage (GetDlgItem (hCurPage, IDC_PROGRESS_BAR), PBM_SETPOS, 0, 0L);
+		SetFocus (GetDlgItem (hwndDlg, IDC_NEXT));
+		if (nCurPageNo == FORMAT_PAGE)
+			KillTimer (hwndDlg, 0xff);
+
+		LoadPage (hwndDlg, 0);
+		break;
+
 	case WM_THREAD_ENDED:
 		EnableWindow (GetDlgItem (hwndDlg, IDC_PREV), TRUE);
 		EnableWindow (GetDlgItem (hwndDlg, IDHELP), TRUE);
 		EnableWindow (GetDlgItem (hwndDlg, IDCANCEL), TRUE);
+		EnableWindow (GetDlgItem (hCurPage, IDC_QUICKFORMAT), bDevice);
+		EnableWindow (GetDlgItem (hCurPage, IDC_CLUSTERSIZE), TRUE);
 		EnableWindow (GetDlgItem (hCurPage, IDC_CANCEL_BAR), FALSE);
 		EnableWindow (GetDlgItem (hwndDlg, IDC_NEXT), TRUE);
 		SendMessage (GetDlgItem (hCurPage, IDC_PROGRESS_BAR), PBM_SETPOS, 0, 0L);
@@ -1246,24 +1225,15 @@ MainDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
 		if (lw == IDC_NEXT)
 		{
-			if (nCurPageNo == VOLTYPE_PAGE)
-			{
-				if (IsButtonChecked (GetDlgItem (hCurPage, IDC_E4M_VOLTYPE2)) == TRUE)
-					nVolType = E4M_VOLTYPE2;
-				if (IsButtonChecked (GetDlgItem (hCurPage, IDC_SFS_VOLTYPE)) == TRUE)
-					nVolType = SFS_VOLTYPE;
-
-				if (IsWindow(GetDlgItem(hCurPage, IDC_NO_HISTORY)))
-					bHistory = !IsButtonChecked (GetDlgItem (hCurPage, IDC_NO_HISTORY));
-			}
-
 			if (nCurPageNo == FILE_PAGE)
 			{
 				GetWindowText (GetDlgItem (hCurPage, IDC_COMBO_BOX), szFileName, sizeof (szFileName));
 				CreateFullVolumePath (szDiskFile, szFileName, &bDevice);
 				MoveEditToCombo (GetDlgItem (hCurPage, IDC_COMBO_BOX));
-				if (bHistory == TRUE)
-					SaveSettings (hCurPage);
+				
+				bHistory = !IsButtonChecked (GetDlgItem (hCurPage, IDC_NO_HISTORY));
+
+				SaveSettings (hCurPage);
 			}
 
 			if (nCurPageNo == CIPHER_PAGE)
@@ -1271,7 +1241,9 @@ MainDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				LPARAM nIndex;
 				nIndex = SendMessage (GetDlgItem (hCurPage, IDC_COMBO_BOX), CB_GETCURSEL, 0, 0);
 				nVolCipher = SendMessage (GetDlgItem (hCurPage, IDC_COMBO_BOX), CB_GETITEMDATA, nIndex, 0);
-				pkcs5 = IsButtonChecked (GetDlgItem (hCurPage, IDC_MD5));
+
+				if (IsButtonChecked (GetDlgItem (hCurPage, IDC_SHA1)))		pkcs5 = SHA1;
+				if (IsButtonChecked (GetDlgItem (hCurPage, IDC_RIPEMD160)))	pkcs5 = RIPEMD160;
 			}
 
 			if (nCurPageNo == SIZE_PAGE)
@@ -1281,8 +1253,9 @@ MainDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				VerifyPasswordAndUpdate (hwndDlg, GetDlgItem (hwndDlg, IDC_NEXT),
 					GetDlgItem (hCurPage, IDC_PASSWORD),
 					  GetDlgItem (hCurPage, IDC_VERIFY),
-					    szPassword, szVerify, nVolType);
+					    szPassword, szVerify);
 
+			// Format start
 			if (nCurPageNo == FORMAT_PAGE)
 			{
 				if (bThreadRunning == TRUE)
@@ -1296,9 +1269,12 @@ MainDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				EnableWindow (GetDlgItem (hwndDlg, IDC_NEXT), FALSE);
 				EnableWindow (GetDlgItem (hwndDlg, IDHELP), FALSE);
 				EnableWindow (GetDlgItem (hwndDlg, IDCANCEL), FALSE);
+				EnableWindow (GetDlgItem (hCurPage, IDC_QUICKFORMAT), FALSE);
+				EnableWindow (GetDlgItem (hCurPage, IDC_CLUSTERSIZE), FALSE);
 				EnableWindow (GetDlgItem (hCurPage, IDC_CANCEL_BAR), TRUE);
 				SetFocus (GetDlgItem (hCurPage, IDC_CANCEL_BAR));
 
+				quickFormat = IsButtonChecked (GetDlgItem (hCurPage, IDC_QUICKFORMAT));
 				_beginthread (formatThreadFunction, 4096, hwndDlg);
 				return 1;
 			}
@@ -1317,8 +1293,7 @@ MainDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				GetWindowText (GetDlgItem (hCurPage, IDC_COMBO_BOX), szFileName, sizeof (szFileName));
 				CreateFullVolumePath (szDiskFile, szFileName, &bDevice);
 				MoveEditToCombo (GetDlgItem (hCurPage, IDC_COMBO_BOX));
-				if (bHistory == TRUE)
-					SaveSettings (hCurPage);
+				SaveSettings (hCurPage);
 			}
 
 			if (nCurPageNo == CIPHER_PAGE)
@@ -1326,7 +1301,9 @@ MainDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				LPARAM nIndex;
 				nIndex = SendMessage (GetDlgItem (hCurPage, IDC_COMBO_BOX), CB_GETCURSEL, 0, 0);
 				nVolCipher = SendMessage (GetDlgItem (hCurPage, IDC_COMBO_BOX), CB_GETITEMDATA, nIndex, 0);
-				pkcs5 = IsButtonChecked (GetDlgItem (hCurPage, IDC_MD5));
+
+				if (IsButtonChecked (GetDlgItem (hCurPage, IDC_SHA1)))		pkcs5 = SHA1;
+				if (IsButtonChecked (GetDlgItem (hCurPage, IDC_RIPEMD160)))	pkcs5 = RIPEMD160;
 			}
 
 			if (nCurPageNo == SIZE_PAGE)
@@ -1336,7 +1313,7 @@ MainDialogProc (HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				VerifyPasswordAndUpdate (hwndDlg, GetDlgItem (hwndDlg, IDC_NEXT),
 					GetDlgItem (hCurPage, IDC_PASSWORD),
 					  GetDlgItem (hCurPage, IDC_VERIFY),
-					    szPassword, szVerify, nVolType);
+					    szPassword, szVerify);
 
 			if (nCurPageNo == FORMAT_PAGE)
 				KillTimer (hwndDlg, 0xff);
@@ -1395,13 +1372,13 @@ ExtractCommandLine (HWND hwndDlg, char *lpszCommandLine)
 					char szTmp[8];
 					GetArgumentValue (lpszCommandLineArgs, nArgPos, &i, nNoCommandLineArgs,
 						     szTmp, sizeof (szTmp));
-					if (!stricmp(szTmp,"y") || !stricmp(szTmp,"yes"))
+					if (!_stricmp(szTmp,"y") || !_stricmp(szTmp,"yes"))
 					{
 						bHistory = TRUE;
 						bHistoryCmdLine = TRUE;
 					}
 
-					if (!stricmp(szTmp,"n") || !stricmp(szTmp,"no"))
+					if (!_stricmp(szTmp,"n") || !_stricmp(szTmp,"no"))
 					{
 						bHistory = FALSE;
 						bHistoryCmdLine = TRUE;

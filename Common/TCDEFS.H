@@ -1,15 +1,18 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#define E4M_MAX_PATH                    260	/* Includes the null
-						   terminator */
+// Version displayed to user 
+#define VERSION_STRING                  "1.0"
+
+// Version number to compare against driver
+#define VERSION_NUM						0x0100
+
+// Version number written to volume header during format,
+// specifies the minimum program version required to mount the volume
+#define VOLUME_VERSION_NUM				0x0100 
+
+#define TC_MAX_PATH						260	/* Includes the null terminator */
 #define SECTOR_SIZE                     512	/* sector size */
-
-#define E4M_OLD_VOLTYPE                 1
-#define SFS_VOLTYPE                     2
-#define E4M_VOLTYPE2                    4
-
-#define isE4M(x) (x == E4M_OLD_VOLTYPE || x == E4M_VOLTYPE2)
 
 #define BYTES_PER_KB                    1024	
 #define BYTES_PER_MB                    1048576
@@ -31,7 +34,8 @@
 #define ERR_VOL_WRITING                 13
 #define ERR_FILES_OPEN_LOCK             14
 #define ERR_VOL_READING                 15
-#define ERR_DRIVER_VERSION		16
+#define ERR_DRIVER_VERSION				16
+#define ERR_NEW_VERSION_REQUIRED		17
 
 #define ERR_VOL_ALREADY_MOUNTED         32
 #define ERR_NO_FREE_SLOTS               33
@@ -41,22 +45,14 @@
 #define ERR_INVALID_DEVICE              37
 #define ERR_ACCESS_DENIED               38
 
-#define MAX_VOLUME_SIZE                 2146435072
 #define MIN_VOLUME_SIZE                 19456
-
-#define WIDE(x) (LPWSTR)L##x
-
-/* version displayed to user */
-
-#define VERSION_STRING                  "V2.02a"
-
-/* version number to compare against driver */
-
-#define VERSION_NUM						0x201
+#define MAX_VOLUME_SIZE                 0x7fffFFFFffffFFFFI64
 
 #define burn(mem,size) \
 	memset(mem,0xff,size); \
 	memset(mem,0,size);
+
+#define WIDE(x) (LPWSTR)L##x
 
 #include <string.h>
 
@@ -74,7 +70,10 @@
 #pragma warning( disable : 4514 )
 #pragma warning( disable : 4127 )
 
+
 #include <ntddk.h>		/* Standard header file for nt drivers */
+#undef _WIN32_WINNT
+#define	_WIN32_WINNT 0x0501
 #include <ntdddisk.h>		/* Standard I/O control codes  */
 #include <ntiologc.h>
 
@@ -89,9 +88,8 @@
 
 /* #pragma warning( default : 4514 ) this warning remains disabled */
 
-#define e4malloc(size) ((void *) ExAllocatePool( NonPagedPool, size ))
-
-#define e4mfree(memblock) ExFreePool( memblock )
+#define TCalloc(size) ((void *) ExAllocatePoolWithTag( NonPagedPool, size, 'MMCT' ))
+#define TCfree(memblock) ExFreePoolWithTag( memblock, 'MMCT' )
 
 #define DEVICE_DRIVER
 
@@ -123,10 +121,10 @@
 
 #define MBYTE16 3967
 
-#define e4malloc(size) _PageAllocate(size % 4096 ? (size/4096)+1 : size/4096,\
+#define TCalloc(size) _PageAllocate(size % 4096 ? (size/4096)+1 : size/4096,\
 	PG_SYS,0,0,0,MBYTE16,NULL,PAGEZEROINIT|PAGEFIXED|PAGECONTIG|PAGEUSEALIGN);
 
-#define e4mfree(memblock) _PageFree(memblock,0)
+#define TCfree(memblock) _PageFree(memblock,0)
 
 #define DEVICE_DRIVER
 
@@ -162,14 +160,16 @@ typedef unsigned long LRESULT;
 
 #else
 
-#define e4malloc malloc
-#define e4mfree free
+#define TCalloc malloc
+#define TCfree free
 
 #pragma warning( disable : 4201 )
 #pragma warning( disable : 4214 )
 #pragma warning( disable : 4115 )
 #pragma warning( disable : 4514 )
 
+#undef _WIN32_WINNT
+#define	_WIN32_WINNT 0x0501
 #include <windows.h>		/* Windows header */
 #include <commctrl.h>		/* The common controls */
 #include <process.h>		/* Process control */

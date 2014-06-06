@@ -1,7 +1,7 @@
-/* Copyright (C) 1998-99 Paul Le Roux. All rights reserved. Please see the
-   file license.txt for full license details. paulca@rocketmail.com */
+/* Copyright (C) 2004 TrueCrypt Team, truecrypt.org
+   This product uses components written by Paul Le Roux <pleroux@swprofessionals.com> */
 
-#include "e4mdefs.h"
+#include "TCdefs.h"
 #include <process.h>
 
 #include "ntservice.h"
@@ -10,6 +10,7 @@
 #include "apidrvr.h"
 
 #include "dismount.h"
+#include <mountdev.h>
 
 /* current status of the service */
 SERVICE_STATUS ssStatus;
@@ -26,8 +27,7 @@ HANDLE hDriver = INVALID_HANDLE_VALUE;
 /* main() calls StartServiceCtrlDispatcher to register the main service
    thread.  When the this call returns, the service has stopped, so exit. */
 
-void _CRTAPI1
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
 	SERVICE_TABLE_ENTRY dispatchTable[]=
 	{
@@ -74,12 +74,18 @@ service_ctrl (DWORD dwCtrlCode)
 	switch (dwCtrlCode)
 	{
 		case SERVICE_CONTROL_STOP:
-		/* Stop the service. SERVICE_STOP_PENDING should be reported
-		   before setting the Stop Event - hServerStopEvent - in
-		   ServiceStop().  This avoids a race condition which may
-		   result in a 1053 - The Service did not respond... error. */
-		ReportStatusToSCMgr (SERVICE_STOP_PENDING, NO_ERROR, 0);
-		ServiceStop ();
+			{	
+				DWORD os_error;
+				int err;
+				UnmountAllVolumes (NULL, &os_error, &err);
+
+				/* Stop the service. SERVICE_STOP_PENDING should be reported
+				before setting the Stop Event - hServerStopEvent - in
+				ServiceStop().  This avoids a race condition which may
+				result in a 1053 - The Service did not respond... error. */
+				ReportStatusToSCMgr (SERVICE_STOP_PENDING, NO_ERROR, 0);
+				ServiceStop ();
+		}
 		return;
 
 	case SERVICE_CONTROL_SHUTDOWN:
@@ -212,14 +218,13 @@ ServiceStart (DWORD dwArgc, LPTSTR * lpszArgv)
 {
 	DWORD dwWait, dwResult = ERROR_GEN_FAILURE;
 	HANDLE hPipe = INVALID_HANDLE_VALUE;
-	HANDLE hEvents[2] =
-	{NULL, NULL};
+	HANDLE hEvents[2] =	{NULL, NULL};
 	OVERLAPPED os;
 	PSECURITY_DESCRIPTOR pSD = NULL;
 	SECURITY_ATTRIBUTES sa;
 	TCHAR szIn[80];
 	TCHAR szOut[80];
-	LPTSTR lpszPipeName = "\\\\.\\pipe\\e4mservice";
+	LPTSTR lpszPipeName = "\\\\.\\pipe\\truecryptservice";
 	BOOL bRet;
 	DWORD cbRead;
 	DWORD cbWritten;
@@ -377,9 +382,57 @@ ServiceStart (DWORD dwArgc, LPTSTR * lpszArgv)
 
 		sscanf (szIn, "%s %d", szOut, &nDosDriveNo);
 
-		if (strcmp (szOut, "unmount") == 0)
+		if (strcmp (szOut, "mount") == 0)
+		{
+			BOOL bResult;
+			HANDLE mountManager;
+			char dosName[3] = {0,':',0}, szDevice[64];
+
+			dosName[0] = (char) (nDosDriveNo + 'A');
+			sprintf (szDevice, "%s%c", NT_MOUNT_PREFIX, dosName[0]);
+
+			// Notify Mount Manager of volume arrival
+			mountManager = CreateFileW (MOUNTMGR_DOS_DEVICE_NAME, FILE_READ_DATA|FILE_WRITE_DATA, FILE_SHARE_WRITE|FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+			if(mountManager != INVALID_HANDLE_VALUE)
+			{
+				WCHAR arrVolume[64], tmp[] = {0,0};
+				char buf[200];
+				PMOUNTMGR_TARGET_NAME in = (PMOUNTMGR_TARGET_NAME) buf;
+
+				tmp[0] = (WCHAR)dosName[0];
+				wcscpy (arrVolume, TC_MOUNT_PREFIX);
+				wcscat (arrVolume, tmp);
+
+				in->DeviceNameLength = (USHORT) wcslen(arrVolume) * 2;
+				wcscpy(in->DeviceName, arrVolume);
+
+				bResult = DeviceIoControl (mountManager, IOCTL_MOUNTMGR_VOLUME_ARRIVAL_NOTIFICATION, in,
+					sizeof (in->DeviceNameLength) + wcslen(arrVolume) * 2, 0, 0, &dwResult, NULL);
+
+				CloseHandle (mountManager);
+			}
+
+			// Create drive letter link
+			if(!DefineDosDevice (DDD_RAW_TARGET_PATH, dosName, szDevice))
+				sprintf (szOut, "-ERR 1 %d", GetLastError());
+			else
+				sprintf (szOut, "+OK mounted");
+
+		}
+		else if (strcmp (szOut, "unmount") == 0)
 		{
 			if (UnmountVolume (nDosDriveNo, &os_error, &err) == FALSE)
+			{
+				sprintf (szOut, "-ERR %d %lu", err, os_error);
+			}
+			else
+			{
+				sprintf (szOut, "+OK unmounted");
+			}
+		}
+		else if (strcmp (szOut, "unmountall") == 0)
+		{
+			if (UnmountAllVolumes (NULL, &os_error, &err) == FALSE)
 			{
 				sprintf (szOut, "-ERR %d %lu", err, os_error);
 			}

@@ -149,7 +149,7 @@ extern int des_rw_mode;		/* defaults to DES_PCBC_MODE */
 #endif
 #ifndef NOPROTO
 char *des_options(void);
-void des_ecb3_encrypt(des_cblock *input,des_cblock *output,
+void _cdecl des_ecb3_encrypt(des_cblock *input,des_cblock *output,
 	des_key_schedule ks1,des_key_schedule ks2,
 	des_key_schedule ks3, int enc);
 DES_LONG des_cbc_cksum(des_cblock *input,des_cblock *output,
@@ -215,7 +215,7 @@ int des_read_pw_string(char *buf,int length,char *prompt,int verify);
 void des_set_odd_parity(des_cblock *key);
 int des_is_weak_key(des_cblock *key);
 int des_set_key(des_cblock *key,des_key_schedule schedule);
-int des_key_sched(des_cblock *key,des_key_schedule schedule);
+int _cdecl des_key_sched(des_cblock *key,des_key_schedule schedule);
 void des_string_to_key(char *str,des_cblock *key);
 void des_string_to_2keys(char *str,des_cblock *key1,des_cblock *key2);
 void des_cfb64_encrypt(unsigned char *in, unsigned char *out, long length,
