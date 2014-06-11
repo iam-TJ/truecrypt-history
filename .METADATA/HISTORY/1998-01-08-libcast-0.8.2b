@@ -1,0 +1,5 @@
+PROJECT="libcast (part of SSLeay)"
+URL_SRC="ftp://ftp.hacktic.nl/pub/security/cryptography/libraries/libeay/libcast-0.8.2b.tar.gz"
+RELEASE_DATE="1998-01-08"
+RETRIEVED_DATE="2014-06-11"
+RETRIEVED_BY="TJ <cypto@iam.tj>"
