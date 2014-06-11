@@ -1,0 +1,9 @@
+PROJECT="Serpent 2nd round assembler implementation, by Dr Brian Gladman"
+URL="http://brgladman.org/oldsite/cryptography_technology/serpent/index.php"
+URL_ARCHIVE="https://web.archive.org/web/20040407205321/http://fp.gladman.plus.com/cryptography_technology/serpent/index.htm"
+URL_SRC="http://brgladman.org/oldsite/cryptography_technology/serpent/serpent.cpp"
+URL_SRC_ARCHIVE="https://web.archive.org/web/20040407205321://web.archive.org/web/20040407205321/http://fp.gladman.plus.com/cryptography_technology/serpent/serpent.cpp"
+RELEASE_DATE="2000-01-25"
+RETRIEVED_DATE="2014-06-11"
+RETRIEVED_BY="TJ <crypto@iam.tj>
+
