@@ -1,0 +1,6 @@
+PROJECT="libdes (part of SSLeay)"
+URL_SRC="ftp://ftp.hacktic.nl/pub/security/cryptography/libraries/libeay/libdes-l-4.04b.tar.gz"
+RELEASE_DATE="1998-01-08"
+RETRIEVED_DATE="2014-06-11"
+RETRIEVED_BY="TJ <crypto@iam.tj>"
+
