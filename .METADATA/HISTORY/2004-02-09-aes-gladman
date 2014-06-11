@@ -1,0 +1,8 @@
+PROJECT="AES by Dr Brian Gladman"
+URL="http://brgladman.org/oldsite/AES/index.php"
+URL_SRC="https://web.archive.org/web/20040509071251/http://fp.gladman.plus.com/AES/aes.zip"
+URL_ARCHIVE="https://web.archive.org/web/20040509071251/http://fp.gladman.plus.com/AES/"
+RELEASE_DATE="2004-02-09"
+RETRIEVED_DATE="2014-06-11"
+RETRIEVED_BY="TJ <crypto@iam.tj>"
+
