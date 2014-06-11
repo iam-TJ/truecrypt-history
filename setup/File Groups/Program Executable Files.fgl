@@ -1,0 +1,10 @@
+[TopDir]
+file0=C:\dev\e4m\volformat\volformat.exe
+file1=C:\dev\e4m\volmount\volmount.exe
+file2=C:\dev\e4m\voltest\voltest.exe
+file3=C:\dev\e4m\doc\Manual.hlp
+file4=C:\dev\e4m\license.txt
+file5=C:\dev\e4m\ntservice\e4mservice.exe
+[General]
+Type=FILELIST
+Version=1.00.000

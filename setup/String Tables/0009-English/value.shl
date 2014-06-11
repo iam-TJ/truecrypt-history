@@ -1,0 +1,22 @@
+[Data]
+TITLE_MAIN=E4M  Encryption for the Masses
+PRODUCT_VERSION=V1.4.6
+ERROR_MOVEDATA=An error occurred during the move data process : %d
+UNINST_KEY=E4M
+CREATE_VOLUME=Create Volume
+TITLE_CAPTIONBAR=E4M
+HELPFILE=E4M Help
+WELCOME_1=This product will secure your data by using industry standard encryption ciphers. No back doors exist. The random number generator, the key setting, and the ciphers follow standards by  NIST,  ANSI,  ISO, and others. The responsibility for your security rests with you. In continuing you understand that if you loose your passwords, your data cannot be recovered.\n\n\n
+ERROR_VGARESOLUTION=This program requires VGA or better resolution.
+FOLDER_NAME=E4M
+UNMOUNT_VOLUME=Unmount Volume
+WELCOME_2=This software uses strong encryption thanks to the fact that it originates in Australia not the USA.\n
+MOUNT_VOLUME=Mount Volume
+UNINST_DISPLAY_NAME=E4M
+PRODUCT_KEY=E4M
+PRODUCT_NAME=E4M
+README=License
+[General]
+Language=0009
+Type=STRINGTABLESPECIFIC
+Version=1.00.000

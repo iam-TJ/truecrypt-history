@@ -1,0 +1,672 @@
+<!doctype html public "-//W30//DTD W3 HTML 2.0//EN">
+
+<HTML>
+
+<!-- This file was generated using SDF 2.000 by
+     Ian Clatworthy (ianc@mincom.com). SDF is freely
+     available from http://www.mincom.com/mtr/sdf. -->
+
+<HEAD>
+<TITLE>Encryption for the Masses V2.0.0 User Guide</TITLE>
+</HEAD>
+<BODY>
+
+<H1>Encryption for the Masses V2.0.0 User Guide</H1>
+<ADDRESS>Paul Le Roux</ADDRESS>
+<ADDRESS>19 June 1999</ADDRESS>
+<BR CLEAR="All">
+<!-- TOC -->
+<HR>
+<H2>Table of Contents</H2>
+<UL>
+<A HREF="#Introduction">1. Introduction</A>
+<BR>
+<A HREF="#Disclaimer">2. Disclaimer</A>
+<BR>
+<A HREF="#What\'s New in this Version">3. What's New in this Version</A>
+<BR>
+<A HREF="#How to Create a Volume">4. How to Create a Volume</A><UL>
+<A HREF="#Step 1 Select Volume Type">4.1. Step 1 Select Volume Type</A>
+<BR>
+<A HREF="#Step 2 Pick Volume Location">4.2. Step 2 Pick Volume Location</A>
+<BR>
+<A HREF="#Step 3 Set Encryption Options">4.3. Step 3 Set Encryption Options</A>
+<BR>
+<A HREF="#Step 4 Specify Volume Size">4.4. Step 4 Specify Volume Size</A>
+<BR>
+<A HREF="#Step 5 Choose a Password">4.5. Step 5 Choose a Password</A>
+<BR>
+<A HREF="#Step 6 Generate the Volume">4.6. Step 6 Generate the Volume</A></UL>
+<BR>
+<A HREF="#Mounting a Volume">5. Mounting a Volume</A>
+<BR>
+<A HREF="#Mount command line parameters">6. Mount command line parameters</A>
+<BR>
+<A HREF="#Unmounting a Volume">7. Unmounting a Volume</A>
+<BR>
+<A HREF="#Changing a volumes password">8. Changing a volumes password</A>
+<BR>
+<A HREF="#Dumping a volumes contents using &quot;voltest&quot;">9. Dumping a volumes contents using &quot;voltest&quot;</A>
+<BR>
+<A HREF="#Supported Encryption Algorithms">10. Supported Encryption Algorithms</A>
+<BR>
+<A HREF="#Support for Scramdisk, &amp; Scramdisk weaknesses">11. Support for Scramdisk, &amp; Scramdisk weaknesses</A>
+<BR>
+<A HREF="#E4M Volume Layout">12. E4M Volume Layout</A>
+<BR>
+<A HREF="#Random Number Generation">13. Random Number Generation</A>
+<BR>
+<A HREF="#Compliance with Standards">14. Compliance with Standards</A>
+<BR>
+<A HREF="#Export Licenses">15. Export Licenses</A>
+<BR>
+<A HREF="#What\'s Planned for Future Versions">16. What's Planned for Future Versions?</A>
+<BR>
+<A HREF="#How you can help in the products development">17. How you can help in the products development?</A>
+<BR>
+<A HREF="#Where to get E4M, and the Source Code">18. Where to get E4M, and the Source Code?</A>
+<BR>
+<A HREF="#Verifying the Distribution with PGP">19. Verifying the Distribution with PGP</A>
+<BR>
+<A HREF="#What Operating Systems are supported">20. What Operating Systems are supported?</A>
+<BR>
+<A HREF="#Internationalisation Support">21. Internationalisation Support</A>
+<BR>
+<A HREF="#Windows directory changes">22. Windows directory changes</A>
+<BR>
+<A HREF="#Uninstalling E4M">23. Uninstalling E4M</A>
+<BR>
+<A HREF="#Reporting bugs">24. Reporting bugs</A>
+<BR>
+<A HREF="#Known bugs">25. Known bugs</A>
+<BR>
+<A HREF="#E4M history of changes">26. E4M history of changes</A>
+<BR>
+<A HREF="#Contact Details">27. Contact Details</A>
+<BR>
+<A HREF="#Credits">28. Credits</A>
+<BR>
+<A HREF="#Trademarks">29. Trademarks</A>
+<BR>
+<A HREF="#License">30. License</A></UL>
+<!-- ENDTOC -->
+<P>Copyright (C) 1998-99 Paul Le Roux. All Rights Reserved.</P>
+<HR>
+<H1><A NAME="Introduction">1. Introduction</A></H1>
+<P>E4M is an on-the-fly disk encryption product.</P>
+<P>The product supports either the file hosted volumes style transparent encryption, or raw partition encryption.</P>
+<P>The way this works is you create a volume on your hard disk, CDROM, floppy or other media which is essentially just a normal file. The file however is in fact a file system itself. It contains all the structures needed by your operating system to recognise the file as a file system of a particular type such as FAT or NTFS. This is the file hosted volumes style volume.</P>
+<P>Or you could choose a blank or unwanted partition on a local hard disk or floppy disks and format it using E4M. You can then mount this new encrypted volume, and use it like you would any other drive. This method is refered to as Raw partition volumes.</P>
+<P>The only difference is that Raw partition volumes do not have a file system in the middle, so they provide an encrypted file system on top of a Raw partition. As opposed to file hosted volumes which need an existing file system to &quot;host&quot; the volume file. An example would be a E4M volume called &quot;myfiles.vol&quot; located in &quot;C:\&quot;, rather than the same volume located on the second partition of your hard disk.</P>
+<P>To your operating system, these new volumes will work exactly like &quot;C:\&quot; or any other drive on your system.</P>
+<P>Tools are provided to &quot;mount&quot; a volume, and to create a volume. The process of mounting a volume involves pretending that the volume file or partition is in fact a removable media device attached to your system.</P>
+<P>Thanks for using my product, and enjoy!</P>
+<P>Paul Le Roux.</P>
+<HR>
+<H1><A NAME="Disclaimer">2. Disclaimer</A></H1>
+<P>In continuing to read this documentation, and in using this product you agree to the following terms and conditions:</P>
+<OL>
+<LI>You understand that this product utilises strong cryptography, and that should this technology be controlled, or illegal in your country, you agree not to use the product, or import this product into your country, or you agree to obtain the necessary permission to use this product as defined by your legal jurisdiction.
+<LI>You understand that this product contains &quot;no backdoor’s&quot;, that would allow partial or complete recovery of your data without your password.
+<LI>You understand that the program author cannot be held responsible for the loss of your data through a defect, or a malfunction of the product, even if the author had been previously advised of the existence of such a defect or malfunction.
+<LI>You understand that the program author cannot assist you in the recovery of your data should you loose your password.
+<LI>You agree not to use this product in such a way that would prevent a law enforcement officer, or any other legally authorised person access to your data; if such a person is legally empowered to access your data.
+<LI>You agree to abide by the import/export control laws regarding the import/export of strong cryptography into, and out of the countries that have such laws.</OL>
+<HR>
+<H1><A NAME="What\'s New in this Version">3. What's New in this Version</A></H1>
+<UL>
+<LI>Support for Pkcs-5 key setting via either HMAC-MD5 or HMAC-SHA1. The Pkcs-5 code is self testing, and tests itself against HMAC and Pkcs-5 test vectors.
+<LI>Support for new ciphers including IDEA, 3 key triple-DES, CAST and Blowfish.
+<LI>Support for Scramdisk file hosted volumes using all of Scramdisk’s ciphers except the &quot;summer&quot; cipher.
+<LI>A new command line tool &quot;voltest&quot; has been provided which dumps the headers (E4M only) of a particular volume, and tests the particular volumes sector encryption, optionally you can display individual sectors with this tool.
+<LI>Support for changing volume passwords has been added.
+<LI>The user interface for mounting a volume has been rewritten to be more user friendly.
+<LI>Passwords can now be cached in the driver (and cleared at the users request).
+<LI>The History information is now more robust, the history operates a MRU list of the last 8 volumes mounted.
+<LI>The mount program now shows the full path name of a mounted volume when a mounted drive letter is selected.
+<LI>Support for MDCSHA is now not available for new volumes. Only <EM>SFS</EM> uses this cipher.
+<LI>Some of the cursor handling in the format wizard has been cleaned up, the wizard now correctly displays the hour glass cursor at the correct times.
+<LI>The FAT formatting code has been rewritten to drop the GPL’d code, this means this product no longer ships under the GNU GPL.
+<LI>The format GUI now shows the user what’s going on with the random code. Random bytes, and the selected key bytes are displayed to the user.
+<LI>The documentation system now uses <EM>SDF</EM> which allows different document formats to be used such as Windows <EM>hlp</EM>, and <EM>html</EM>.</UL>
+<HR>
+<H1><A NAME="How to Create a Volume">4. How to Create a Volume</A></H1>
+<P>To create a volume file you will need to click on the icon &quot;Create Volume&quot;.</P>
+<P>The program &quot;volformat&quot; should start, and will have the title &quot;Create E4M Volume&quot;.</P>
+<P>You should see the following wizard.</P>
+<P><IMG SRC="format.gif"></P>
+<P>There are six steps in creating a volume:</P>
+<OL>
+<LI>Step 1 Select Volume Type
+<LI>Step 2 Pick Volume Location
+<LI>Step 3 Set Encryption Options
+<LI>Step 4 Specify Volume Size
+<LI>Step 5 Choose a Password
+<LI>Step 6 Generate the Volume</OL>
+<H2><A NAME="Step 1 Select Volume Type">4.1. Step 1 Select Volume Type</A></H2>
+<P>Choose a type for your volume. The format or type of your volume can be either one of the following formats:</P>
+<UL>
+<LI>E4M
+<LI>SFS</UL>
+<P>You should only use SFS is you want to be able to use your volumes in DOS, Windows 3.x or Windows 95/98.</P>
+<P>SFS format is slightly more efficient than the E4M format. SFS volumes have exactly 512 more bytes than E4M. This is because E4M needs a header sector and a boot sector. SFS uses the boot sector for its header, and then needs E4M to fake the boot sector for it at run time. Which directly gives rise to the following important limitation:</P>
+<P><HR WIDTH="80%" ALIGN="Left">
+<STRONG>Warning: </STRONG>Never reformat an SFS volume using format.com, explorer or any other tool. SFS volumes cannot be formatted. If you accidentally reformat an SFS volume, the volume will be corrupted.
+<HR WIDTH="80%" ALIGN="Left"></P>
+<P>E4M volumes can be reformatted freely using either FAT or NTFS without any limitations.</P>
+<P>Once you have selected a volume type, the &quot;Next&quot; button will be enabled and you can proceed to the next step.</P>
+<H2><A NAME="Step 2 Pick Volume Location">4.2. Step 2 Pick Volume Location</A></H2>
+<P>Select where on your system the volume is to reside, you should click the &quot;Browse Files&quot; button or the &quot;Raw Devices&quot; button to choose the location for the new volume.</P>
+<P><HR WIDTH="80%" ALIGN="Left">
+<STRONG>Note: </STRONG>Unlike some products, E4M does not provide a field for you to type in a descriptive name for your volume; instead simply use long filenames if you are using file hosted volumes.
+<HR WIDTH="80%" ALIGN="Left"></P>
+<P>Once you have picked a location for your volume, the &quot;Next&quot; button will be enabled and you can proceed to the next step.</P>
+<H2><A NAME="Step 3 Set Encryption Options">4.3. Step 3 Set Encryption Options</A></H2>
+<P>Select the type of encryption you want for your volume.</P>
+<P>You can choose one of the listed ciphers.</P>
+<P>You must also choose either HMAC-MD5 or HMAC-SHA1 for use with Pkcs-5.</P>
+<P>If you are creating a legacy volume such as SFS, no Pkcs-5 is used.</P>
+<P>Once you have picked the cipher of your choice, the &quot;Next&quot; button will be enabled and you can proceed to the next step.</P>
+<H2><A NAME="Step 4 Specify Volume Size">4.4. Step 4 Specify Volume Size</A></H2>
+<P>Please choose a reasonable size for your volume. There is a minimum and maximum size. The minimum size is 19KB, while the maximum size is 2GB.</P>
+<P>If you type in an invalid size the wizard will not let you proceed to the next step.</P>
+<P>If you are creating a volume on a Raw partition, the size edit box is disabled. This is because the size of the partition onto which your volume is created is set by whatever program you used to partition your drive (such as fdisk). The size is fixed and cannot be changed here. Simply click the &quot;Next&quot; button.</P>
+<P>Once the system has a valid size for your volume. The wizard will enable the &quot;Next&quot; button and you can proceed to the next step.</P>
+<H2><A NAME="Step 5 Choose a Password">4.5. Step 5 Choose a Password</A></H2>
+<P>The system requires that you enter a password no shorter than 8 characters for E4M; and no shorter than 10 characters for SFS. SFS requires a complete phrase, this simply means a minimum of two words separated by a space which together are <U>no less</U> than 10 characters long.</P>
+<P>Please be very careful when choosing your password. It should be picked carefully, please do not use any of the following:</P>
+<UL>
+<LI>A word found in any dictionary; even a word from an obscure language
+<LI>A lyric from your favourite song
+<LI>Your birthday; or your families birthday’s
+<LI>The login password for your computer system
+<LI>Your email password</UL>
+<P>Examples of good passwords include words which include combinations of upper and lowercase letters, as well as punctuation and numbers.</P>
+<P>Once you have selected a password, and typed it in twice for verification. The system will let you proceed to the final step by enabling the &quot;Next&quot; button.</P>
+<H2><A NAME="Step 6 Generate the Volume">4.6. Step 6 Generate the Volume</A></H2>
+<P>To complete the creation of your volume click the &quot;Finish&quot; button. There will be a short delay while your system is polled for some additional randomness which will be used in generating you volume.</P>
+<P>Some products require that you move the mouse or type on the keyboard at this stage in order to generate randomness. E4M &quot;hooks&quot; the keyboard &amp; mouse from the very start of the volume creation wizard, every keyboard stroke and mouse movement is contributing to the &quot;randomness pool&quot;; this pool also includes the results of many various system calls. The aim of all of this is so that the system at this stage in the creation process has good quality randomness to create a unique volume key.</P>
+<P>Once the key has been generated for you, and your new volume has been formatted, you should see a dialog giving you statistics about your volume. Once you see this dialog the entire creation process is complete, and the wizard will automatically exit.</P>
+<HR>
+<H1><A NAME="Mounting a Volume">5. Mounting a Volume</A></H1>
+<P>The concept of &quot;mounting a volume&quot; means to make your operating system aware of the encrypted volume, which in turn allows you to read and write files to the volume, to defrag the volume, and to do everything else you would normally do to any other disk, even including formatting the volume.</P>
+<P>To mount a volume, you will need to click on the icon &quot;Mount Volume&quot;. This will start the program &quot;volmount&quot;.</P>
+<P>You should see the following window.</P>
+<P><IMG SRC="mount.gif"></P>
+<P>This window has the following elements:</P>
+<UL>
+<LI>Tree view - which contains all of the driver letters available on your system, including the driver letters which have an encrypted volume attached to them in addition to free drive letters.
+<LI>Volume to mount - this combo box contains a list of the last 8 volumes you mounted on your system, in addition there is an edit box which allows you to type in a volume name.
+<LI>A Browse files button - this button allows you to select the volume you wish to mount by showing you a file selection dialog box.
+<LI>A Raw devices button - as E4M supports volumes which are themselves actually disk partitions, the Raw devices button allows you to select which particular disk partition you want to mount, or select a floppy disk to mount. As Partitions, and floppy disk volumes require a special syntax, you would normally use this button to select one of these types of volumes.
+<LI>Never save history - this check box allows you to retain maximum privacy by never storing the last 8 volumes you accessed, or any other program settings.
+<LI>Password tab - this tab allows you to tell the system to attempt to mount an E4M volume, or a Scramdisk volume.
+<LI>Password edit box - this field provides space for you to enter a volume password of up to 100 characters.
+<LI>Password edit box (Scramdisk) - these 4 fields provide space for you to enter up to four 40 character passwords for use with Scramdisk.
+<LI>Change button - this button allows you to change the volumes password, and will prompt you with the Change Password Window.
+<LI>Cache in driver - this check box allows you to cache up to the last 4 passwords. What this means is that the device driver will try either the password you specify, or up to the last 4 passwords you had specified previously when mounting volumes (but only within you current Windows session as passwords are not stored on disk for security reasons).
+<LI>Wipe Cache button - this button clears any passwords the driver has retained on your behalf in it's memory.
+<LI>Mount - this button will pass everything on to the device driver, which will proceed to mount your volume.
+<LI>Help - this button will open up the E4M help file.</UL>
+<P>To mount a volume first select an available volume from the tree view, next type in a volume name, and a password, and finally press the mount button.</P>
+<HR>
+<H1><A NAME="Mount command line parameters">6. Mount command line parameters</A></H1>
+<P>In order to make mounting a volume easier, such as automatically when a system starts up, or automatically when a particular program is run, extensive command line parameters have been provided which allow you to control the entire mount process, and any parameter or field present in the mount window. The mount parameters are:</P>
+<UL>
+<LI>/volume or /v  - allows you to enter a file and path name for the volume to be mounted.
+<LI>/Scramdisk or /sd - this command switches to mounting in Scramdisk mode.
+<LI>/letter or /l - allows you to specify which driver letter to attach the volume to.
+<LI>/explore or /e  - opens an explorer window after a volume has been mounted.
+<LI>/beep or /b - beeps after a volume has been mounted.
+<LI>/password or /p - specifies the password to be used with the volume in /v.
+<LI>/password2 or /p2 - specifies the password to be used with the volume in /v (Scramdisk).
+<LI>/password3 or /p3 - specifies the password to be used with the volume in /v (Scramdisk).
+<LI>/password4 or /p4 - specifies the password to be used with the volume in /v (Scramdisk).
+<LI>/auto or /a  - automatically executes the mount if enough parameters have been provided.
+<LI>/cache or /c - with a value of Y or N, enables or disables the password cache.
+<LI>/history or /h - with a value of Y or N, enables or disables the history.
+<LI>/wipecache or /wc - wipes any currently stored passwords in the drivers memory.</UL>
+<P>The syntax of the command line is:</P>
+<P>volmount [/v volume] [/sd] [/l letter] [/e] [/b] [/p password] etc</P>
+<P>Whitespace between parameters, and parameter values does not matter.</P>
+<P>The order of the parameters does not matter.</P>
+<P><HR WIDTH="80%" ALIGN="Left">
+<STRONG>Note: </STRONG>Turning off the cache will not clear the password cache, use both /c and /wc to turn the cache off, and clear it.
+<HR WIDTH="80%" ALIGN="Left"></P>
+<HR>
+<H1><A NAME="Unmounting a Volume">7. Unmounting a Volume</A></H1>
+<P>The concept of &quot;unmounting a volume&quot; means to take away the operating systems knowledge of your encrypted disk.</P>
+<P>To unmount a volume, you will need to click on the icon &quot;Unmount Volume&quot;. This will start the program &quot;volmount&quot;.</P>
+<P>You should see the following window.</P>
+<P><IMG SRC="unmount.gif"></P>
+<P>This window has the following elements:</P>
+<UL>
+<LI>Tree view - which contains all of the driver letters available on your system, including the driver letters which have an encrypted volume attached to them, in addition to free drive letters. Used or &quot;mounted&quot; driver letters will show the full path and filename of the file hosted volume or partition based volume that's attached to them.
+<LI>Unmount button - this button will unmount a mounted driver letter.
+<LI>Help - this button will open up the E4M help file.</UL>
+<P>To unmount a volume first select a mounted volume, and then press the unmount button.</P>
+<HR>
+<H1><A NAME="Changing a volumes password">8. Changing a volumes password</A></H1>
+<P>To change a volumes password, you will need to follow the steps for mounting a volume, but instead of pressing the mount button, press the change password button. This will prompt you with the Password Change window.</P>
+<P>This window has the following elements:</P>
+<UL>
+<LI>Old Password box - this is the field into which you must type the volumes old password.
+<LI>New Password box - here type in the new password you want to assign to the volume.
+<LI>Verify Password box - in order to make sure you don’t loose access to your data, the system requires that you enter your new password twice. Enter the second copy here.
+<LI>Change button - this button will change your volumes password. If you have used the wrong password for the volume, or the volume is not an E4M volume, the system will complain.</UL>
+<HR>
+<H1><A NAME="Dumping a volumes contents using &quot;voltest&quot;">9. Dumping a volumes contents using &quot;voltest&quot;</A></H1>
+<P>To dump a volumes contents you can use the command line only tool &quot;voltest&quot;.</P>
+<P>This program accepts the following parameters:</P>
+<UL><UL>
+<LI>v volume
+<LI>t
+<LI>s secNumber
+<LI>c secCount
+<LI>v specifies the file and path name of the volume to be dumped.
+<LI>t specifies to test the volumes encryption/decryption support
+<LI>s specifies which sector to start dumping from
+<LI>c specifies the number of sectors to dump</UL></UL>
+<P>This tool displays the contents of an E4M volume. It is a useful starting point to understanding how E4M volumes are structured, and in solving problems related to bad disk sectors, or other corruptions.</P>
+<P>The tool also checks to make sure that the volumes sector encryption is working correctly.</P>
+<P>This tool does not support Scramdisk.</P>
+<P>This tool only supports file hosted volumes.</P>
+<HR>
+<H1><A NAME="Supported Encryption Algorithms">10. Supported Encryption Algorithms</A></H1>
+<TABLE BORDER>
+<TR>
+<TD>
+<STRONG>Algorithm</STRONG>
+</TD>
+<TD>
+<STRONG>Author           </STRONG>
+</TD>
+<TD>
+<STRONG>Key size </STRONG>
+</TD>
+<TD>
+<STRONG>Block size</STRONG>
+</TD>
+<TD>
+<STRONG>Implementation</STRONG>
+</TD>
+<TD>
+<STRONG>Speed</STRONG>
+</TD>
+</TR>
+<TR>
+<TD>
+triple-DES
+</TD>
+<TD>
+IBM/NSA
+</TD>
+<TD>
+168 bits
+</TD>
+<TD>
+64 bits
+</TD>
+<TD>
+Assembler
+</TD>
+<TD>
+65 secs
+</TD>
+</TR>
+<TR>
+<TD>
+IDEA(3)
+</TD>
+<TD>
+Lai &amp; Massey
+</TD>
+<TD>
+128 bits
+</TD>
+<TD>
+64 bits
+</TD>
+<TD>
+Assembler
+</TD>
+<TD>
+66 secs
+</TD>
+</TR>
+<TR>
+<TD>
+DES
+</TD>
+<TD>
+IBM/NSA
+</TD>
+<TD>
+56 bits
+</TD>
+<TD>
+64 bits
+</TD>
+<TD>
+Assembler
+</TD>
+<TD>
+45 secs
+</TD>
+</TR>
+<TR>
+<TD>
+Blowfish
+</TD>
+<TD>
+B.Schneier
+</TD>
+<TD>
+256 bits
+</TD>
+<TD>
+64 bits
+</TD>
+<TD>
+Assembler
+</TD>
+<TD>
+39 secs
+</TD>
+</TR>
+<TR>
+<TD>
+CAST
+</TD>
+<TD>
+Adams &amp; Tavares
+</TD>
+<TD>
+128 bits
+</TD>
+<TD>
+64 bits
+</TD>
+<TD>
+Assembler
+</TD>
+<TD>
+45 secs
+</TD>
+</TR>
+<TR>
+<TD>
+MDC/SHA(1)
+</TD>
+<TD>
+P.Gutmann
+</TD>
+<TD>
+512 bits
+</TD>
+<TD>
+160 bits
+</TD>
+<TD>
+C
+</TD>
+<TD>
+87 secs
+</TD>
+</TR>
+<TR>
+<TD>
+Square(2)
+</TD>
+<TD>
+Daemon &amp; Rijmen
+</TD>
+<TD>
+128 bits
+</TD>
+<TD>
+128 bits
+</TD>
+<TD>
+C
+</TD>
+<TD>
+N/A
+</TD>
+</TR>
+<TR>
+<TD>
+TEA16(2)
+</TD>
+<TD>
+Wheeler &amp; Needham
+</TD>
+<TD>
+128 bits
+</TD>
+<TD>
+64 bits
+</TD>
+<TD>
+Assembler
+</TD>
+<TD>
+N/A
+</TD>
+</TR>
+<TR>
+<TD>
+TEA32(2)
+</TD>
+<TD>
+Wheeler &amp; Needham
+</TD>
+<TD>
+128 bits
+</TD>
+<TD>
+64 bits
+</TD>
+<TD>
+Assembler
+</TD>
+<TD>
+N/A
+</TD>
+</TR>
+<TR>
+<TD>
+MISTY1(2)
+</TD>
+<TD>
+M. Matsui
+</TD>
+<TD>
+128 bits
+</TD>
+<TD>
+64 bits
+</TD>
+<TD>
+C
+</TD>
+<TD>
+N/A
+</TD>
+</TR>
+</TABLE>
+
+<P>1. SFS volumes only. 2. Scramdisk volumes only. 3. Commercial use of IDEA must be licensed, contact Ascom-Tech AG <A HREF="mailto:idea@ascom.ch">idea@ascom.ch</A></P>
+<P>Speed is based on copying a 50mb file to an encrypted volume on a P166 MMX Windows NT Server with 96mb ram.</P>
+<P><HR WIDTH="80%" ALIGN="Left">
+<STRONG>Note: </STRONG>The &quot;Summer&quot; cipher from Scramdisk is not supported.
+<HR WIDTH="80%" ALIGN="Left"></P>
+<HR>
+<H1><A NAME="Support for Scramdisk, &amp; Scramdisk weaknesses">11. Support for Scramdisk, &amp; Scramdisk weaknesses</A></H1>
+<P>Scramdisk support is provided for file hosted volumes, but not for raw partition volumes, or for &quot;WAV&quot; based volumes.</P>
+<P>The Scramdisk information block (such as last access time) is not updated by E4M.</P>
+<P>As E4M has more sophisticated Pkcs-5 key setting, and faster cipher implementations than Scramdisk, support for Scramdisk will be phased out when E4M supports Windows 95/98.</P>
+<P>The length of Blowfish keys in Scramdisk is actually only 160 bits not 256 bits.</P>
+<P>The length of Triple-DES keys in Scramdisk is actually only 140 bits not 168 bits.</P>
+<P>This is because during the user password key setting stage of opening a volume, Scramdisk uses only 20 bytes worth of key material. The fact that the disk keys later use up to 32 bytes of key material is irrelevant because an attacker would simply brute force the first stage, and then recover the key for the second stage.</P>
+<P>However there is no cause for concern. The ANSI standard for Triple-DES specifies only 112 bits.</P>
+<P>Scramdisk does not record which particular cipher has encrypted a particular volume in an attempt to make a dictionary attack harder. This protection mechanism is weak because:</P>
+<OL>
+<LI>A dictionary of all possible Scramdisk passwords can easily be compiled because there is no key salt.
+<LI>A user using the same password on more than one volume is vulnerable to a dictionary attack because his password will hash down to the same value for both volumes, thanks to the point above.
+<LI>Many people will simply use the default cipher (Blowfish), making trying the dictionary using Blowfish the first point of attack, and the most likely to succeed.
+<LI>Non-Blowfish users will most likely use either DES or IDEA, making these the second most likely ciphers to attack.</OL>
+<P>E4M uses Pkcs-5 with a keysetup counter of 1000 and a key salt of 20 bytes. This results in a delay of a second or more to set a single key. An attacker using 140,000 word lower case dictionary would need to run a computer for a day continuously to recover the password.</P>
+<P>If the password for one volume is recovered, and the same password is used on a second volume to which an attacker wants to break into, the second attack would still take another day, this is thanks to the key salt.</P>
+<P>These attacks would be much quicker against a Scramdisk volume.</P>
+<P><HR WIDTH="80%" ALIGN="Left">
+<STRONG>Important: </STRONG>This emphasises the need to choose passwords wisely, try to select passwords with upper, and lower case characters, together with punctuation. A well chosen password is immune to this attack.
+<HR WIDTH="80%" ALIGN="Left"></P>
+<HR>
+<H1><A NAME="E4M Volume Layout">12. E4M Volume Layout</A></H1>
+<P>The E4M volume format is based on the format used by SFS with the following differences:</P>
+<UL>
+<LI>E4M does not create/use header #3. This header is the File System Information header. This is because rather than dynamically creating a boot sector when a volume is mounted (as SFS does), E4M stores the boot sector as sector #2 within the volume. This allows a E4M FAT volume to be reformatted to use NTFS.
+<LI>E4M uses the volume ID tag &quot;E4M&quot; which is present in the first 3 bytes of all E4M format volumes. There is an extra 4th byte with is currently set to 0x20 (space). This byte is reserved for a future version number.
+<LI>E4M does not use or support descriptive volume names; because Windows now has long filename support; this feature is not required.
+<LI>E4M has an extra 16bit field for the Pkcs-5 flag.
+<LI>E4M has a maximum disk key length of 288 bytes, although the largest key length supported at the moment is 32 byte Blowfish (256 bits).</UL>
+<HR>
+<H1><A NAME="Random Number Generation">13. Random Number Generation</A></H1>
+<P>The random number generator used in this product is based on:</P>
+<UL>
+<LI>&quot;Software Generation of Practically Strong Random Numbers&quot; by Peter Gutmann, <A HREF="http://www.cs.auckland.ac.nz/~pgut001/pubs/random.pdf">http://www.cs.auckland.ac.nz/~pgut001/pubs/random.pdf</A>
+<LI>&quot;Cryptographic Random Numbers&quot; by Carl Ellison, <A HREF="http://www.clark.net/pub/cme/P1363/ranno.html">http://www.clark.net/pub/cme/P1363/ranno.html</A></UL>
+<HR>
+<H1><A NAME="Compliance with Standards">14. Compliance with Standards</A></H1>
+<P>E4M complies with the following standards:</P>
+<UL>
+<LI><EM>SHA</EM> NIST FIPS 180 <A HREF="http://csrc.nist.gov/publications.html">http://csrc.nist.gov/publications.html</A>
+<LI><EM>Key setting</EM> Pkcs5v2 <A HREF="http://www.rsa.com/rsalabs/pubs/PKCS/html/pkcs-5.html">http://www.rsa.com/rsalabs/pubs/PKCS/html/pkcs-5.html</A>
+<LI><EM>HMAC</EM> RFC2104  <A HREF="http://www.cis.ohio-state.edu/htbin/rfc/rfc2104.html">http://www.cis.ohio-state.edu/htbin/rfc/rfc2104.html</A>
+<LI><EM>HMAC test vectors</EM> RFC2202 <A HREF="http://www.cis.ohio-state.edu/htbin/rfc/rfc2202.html">http://www.cis.ohio-state.edu/htbin/rfc/rfc2202.html</A>
+<LI><EM>DES modes of operation</EM> FIPS 81 <A HREF="http://csrc.nist.gov/fips/fip81.txt">http://csrc.nist.gov/fips/fip81.txt</A>
+<LI><EM>DES</EM> FIPS 46-2 <A HREF="http://csrc.nist.gov/fips/fips46-2.txt">http://csrc.nist.gov/fips/fips46-2.txt</A>
+<LI><EM>Triple-DES</EM> FIPS 46-3 <A HREF="http://csrc.nist.gov/fips/dfips46-3.pdf">http://csrc.nist.gov/fips/dfips46-3.pdf</A></UL>
+<HR>
+<H1><A NAME="Export Licenses">15. Export Licenses</A></H1>
+<P>The product was developed in Australia.</P>
+<P>Australia controls the export of cryptography[1]. However as this product is exported only via the Internet the cryptography related laws <U>donot</U> apply.</P>
+<P><STRONG>References</STRONG></P>
+<P>1. Please see the section on Export/ import controls in <A HREF="http://cwis.kub.nl/~frw/people/koops/lawsurvy.htm">http://cwis.kub.nl/~frw/people/koops/lawsurvy.htm</A></P>
+<P>Other documentation is also available at <A HREF="http://www.gilc.org/crypto/crypto-survey.html">http://www.gilc.org/crypto/crypto-survey.html</A></P>
+<HR>
+<H1><A NAME="What\'s Planned for Future Versions">16. What's Planned for Future Versions?</A></H1>
+<UL>
+<LI>Support for Windows 95/98
+<LI>Support for Linux
+<LI>Support for other Unix platforms
+<LI>Support for Steganography (WAV or Image based)
+<LI>Driver support for Compression
+<LI>Use of ASN.1 for the volume header
+<LI>Provide test vectors for all ciphers, and a cipher test tool
+<LI>Provide a cipher speed testing tool</UL>
+<HR>
+<H1><A NAME="How you can help in the products development">17. How you can help in the products development?</A></H1>
+<P>If you have skills which you think will be of use to the products developer, and would like to encourage, or participate in the development of this product, or you would like to beta test new versions of the product, please contact the author at <A HREF="mailto:paulca@rocketmail.com">paulca@rocketmail.com</A></P>
+<P>I am committed to eclipsing all other similar products by using tried and trusted encryption techniques, secure random number generation, solid key setting, together with providing solid support for as many operating systems as possible.</P>
+<P>Thanks for your interest in making E4M the disk encryption product of choice.</P>
+<HR>
+<H1><A NAME="Where to get E4M, and the Source Code">18. Where to get E4M, and the Source Code?</A></H1>
+<P>The primary site for E4M is <A HREF="www.e4m.net">www.e4m.net</A></P>
+<HR>
+<H1><A NAME="Verifying the Distribution with PGP">19. Verifying the Distribution with PGP</A></H1>
+<P>First you will need a copy of PGP version 2.3a or later. The latest version of PGP can be found at <A HREF="http://www.pgpi.com">http://www.pgpi.com</A></P>
+<P>Next you will need to get the public key used in signing the E4M distributions.</P>
+<P>To get the public key either copy it from the web page <A HREF="http://www.e4m.net">http://www.e4m.net</A>, or download it from <A HREF="http://wwwkeys.pgp.net">http://wwwkeys.pgp.net</A> or one of the many other PGP public key servers around the world.</P>
+<P>The key should identify itself as Paul Le Roux <A HREF="mailto:paulc@sdf.lonestar.org">paulc@sdf.lonestar.org</A></P>
+<P><STRONG>The Key ID for this key is 0xE7959B99</STRONG></P>
+<P>Finally, open up a DOS prompt and change to the directory where you installed E4M.</P>
+<P>Then type the following command:</P>
+<P>pgp thesigfile.asc thefile</P>
+<P>You should see a &quot;Good signature&quot; message from PGP.</P>
+<P>If you use the Windows 95/NT version of PGP, such as PGP 5 or later, go to PGPtools and click the &quot;Decrypt/Verify&quot; button. Next select as the &quot;signature file&quot; thesigfile.asc, as the &quot;signed file&quot; select thefile.</P>
+<P>If you do not receive a &quot;Bad signature&quot; message you have a valid distribution!</P>
+<P>thesigfile is the PGP signature file for the file you downloaded.</P>
+<P>thefile is the actual downloaded file.</P>
+<P><HR WIDTH="80%" ALIGN="Left">
+<STRONG>Important: </STRONG>Check the fingerprint on the e4m web site to be sure you really have the correct public key.
+<HR WIDTH="80%" ALIGN="Left"></P>
+<HR>
+<H1><A NAME="What Operating Systems are supported">20. What Operating Systems are supported?</A></H1>
+<UL>
+<LI>Windows NT 4.0 Workstation &amp; Server</UL>
+<P>Every release of E4M is tested against the 1996 NT 4.0 Hardware Compatibility Tests.</P>
+<HR>
+<H1><A NAME="Internationalisation Support">21. Internationalisation Support</A></H1>
+<P>There is no support for foreign languages in E4M.</P>
+<P>I am looking for volunteers to translate the strings used in E4M into other languages, and/or to translate this manual.</P>
+<HR>
+<H1><A NAME="Windows directory changes">22. Windows directory changes</A></H1>
+<P>The file &quot;e4m.ini&quot; is copied into your Windows directory.</P>
+<P>Everything else goes into the directory you specify.</P>
+<HR>
+<H1><A NAME="Uninstalling E4M">23. Uninstalling E4M</A></H1>
+<P>To uninstall E4M simply open up the Windows control panel and click &quot;Add/Remove Programs&quot;, scroll until you find E4M, then click the &quot;Add/Remove&quot; button.</P>
+<P>This will remove all E4M files, and undo changes made to the registry. The device driver will also be removed. The uninstall will NOT remove any volume files you may have created. These will have to be deleted manually assuming you no longer require them.</P>
+<P>For a list of what to remove from your registry should you need to manually remove the product, please see section List of changes made to your system</P>
+<P><HR WIDTH="80%" ALIGN="Left">
+<STRONG>Note: </STRONG>Windows &amp; InstallShield stubbornly refuse to remove all changes to the registry.
+<HR WIDTH="80%" ALIGN="Left"></P>
+<HR>
+<H1><A NAME="Reporting bugs">24. Reporting bugs</A></H1>
+<P>To report bugs please send a bug report to paulca@rocketmail.com with the following information:</P>
+<OL>
+<LI>What your system configuration is, such as what operating system/service pack you are running.
+<LI>What you were doing at the time of the system crash.
+<LI>What other applications were running at the time.
+<LI>What kind of crash occurred eg Windows NT blue screen.
+<LI>What version of E4M you are using.</OL>
+<HR>
+<H1><A NAME="Known bugs">25. Known bugs</A></H1>
+<UL>
+<LI>The software cannot detect a wrong volume condition!</UL>
+<P>If you remove a floppy and then reinsert the wrong floppy your system will not crash, but E4M will read and write garbage to the disk. This could corrupt your disks!</P>
+<P><HR WIDTH="80%" ALIGN="Left">
+<STRONG>Note: </STRONG>This affects only removable Raw partition volumes (floppy disks only).
+<HR WIDTH="80%" ALIGN="Left"></P>
+<UL>
+<LI>If you remove a floppy or other removable media, and then use &quot;edit&quot; to open a file on the volume, NT may lock &quot;edit&quot; up.</UL>
+<P>Edit seems to lock up only after pressing ignore several times after getting the abort, retry, ignore dialog box.</P>
+<P>Programs other than edit seem unaffected.</P>
+<P><HR WIDTH="80%" ALIGN="Left">
+<STRONG>Note: </STRONG>This affects only file-system hosted volumes on removable media (floppies, Zip disks etc).
+<HR WIDTH="80%" ALIGN="Left"></P>
+<UL>
+<LI>Whilst E4M allows you to reformat any volume using either FAT or NTFS, the software incorrectly does not prevent you from reformatting SFS or Scramdisk volumes!</UL>
+<P>If you reformat one of these volumes it will be unreadable the next time you try to mount it. Only E4M volumes can be reformatted.</P>
+<UL>
+<LI>Not all the changes to the registry are removed when the product is uninstalled.
+<LI>If you are using Windows NT, always ensure you are running e4mservice, (which is installed automatically), this service takes care of unmounting any mounted volumes, if this service is not running or fails for some reason, you may see a blue screen with the code 0x50ff, this means that E4M was not able to flush all of your data back to disk. If you cannot run e4mservice, always unmount volumes before shutting down your system.</UL>
+<HR>
+<H1><A NAME="E4M history of changes">26. E4M history of changes</A></H1>
+<OL>
+<LI>Dec 1998 Version 100 released to general public for beta testing under the development name of &quot;Caveo&quot;.
+<LI>March 1999 Version 136 released to the general public for beta testing.
+<LI>June 1999 Version 200 first release version, product renamed.</OL>
+<HR>
+<H1><A NAME="Contact Details">27. Contact Details</A></H1>
+<P>I can be contacted at <A HREF="mailto:paulca@rocketmail.com">paulca@rocketmail.com</A> or <A HREF="mailto:paulc@sdf.lonestar.org">paulc@sdf.lonestar.org</A></P>
+<HR>
+<H1><A NAME="Credits">28. Credits</A></H1>
+<P>Thanks go the following people:</P>
+<UL>
+<LI>Peter Gutmann <A HREF="mailto:pgut001@cs.auckland.ac.nz">pgut001@cs.auckland.ac.nz</A> for making some of his SFS code available. The assembly code he provided was the basis for the sector scrambler used in this product. Also thanks to Peter Gutmann for his paper on random numbers, and for creating his cryptlib product which was the source of some of the random number code used in this product.
+<LI>Andy Neville <A HREF="mailto:andy@previewsystems.com">andy@previewsystems.com</A> for providing some of the code, and inspiration, useful in the implementation of the file hosted volumes encryption.
+<LI>Eric Young <A HREF="mailto:eay@pobox.com">eay@pobox.com</A> for writing his excellent libdes, libcast ... etc which was the source of some of the cryptography code used in this product.</UL>
+<HR>
+<H1><A NAME="Trademarks">29. Trademarks</A></H1>
+<P>Any trademarks used in this document are the property of their respective owners.</P>
+<HR>
+<H1><A NAME="License">30. License</A></H1>
+<P>Please read the file &quot;license.txt&quot; included with this manual. This file contains your license agreement for this product.</P>
+<P>You are not permitted to use the product until you have read the license agreement, and the disclaimer at the top of this document.</P>
+<HR>
+
+</BODY>
+</HTML>

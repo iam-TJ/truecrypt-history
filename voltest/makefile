@@ -1,0 +1,20 @@
+#
+# THIS MAKEFILE WORKS WITH MICROSOFT NMAKE ONLY
+#
+
+BASENAME = voltest
+
+all: $(BASENAME).exe
+
+OBJECTS = $(BASENAME).obj volumes1.obj combo.obj crc.obj \
+	crypto.obj dlgcode.obj endian.obj random.obj sdvol.obj \
+	 pkcs5.obj getopt.obj 
+
+CFLAGS = $(CFLAGS_G) /DVOLTEST /D_CONSOLE /YXe4mdefs.h 
+
+!include ..\common.ms
+
+$(BASENAME).exe : $(OBJECTS) crypto.lib
+	$(LINK_G) $(OBJECTS) crypto.lib /subsystem:console 
+
+

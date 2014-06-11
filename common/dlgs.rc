@@ -1,0 +1,217 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUT_DLG DIALOG DISCARDABLE  31, 51, 263, 223
+STYLE DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "About E4M"
+CLASS "SplashDlg"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,103,204,50,14
+END
+
+IDD_RAWDEVICES_DLG DIALOG DISCARDABLE  0, 0, 216, 95
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Open Raw Device Volume"
+FONT 8, "MS Sans Serif"
+BEGIN
+    COMBOBOX        IDC_DEVICE,7,7,134,81,CBS_SIMPLE | CBS_AUTOHSCROLL | 
+                    CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "OK",IDOK,150,7,59,14
+    PUSHBUTTON      "Cancel",IDCANCEL,150,24,59,14
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_RAWDEVICES_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 209
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_WARNING_ICON        ICON    DISCARDABLE     "..\\common\\warning.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_ABOUTBOX            "&About..."
+    IDS_NOFONT              "Could not create the Fonts."
+    IDS_OUTOFMEMORY         "Out of Memory."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_INIT_REGISTER       "Unable to initialize the application. Failed to register the Dialog class."
+    IDS_PASSWORD_HELP0      "It is very important that you choose a password that is easy for you to remember, but difficult for anyone else "
+    IDS_PASSWORD_HELP1      "(or a computer) to guess. Please donot use a dictionary word, even a foreign language one. "
+    IDS_PASSWORD_HELP2      "For SFS your password must be a phrase atleast 10 chars long. For E4M you can use "
+    IDS_PASSWORD_HELP3      "a phrase or word atleast 8 chars. The max length is 100 chars."
+    IDS_NODRIVER            "Unable to connect to the Device Driver.\n\nPlease make sure it's running."
+    IDS_RAWDEVICES          "Unable to list the Raw devices installed on your system!"
+    IDS_NOSERVICE           "The first time this program is run you must be logged on as Administrator, so the E4M service can be installed."
+    IDS_SERVICE_NOT_RUNNING "You must get an Administrator to start the service 'E4M service' on your machine. Otherwise this program cannot run."
+    IDS_INIT_MUTEX          "Unable to initialize the application. Failed to create a required mutex object."
+    IDS_TWO_INSTANCES       "You cannot have more than one copy of this program running at the same time."
+    IDS_VOLUME_FORMAT_BAD   "The format of this volume is not recognized; or the volume may be corrupt."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_PASSWORD_WRONG      "The password you have used does not match the volume password."
+    IDS_OPENFILES_DRIVER    "The Driver cannot unmount the volume at this time. The system still has outstanding references to this device."
+    IDS_BAD_DRIVE_LETTER    "Invalid drive letter."
+    IDS_UNKNOWN             "The Device Driver returned an unrecognized error!"
+    IDS_NOT_FOUND           "The DOS drive letter you specified has not been found."
+    IDS_VOLUME_SIZE_WRONG   "The size of this volume is too large or too small to be a recognized volume format."
+    IDS_COMPRESSION_NOT_SUPPORTED 
+                            "The volume has been compressed on an NTFS partition. This is not supported, please remove the compression attribute."
+    IDS_DRIVELETTERS        "Could not get available drive letters."
+    IDS_OPENFILES_LOCK      "Unable to lock the volume. There are still open files on this volume, the volume cannot be unmounted at this time."
+    IDS_SYMLINK             "Could not associate a DOS drive letter with the device."
+    IDS_SYMLINK_REMOVE      "Could not remove the DOS drive letter associated with the device."
+    IDS_INIT_RAND           "Failed to initialize the random number generator."
+    IDS_CREATE_FAILED       "Failed to create volume %s"
+    IDS_ACCESSMODEFAIL      "The read-only attribute on your old volume could not be changed. Please check file access permissions."
+    IDS_OVERWRITEPROMPT     "The volume '%s' exists. Are you sure you want to replace this file?"
+    IDS_OVERWRITEPROMPT_DEVICE 
+                            "Are you sure you want to overwrite '%s'. This action will erase all the data on this device."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_WIPE_CACHE          "The cached passwords stored in the device driver have been wiped."
+    IDS_VOLUME_TOO_SMALL    "The size of this volume is too small, it is an invalid volume."
+    IDS_WRONG_VOL_VERSION   "Passwords cannot be changed on old volume formats."
+    IDS_WRONG_VOL_TYPE      "E4M cannot change the volume password on foreign volumes. Please use SFS or Scramdisk to change the password."
+    IDS_VOL_SEEKING         "Error seeking to correct location in volume."
+    IDS_VOL_WRITING         "Error writing data to the volume."
+    IDS_PASSWORD_CHANGED    "Password successfully changed."
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (Australia) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENA)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_AUS
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_E4M                 ICON    DISCARDABLE     "..\\common\\e4m.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_E4M                 BITMAP  DISCARDABLE     "..\\common\\e4m.bmp"
+#endif    // English (Australia) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

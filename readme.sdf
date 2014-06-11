@@ -1,0 +1,95 @@
+!init OPT_STYLE="manual"
+# Build the title
+!define DOC_NAME           "How to build Encryption for the Masses"
+!define DOC_TYPE           "- A Developers Guide"
+!define DOC_AUTHOR         "Paul Le Roux"
+!build_title
+
+Copyright (C) 1998-99 Paul Le Roux. All Rights Reserved.
+
+H1: Introduction
+
+Welcome to the source distribution of E4M. This document briefly 
+describes how to build E4M.
+
+Firstly E4M does not use the build tool supplied by Microsoft in
+the NT DDK.
+
+E4M uses normal makefiles to build everything.
+
+Extract the files from the zip archive, with "use directories" set
+on. The source zip contains long names so don't use an older
+pkunzip.
+
+For the rest of this document I will assume you installed it 
+into "C:\e4m", but this can be any directory. If you pick another
+directory just replace "C:\e4m" in the documentation with 
+whatever you like.
+
+H1: What you will need
+
+^ A compiler, which can be VC4.x, VC5.0, VC6.0 or later
++ The NT DDK
+
+H1: Setup the DDK path
+
+In the device drivers makefile, change the variable DDK to
+the full path of your ddk directory, normally c:\ddk
+
+H2: If you plan to debug the driver
+
+If you plan to debug the product you will need:
+
+^ Two computers and a serial cable (laplink cable)
++ The Win32 SDK, or WinDbg alone, which can be downloaded from Microsoft
++ The checked build of Widows NT installed on the second computer
+
+H2: If you want to modify the help files
+
+^ SDF {{URL:http://www.mincom.com/mtr/sdf/resources/index.html}}
++ any text editor
++ any Microsoft help compiler
+
+H2: If you want to modify the setup program
+
+^ InstallShield 5.0 professional or the "Free" Edition which 
+   comes with Visual C++.
++ PackageForTheWeb which creates self extracting archives for distribution.
+
+Note: The Debug format changed between VC4.x and VC5.0. To debug
+  using VC5.0 or later you must download a new WinDbg from Microsoft.
+  With an older VC4.x, try the WinDbg from an old Win32 SDK CD.
+
+Enjoy,
+
+Paul Le Roux {{EMAIL:paulca@rocketmail.com}}
+
+H1: Verifying that you have genuine source code
+
+Follow the instructions given in the E4M help file or in the online
+documentation for verifying the main program.
+
+H1: Building the driver 
+
+^ open up a DOS prompt
++ change to the C: drive
++ cd to c:\e4m\ntdriver 
++ run "c:\progra~1\devstudio\vc\bin\vcvars32.bat" or "vcvars32 x86" 
+   for VC4.x this sets up the search path's for your compiler
++ run "nmake" or "nmake RELEASE=1"
+
+You should end up with e4mnt4.sys in the ntdriver directory.
+
+H1: Setting up the registry entries for the driver
+
+Don't try this by hand, just install the driver from the binary 
+distribution, then overwrite it with the rebuilt driver.
+
+H1: Building volmount, voltest etc
+
+^ open up a DOS prompt
++ change to the C: drive
++ cd to c:\e4m\volmount, volformat etc
++ run "c:\progra~1\devstudio\vc\bin\vcvars32.bat" or "vcvars32 x86"
++ run "nmake" or "nmake RELEASE=1"
+

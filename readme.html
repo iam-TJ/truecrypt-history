@@ -1,0 +1,103 @@
+<!doctype html public "-//W30//DTD W3 HTML 2.0//EN">
+
+<HTML>
+
+<!-- This file was generated using SDF 2.000 by
+     Ian Clatworthy (ianc@mincom.com). SDF is freely
+     available from http://www.mincom.com/mtr/sdf. -->
+
+<HEAD>
+<TITLE>How to build Encryption for the Masses - A Developers Guide</TITLE>
+</HEAD>
+<BODY>
+
+<H1>How to build Encryption for the Masses - A Developers Guide</H1>
+<ADDRESS>Paul Le Roux</ADDRESS>
+<ADDRESS>19 June 1999</ADDRESS>
+<BR CLEAR="All">
+<!-- TOC -->
+<HR>
+<H2>Table of Contents</H2>
+<UL>
+<A HREF="#Introduction">1. Introduction</A>
+<BR>
+<A HREF="#What you will need">2. What you will need</A>
+<BR>
+<A HREF="#Setup the DDK path">3. Setup the DDK path</A><UL>
+<A HREF="#If you plan to debug the driver">3.1. If you plan to debug the driver</A>
+<BR>
+<A HREF="#If you want to modify the help files">3.2. If you want to modify the help files</A>
+<BR>
+<A HREF="#If you want to modify the setup program">3.3. If you want to modify the setup program</A></UL>
+<BR>
+<A HREF="#Verifying that you have genuine source code">4. Verifying that you have genuine source code</A>
+<BR>
+<A HREF="#Building the driver">5. Building the driver</A>
+<BR>
+<A HREF="#Setting up the registry entries for the driver">6. Setting up the registry entries for the driver</A>
+<BR>
+<A HREF="#Building volmount, voltest etc">7. Building volmount, voltest etc</A></UL>
+<!-- ENDTOC -->
+<P>Copyright (C) 1998-99 Paul Le Roux. All Rights Reserved.</P>
+<HR>
+<H1><A NAME="Introduction">1. Introduction</A></H1>
+<P>Welcome to the source distribution of E4M. This document briefly describes how to build E4M.</P>
+<P>Firstly E4M does not use the build tool supplied by Microsoft in the NT DDK.</P>
+<P>E4M uses normal makefiles to build everything.</P>
+<P>Extract the files from the zip archive, with &quot;use directories&quot; set on. The source zip contains long names so don't use an older pkunzip.</P>
+<P>For the rest of this document I will assume you installed it into &quot;C:\e4m&quot;, but this can be any directory. If you pick another directory just replace &quot;C:\e4m&quot; in the documentation with whatever you like.</P>
+<HR>
+<H1><A NAME="What you will need">2. What you will need</A></H1>
+<OL>
+<LI>A compiler, which can be VC4.x, VC5.0, VC6.0 or later
+<LI>The NT DDK</OL>
+<HR>
+<H1><A NAME="Setup the DDK path">3. Setup the DDK path</A></H1>
+<P>In the device drivers makefile, change the variable DDK to the full path of your ddk directory, normally c:\ddk</P>
+<H2><A NAME="If you plan to debug the driver">3.1. If you plan to debug the driver</A></H2>
+<P>If you plan to debug the product you will need:</P>
+<OL>
+<LI>Two computers and a serial cable (laplink cable)
+<LI>The Win32 SDK, or WinDbg alone, which can be downloaded from Microsoft
+<LI>The checked build of Widows NT installed on the second computer</OL>
+<H2><A NAME="If you want to modify the help files">3.2. If you want to modify the help files</A></H2>
+<OL>
+<LI>SDF <A HREF="http://www.mincom.com/mtr/sdf/resources/index.html">http://www.mincom.com/mtr/sdf/resources/index.html</A>
+<LI>any text editor
+<LI>any Microsoft help compiler</OL>
+<H2><A NAME="If you want to modify the setup program">3.3. If you want to modify the setup program</A></H2>
+<OL>
+<LI>InstallShield 5.0 professional or the &quot;Free&quot; Edition which comes with Visual C++.
+<LI>PackageForTheWeb which creates self extracting archives for distribution.</OL>
+<P><HR WIDTH="80%" ALIGN="Left">
+<STRONG>Note: </STRONG>The Debug format changed between VC4.x and VC5.0. To debug using VC5.0 or later you must download a new WinDbg from Microsoft. With an older VC4.x, try the WinDbg from an old Win32 SDK CD.
+<HR WIDTH="80%" ALIGN="Left"></P>
+<P>Enjoy,</P>
+<P>Paul Le Roux <A HREF="mailto:paulca@rocketmail.com">paulca@rocketmail.com</A></P>
+<HR>
+<H1><A NAME="Verifying that you have genuine source code">4. Verifying that you have genuine source code</A></H1>
+<P>Follow the instructions given in the E4M help file or in the online documentation for verifying the main program.</P>
+<HR>
+<H1><A NAME="Building the driver">5. Building the driver</A></H1>
+<OL>
+<LI>open up a DOS prompt
+<LI>change to the C: drive
+<LI>cd to c:\e4m\ntdriver
+<LI>run &quot;c:\progra~1\devstudio\vc\bin\vcvars32.bat&quot; or &quot;vcvars32 x86&quot; for VC4.x this sets up the search path's for your compiler
+<LI>run &quot;nmake&quot; or &quot;nmake RELEASE=1&quot;</OL>
+<P>You should end up with e4mnt4.sys in the ntdriver directory.</P>
+<HR>
+<H1><A NAME="Setting up the registry entries for the driver">6. Setting up the registry entries for the driver</A></H1>
+<P>Don't try this by hand, just install the driver from the binary distribution, then overwrite it with the rebuilt driver.</P>
+<HR>
+<H1><A NAME="Building volmount, voltest etc">7. Building volmount, voltest etc</A></H1>
+<OL>
+<LI>open up a DOS prompt
+<LI>change to the C: drive
+<LI>cd to c:\e4m\volmount, volformat etc
+<LI>run &quot;c:\progra~1\devstudio\vc\bin\vcvars32.bat&quot; or &quot;vcvars32 x86&quot;
+<LI>run &quot;nmake&quot; or &quot;nmake RELEASE=1&quot;</OL>
+<HR>
+
+</BODY>
+</HTML>

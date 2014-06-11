@@ -1,0 +1,337 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+#include "..\\common\\resource.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_MKFS_DLG DIALOG DISCARDABLE  0, 0, 352, 206
+STYLE DS_SETFOREGROUND | DS_CENTER | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "TITLE"
+CLASS "CustomDlg"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CTEXT           "BOX TITLE",IDC_BOX_TITLE,119,10,208,17
+    LTEXT           "POSITION BOX",IDC_POS_BOX,119,45,217,125
+    PUSHBUTTON      "PREV",IDC_PREV,68,186,50,14
+    DEFPUSHBUTTON   "NEXT/FINISH",IDC_NEXT,122,186,50,14
+    PUSHBUTTON      "&Cancel",IDCANCEL,176,186,50,14
+    PUSHBUTTON      "&Help",9,230,186,50,14
+    GROUPBOX        "",IDC_STATIC,6,1,339,181
+    CONTROL         119,IDC_STATIC,"Static",SS_BITMAP | SS_SUNKEN,13,10,72,
+                    166
+END
+
+IDD_VOLTYPE_PAGE_DLG DIALOG DISCARDABLE  0, 0, 217, 113
+STYLE DS_CONTROL | WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "&E4M",IDC_E4M_VOLTYPE2,"Button",BS_AUTORADIOBUTTON | 
+                    WS_GROUP | WS_TABSTOP,75,19,31,10
+    CONTROL         "&SFS",IDC_SFS_VOLTYPE,"Button",BS_AUTORADIOBUTTON,75,35,
+                    29,10
+    CONTROL         "E4M &old format",IDC_E4M_OLD_VOLTYPE,"Button",
+                    BS_AUTORADIOBUTTON | WS_TABSTOP,75,50,63,10
+    LTEXT           "BOX HELP",IDC_BOX_HELP,9,71,198,24
+END
+
+IDD_CIPHER_PAGE_DLG DIALOG DISCARDABLE  0, 0, 217, 125
+STYLE DS_CONTROL | WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    COMBOBOX        IDC_COMBO_BOX,0,0,137,45,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    CONTROL         "Derive key with pkcs#5 HMAC-&SHA1",IDC_SHA1,"Button",
+                    BS_AUTORADIOBUTTON | WS_GROUP,4,27,134,10
+    CONTROL         "Derive key with pkcs#5 HMAC-&MD5",IDC_MD5,"Button",
+                    BS_AUTORADIOBUTTON,4,42,131,10
+    LTEXT           "BOX HELP",IDC_BOX_HELP,0,65,214,50
+END
+
+IDD_PASSWORD_PAGE_DLG DIALOG DISCARDABLE  0, 0, 217, 125
+STYLE DS_CONTROL | WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    RTEXT           "P&assword:",IDC_STATIC,0,4,34,8
+    EDITTEXT        IDC_PASSWORD,40,0,124,14,ES_PASSWORD | ES_AUTOHSCROLL
+    RTEXT           "&Verify:",IDC_STATIC,0,21,34,8
+    EDITTEXT        IDC_VERIFY,40,17,124,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "BOX HELP",IDC_BOX_HELP,0,40,214,77
+END
+
+IDD_SIZE_PAGE_DLG DIALOG DISCARDABLE  0, 0, 217, 100
+STYLE DS_CONTROL | WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_SIZEBOX,0,0,71,14,ES_AUTOHSCROLL
+    CONTROL         "&KB",IDC_KB,"Button",BS_AUTORADIOBUTTON | WS_GROUP | 
+                    WS_TABSTOP,80,3,25,10
+    CONTROL         "&MB",IDC_MB,"Button",BS_AUTORADIOBUTTON,119,3,27,10
+    LTEXT           "BOX HELP",IDC_BOX_HELP,0,53,214,40
+    LTEXT           "SPACE LEFT ON DEVICE = nnnnn",IDC_SPACE_LEFT,0,22,214,
+                    21
+END
+
+IDD_FILE_PAGE_DLG DIALOG DISCARDABLE  0, 0, 217, 86
+STYLE DS_CONTROL | WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    COMBOBOX        IDC_COMBO_BOX,0,1,149,60,CBS_DROPDOWN | WS_VSCROLL | 
+                    WS_TABSTOP
+    PUSHBUTTON      "&Browse Files...",IDC_BROWSE_FILES,155,1,59,14
+    PUSHBUTTON      "&Raw Devices...",IDC_BROWSE_DEVICES,155,18,59,14
+    LTEXT           "BOX HELP",IDC_BOX_HELP,0,39,214,36
+END
+
+IDD_FORMAT_PAGE_DLG DIALOG DISCARDABLE  0, 0, 217, 125
+STYLE DS_CONTROL | WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    PUSHBUTTON      "C&ancel",IDC_CANCEL_BAR,75,18,50,14
+    CONTROL         "Progress1",IDC_PROGRESS_BAR,"msctls_progress32",
+                    WS_BORDER,0,0,215,14
+    LTEXT           "BOX HELP",IDC_BOX_HELP,0,76,217,48
+    RTEXT           "Key Salt:",IDC_STATIC,8,51,38,8
+    LTEXT           "",IDC_KEY_SALT,53,51,160,8
+    RTEXT           "Disk Key:",IDC_STATIC,8,62,38,8
+    LTEXT           "",IDC_DISK_KEY,53,62,160,8
+    RTEXT           "Random:",IDC_STATIC,16,40,30,8
+    LTEXT           "",IDC_RANDOM_BYTES,53,40,160,8
+END
+
+IDD_VOLSTATS_DLG DIALOG DISCARDABLE  0, 0, 229, 146
+STYLE DS_MODALFRAME | DS_SETFOREGROUND | DS_CENTER | WS_CAPTION
+CAPTION "Volume creation complete"
+CLASS "CustomDlg"
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "",-1,8,4,213,136
+    LTEXT           "The volume has been created. The volume file system details are as follows:",
+                    -1,17,15,194,20
+    LTEXT           "STATS BOX",IDC_STATS_BOX,17,37,194,74
+    DEFPUSHBUTTON   "OK",IDOK,87,118,50,14
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "#include ""..\\\\common\\\\resource.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""..\\\\common\\\\dlgs.rc""\r\n"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_MKFS_DLG, DIALOG
+    BEGIN
+        RIGHTMARGIN, 345
+        TOPMARGIN, 1
+        BOTTOMMARGIN, 204
+    END
+
+    IDD_VOLTYPE_PAGE_DLG, DIALOG
+    BEGIN
+        RIGHTMARGIN, 214
+        BOTTOMMARGIN, 108
+    END
+
+    IDD_CIPHER_PAGE_DLG, DIALOG
+    BEGIN
+        RIGHTMARGIN, 214
+        BOTTOMMARGIN, 90
+    END
+
+    IDD_PASSWORD_PAGE_DLG, DIALOG
+    BEGIN
+        RIGHTMARGIN, 214
+    END
+
+    IDD_SIZE_PAGE_DLG, DIALOG
+    BEGIN
+        RIGHTMARGIN, 214
+        BOTTOMMARGIN, 93
+    END
+
+    IDD_FILE_PAGE_DLG, DIALOG
+    BEGIN
+        RIGHTMARGIN, 214
+        BOTTOMMARGIN, 81
+    END
+
+    IDD_VOLSTATS_DLG, DIALOG
+    BEGIN
+        RIGHTMARGIN, 222
+        TOPMARGIN, 1
+        BOTTOMMARGIN, 122
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+IDD_CIPHER_PAGE_DLG DLGINIT
+BEGIN
+    IDC_COMBO_BOX, 0x403, 1, 0
+"\000" 
+    0
+END
+
+IDD_FILE_PAGE_DLG DLGINIT
+BEGIN
+    IDC_COMBO_BOX, 0x403, 1, 0
+"\000" 
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_E4M2                BITMAP  DISCARDABLE     "..\\common\\e4m2.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_SIZE_TITLE          "Step 4. Specify Volume Size"
+    IDS_MDCSHA_HELP0        "Invented by Peter Gutmann, MDC turns one-way hash functions such as SHA into ciphers. "
+    IDS_MDCSHA_HELP1        "MDC when used with SHA has a 160-bit block size, and a 512-bit key. This cipher is fast, however "
+    IDS_MDCSHA_HELP2        "hash based ciphers are new, and may be insecure. SHA used here is the original, not the 1994 modification. "
+    IDS_MDCSHA_HELP3        "SHA is NIST's Secure Hash Algorithm (FIPS 180)."
+    IDS_NEXT                "&Next >"
+    IDS_FINISH              "&Finish"
+    IDS_OPEN_TITLE          "Please specify a path an filename"
+    IDS_FILE_TITLE          "Step 2. Pick Volume location"
+    IDS_FILE_HELP0          "Please click on the ""...""  button, and then type in the filename and path of your new Volume. "
+    IDS_FILE_HELP1          "You can create file hosted volumes or create encrypted floppy or disk partitions.\n"
+    IDS_VOLTYPE_HELP0       "Please choose between an E4M or SFS format volume.\n\n"
+    IDS_VOLTYPE_HELP1       "Your choice of format limits which ciphers are available. "
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_VOLTYPE_TITLE       "Step 1. Select Volume Type"
+    IDS_FORMAT_TITLE        "Last Step. Generate the Volume"
+    IDS_PASSWORD_TITLE      "Step 5. Choose a password"
+    IDS_PREV                "< &Prev"
+    IDS_SIZE_HELP0          "Please enter the size of your new volume. Click on the KB radio button to specify Kilobytes or the MB button "
+    IDS_SIZE_HELP1          "for Megabytes. The Volume size limit is 2GB. The minimum size is 19 KB."
+    IDS_FORMAT_HELP0        "Press ""Finish"" to create your new Volume. There will be a pause before your volume is formatted while "
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_TITLE               "Create E4M Volume"
+    IDS_VOL_STATUS0         "Volume has %d head(s) and %d sector(s) per track,\nusing 0x%02x media descriptor, with %d sectors;\n"
+    IDS_VOL_STATUS1         "file system has %d %d-bit FAT(s) and %d sector(s) per cluster.\nFAT size is %d sector(s), and provides %d cluster(s).\n"
+    IDS_VOL_STATUS2         "Root directory contains %d slots.\nVolume ID is %08lx, %s. Took %lums to create volume."
+    IDS_VOL_NO_LABEL        "no volume label."
+    IDS_VOL_LABEL           "volume label %s\n"
+    IDS_FORMAT_HELP1        "your system is polled for extra randomness. Random bytes are being collected all the time in the background "
+    IDS_FORMAT_HELP2        "from your mouse movements, key clicks, and from your system data  such as memory status, performance data etc."
+    IDS_READONLYPROMPT      "The volume '%s' exists, and is read-only. Are you sure you want to replace this file?"
+    IDS_CIPHER_NONE_HELP0   "Encryption disabled."
+    IDS_DISK_FREE_BYTES     "Drive %s has %.2f  bytes available."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_CIPHER_TITLE        "Step 3. Set Encryption Options"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_DISK_FREE_KB        "Drive %s has %.2f KB available."
+    IDS_DISK_FREE_MB        "Drive %s has %.2f MB available."
+    IDS_CANNOT_CALC_SPACE   "Cannot calculate available free space\\layout for this drive."
+    IDS_DEVICE_FREE_BYTES   "Device %s has a size of %.2f  bytes."
+    IDS_DEVICE_FREE_KB      "Device %s has a size of %.2f KB."
+    IDS_DEVICE_FREE_MB      "Device %s has a size of %.2f MB."
+    IDS_DES_HELP0           "This is the US government's Data Encryption Standard, by IBM and the NSA. The standard was published as FIPS PUB 46."
+    IDS_DES_HELP1           "This algorithm has a 56 bit key, and 64-bit block size."
+    IDS_BLOWFISH_HELP0      "Invented by Bruce Schneier, Blowfish has a 64-bit block size with a variable length key. "
+    IDS_BLOWFISH_HELP1      "Blowfish is a fast cipher, and can be used freely anywhere. E4M uses 256 bit blowfish keys."
+    IDS_IDEA_HELP0          "By Ascom-Tech AG. This cipher has a  64-bit block size with a 128-bit key. "
+    IDS_IDEA_HELP1          "A license fee is required for commercial use available from idea@ascom.ch."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_TRIPLEDES_HELP0     "TripleDES is 3 iterations of the DES algorithm, in inner-CBC mode, with 3 independent keys. "
+    IDS_TRIPLEDES_HELP1     "The block size is 64-bits. The key length is 168-bits."
+    IDS_CAST_HELP0          "CAST has a 64-bit block size, E4M uses 128-bit keys. Designed in Canada by "
+    IDS_CAST_HELP1          "Carlisle Adams and Stafford Tavares. This cipher is fast."
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#include "..\\common\\dlgs.rc"
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

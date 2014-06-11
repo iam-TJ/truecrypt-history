@@ -1,0 +1,46 @@
+[Language]
+LanguageSupport0=0009
+[OperatingSystem]
+OSSupport=0000000000010000
+[Data]
+CurrentMedia=Default
+CurrentComponentDef=Default.cdf
+ProductName=
+set_mifserial=
+DevEnvironment=Microsoft Visual C++ 5.0
+AppExe=
+set_dlldebug=No
+EmailAddresss=
+Instructions=Instructions.txt
+set_testmode=No
+set_mif=No
+SummaryText=
+Department=
+HomeURL=
+Author=
+Type=Database Application
+InstallRoot=C:\dev\e4m\setup
+set_level=Level 3
+Version=1.00.000
+InstallationGUID=45165140-8be8-11d2-b65a-0060088b266b
+CurrentFileGroupDef=Default.fdf
+Notes=Notes.txt
+set_maxerr=50
+set_args=
+set_miffile=Status.mif
+set_dllcmdline=
+Copyright=
+set_warnaserr=No
+CurrentPlatform=
+Category=
+set_preproc=
+CurrentLanguage=English
+CompanyName=
+Description=Description.txt
+set_maxwarn=50
+set_crc=Yes
+[MediaInfo]
+mediadata0=Default/Media\Default
+[General]
+Type=INSTALLMAIN
+Version=1.00.000
