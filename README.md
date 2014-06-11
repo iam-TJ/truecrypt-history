@@ -1,6 +1,14 @@
 This repository contains a curated, reconstructed history of the TrueCrypt project from when it began as a
 fork of Encryption for the Masses v2.0.2 in 1999 through to the TrueCrypt v7.2 release in May 2014.
 
+The curated history of the sub-projects (code libraries) included in TrueCrypt, and TrueCrypt releases themselves,
+is contained in the directory ./.METADATA/HISTORY/ in each branch. Please read
+
+ ./.METADATA/HISTORY/README.md
+
+for an explanation of the history meta-data.
+
+
 All source-code contained in this repository is copyright its respective authors. Please see the licence details
 in each branch.
 
