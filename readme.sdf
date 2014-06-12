@@ -1,0 +1,134 @@
+!init OPT_STYLE="manual"
+# Build the title
+!define DOC_NAME           "How to build Encryption for the Masses"
+!define DOC_TYPE           "A Developers Guide"
+!define DOC_AUTHOR         "Paul Le Roux"
+!build_title
+
+Copyright (C) 1998-99 Paul Le Roux. All Rights Reserved.
+
+H1: Introduction
+
+Welcome to the source distribution of E4M. This document briefly 
+describes how to build E4M.
+
+Firstly E4M does not use the build tool supplied by Microsoft in
+the NT DDK.
+
+E4M uses normal makefiles to build everything.
+
+Extract the files from the zip archive, with "use directories" set
+on. The source zip contains long names so don't use an older
+pkunzip.
+
+For the rest of this document I will assume you installed it 
+into \e4m, but this can be any directory. All paths in
+the code, and the makefiles are relative.
+
+The commandline makefiles are the only supported method of building
+E4M.
+
+IDE project files for the Visual C++ 5.0 environment are provided as part
+of the source package, but they are unsupported. These are in the 
+\e4m\ide directory.
+
+The reference compiler for Windows builds is Visual C++ 5.0 (no service packs).
+
+This is the compiler that the shipping product is built under.
+
+H1: What you will need
+
+^ Visual C++ 4.x, 5.0, 6.0 or later
++ MASM 6.11c
++ NT DDK
++ Windows 95 DDK
+
+H1: Setup the DDK paths
+
+In the device driver makefiles, change the variable DDK to
+the full path of your ddk directories for both the Windows 9x
+driver, and the NT driver.
+
+H1: If you plan to debug the product
+
+^ Two computers and a serial cable (laplink cable)
++ The Win32 SDK, or WinDbg alone, which can be downloaded from Microsoft
++ The checked build of Widows NT installed on the second computer
++ For Windows 9x SoftIce 3.24 or later (but don't use the /zi flag).
+
+H1: If you want to modify the help files
+
+^ SDF {{URL:http://www.mincom.com/mtr/sdf/resources/index.html}}
++ any Microsoft help compiler
++ any text editor
+
+Note: The Debug format changed between VC4.x and VC5.0. To debug
+  using VC5.0 or later you must download a new WinDbg from Microsoft.
+  With an older VC4.x, try the WinDbg from an old Win32 SDK CD.
+
+H1: Verifying that you have genuine source code
+
+Follow the instructions given in the E4M help file or in the online
+documentation for verifying the main program. The source is verified
+the same way.
+
+H1: Building the drivers 
+
+^ open up a DOS prompt
++ change to the C drive
++ cd to \e4m\ntdriver  or \e4m\windriver
++ run "\progra~1\devstudio\vc\bin\vcvars32.bat" or "vcvars32 x86" 
+   for VC4.x this sets up the search path's for your compiler
++ run "nmake" or "nmake RELEASE=1"
+
+You should end up with e4mnt4.sys in the ntdriver directory.
+
+or e4m9x.vxd in the windriver directory.
+
+H1: Building volmount, voltest etc
+
+^ open up a DOS prompt
++ change to the C drive
++ cd to \e4m\volmount, volformat etc
++ run "\progra~1\devstudio\vc\bin\vcvars32.bat" or "vcvars32 x86"
++ run "nmake" or "nmake RELEASE=1"
+
+H1: Setting up the registry entries for the driver
+
+Don't try this by hand, just install the driver from the binary 
+distribution, then overwrite it with the rebuilt driver.
+
+H1: Mkproto - automatically generating function prototypes
+
+All the function prototypes in E4M (except those in crypto\)
+are generated using the mkproto tool which you can download from
+{{URL:http://www.e4m.net/download.html}}
+
+This tool is used with the following command line option:
+
+mkproto -s -p -h somefile.c
+
+the above command produces somefile.h with a prototype line for 
+each function found in somefile.c
+
+H1: GNU Indent - generating beautified code
+
+GNU Indent v1.2 is used to format the code that is distributed.
+
+This tool is used with the following command line option:
+
+indent -cli0.4 -bli0 -i8 -ci0 somefile.c
+
+The IDE tab settings used are the defaults (eg: tab size=4, indent size=4,
+keep tabs).
+
+H1: RAR - packaging the final product
+
+The shareware tool "rar" v2.50 is used to package the final product, this tool creates both
+the sfx installation binary, and the zip archive for the source code.
+
+This tool is available from {{URL:http://www.rarsoft.com}}
+
+Enjoy!
+
+Paul Le Roux

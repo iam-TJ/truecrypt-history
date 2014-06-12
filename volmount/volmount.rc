@@ -1,0 +1,169 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+#include "..\\common\\resource.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "#include ""..\\\\common\\\\resource.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""..\\\\common\\\\dlgs.rc""\r\n"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_PASSWORDCHANGE_DLG DIALOG DISCARDABLE  0, 0, 272, 134
+STYLE DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "Password Change"
+CLASS "CustomDlg"
+FONT 8, "MS Sans Serif"
+BEGIN
+    RTEXT           "&Old Password:",IDC_STATIC,8,9,59,8
+    EDITTEXT        IDC_OLD_PASSWORD,71,7,124,12,ES_PASSWORD | 
+                    ES_AUTOHSCROLL
+    RTEXT           "&New Password:",IDC_STATIC,7,27,59,8
+    EDITTEXT        IDC_PASSWORD,71,25,124,12,ES_PASSWORD | ES_AUTOHSCROLL
+    RTEXT           "&Verify:",IDC_STATIC,8,42,59,8
+    EDITTEXT        IDC_VERIFY,71,41,124,12,ES_PASSWORD | ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "&Change",IDOK,206,7,59,14
+    PUSHBUTTON      "Cancel",IDCANCEL,206,24,59,14
+    LTEXT           "BOX HELP",IDC_BOX_HELP,38,59,189,67
+END
+
+IDD_MOUNT_DLG DIALOG DISCARDABLE  0, 0, 310, 236
+STYLE DS_SETFOREGROUND | DS_3DLOOK | DS_CENTER | WS_MINIMIZEBOX | WS_POPUP | 
+    WS_CAPTION | WS_SYSMENU
+CAPTION "TITLE"
+CLASS "CustomDlg"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Tree1",IDC_TREE,"SysTreeView32",TVS_SHOWSELALWAYS | 
+                    WS_BORDER | WS_TABSTOP,6,7,298,90
+    RTEXT           "&Volume to Mount:",IDC_VOLUME_STATIC,3,106,65,8
+    COMBOBOX        IDC_VOLUME,74,104,155,45,CBS_DROPDOWN | CBS_AUTOHSCROLL | 
+                    WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "&Browse Files...",IDC_BROWSE_FILES,239,104,59,14
+    CONTROL         "&Never save history or settings",IDC_NO_HISTORY,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,86,121,137,10
+    PUSHBUTTON      "&Raw Devices...",IDC_BROWSE_DEVICES,239,121,59,14
+    RTEXT           "&Password:",IDC_PASSWORD_STATIC,4,147,64,8
+    EDITTEXT        IDC_PASSWORD,74,146,154,12,ES_PASSWORD | ES_AUTOHSCROLL
+    PUSHBUTTON      "&Change",IDC_CHANGE_PASSWORD,239,145,59,14,WS_DISABLED
+    CONTROL         "Cache in driv&er",IDC_CACHE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,97,163,117,8
+    PUSHBUTTON      "&Wipe Cache",IDC_WIPE_CACHE,239,162,59,14,WS_DISABLED
+    DEFPUSHBUTTON   "&Mount",IDOK,59,218,59,14,WS_GROUP
+    PUSHBUTTON      "Cancel",IDCANCEL,123,218,59,14
+    PUSHBUTTON      "&Help",9,187,218,59,14
+    CTEXT           "No drive letters available",IDC_NO_DRIVES_STATIC,34,135,
+                    232,21
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_PASSWORDCHANGE_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 265
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 127
+    END
+
+    IDD_MOUNT_DLG, DIALOG
+    BEGIN
+        TOPMARGIN, 1
+        BOTTOMMARGIN, 234
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_TREE_VIEW_NORMAL    BITMAP  DISCARDABLE     "tree.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_MOUNT_BUTTON        "&Mount"
+    IDS_UNMOUNT_BUTTON      "&Unmount"
+    IDS_OPEN_TITLE          "Select volume host file"
+    IDS_TITLE               "Mount E4M Volume"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_PASSWORD            "Password"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#include "..\\common\\dlgs.rc"
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
