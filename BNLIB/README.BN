@@ -1,0 +1,182 @@
+Welcome to my multiprecision math library!  I'm a little bit proud
+of it, particularly its speed.  If you have a machine for which
+assembly-language subroutines are available (you can probably guess
+from the filename), it will go even faster.  Instructions for
+building the library with assembly subroutines are included later.
+
+Barring that, on many machines using GCC, the GNU C compiler, helps
+the speed significantly, because it not only supports "long long"
+64-bit data types, but it can perform operations on them in line.
+Many compilers that support "long long" are rather inefficient when
+working with them.
+
+For a description of what the library does, see bn.doc.  For a description
+of how it's organized, see bnintern.doc.  For the real nitty-gritty,
+read the code.  I'm very curious what you all think of it.  One thing I
+tried to do was to comment it better than most, although that is more
+apparent in the lower-level parts of the code (the lbn* files) that I
+wrote first rather than the higher levels, when I didn't need comments
+to explain what I was doing to myself.
+
+I can't put a full number theory course in the comments, so there
+are some parts that are just going to be confusing unless you
+have background.  Here's how I suggest judging it: if you stare
+at the code for a while, and figure out what's going on, but think
+that it was harder than necessary, send me mail explaining how you
+think it could be made easier.  If you never manage to figure it out,
+then assume that it's something you never learned in school and
+it's not my job to teach you.
+
+But really, I can't stop you from saying whatever you want.  If you'd
+like to send some comments, good or bad, send me some mail.
+-- 
+	-Colin <colin@nyx.net>
+
+
+** How to build the library
+
+For the full details of how all the bits go together, see bnintern.doc.
+If you're on a Unix machine, run the "configure" script (generated
+from configure.in using GHU autoconf) and it will set things up
+automatically.  If you're on another machine, you'll have to do
+things by hand, although it's still not hard.
+
+This library works in three word sizes: 16, 32 and 64 bits.  The
+limiting factor is that it needs a double-word multiply, so even
+a 64-bit SPARC must use the 32-bit code, because it only produces
+a 64-bit multiply result.  The MIPS, PowerPC and Alpha, however,
+can use the 64-bit version, as they provide access to the high
+64 bits of an integer multiply result.
+
+If you're compiling a pure C version, or even a simple assembly-language
+version, there are some special auto-size-detecting files that will
+figure out (at compile time, using <limits.h> and the C preprocessor)
+what version to compile and #include it.  To compile that version,
+you need to put together the following files:
+
+- bn.c
+- bn00.c
+- lbn00.c
+- lbnmem.c
+
+The file "bntest00.c" (see README.bntest) is a low-level test program
+that will check the correct operation of the library.  It needs to be
+linked onl with lbn00.c and lbnmem.c.  The file "sizetest.c" will tell
+you what word size it is compiling.  (Or look at the symbols compiled
+in the object files.)
+
+The file "germtest.c" is a simple program to generate Sophie Germain
+primes which demonstrates the library's use.
+
+It is possible to include some assembly-language primitives in this.
+For example, for the DEC Alpha primitives, you need to compile
+everything with the -DBNINCLUDE=lbnalpha.h flag (or somehow get
+the effect of "#define BNINCLUDE lbnalpha.h" in all of the code),
+and assemble and link in "lbnalpha.s".
+
+If you want to compile a specific version of the library, say the
+32-bit version, you need to compile together the following files:
+
+- bn.c
+- bn32.c
+- bninit32.c
+- lbn32.c
+- lbnmem.c
+- legal.c
+
+Note the estra "bninit32.c" file.  This is included in "bn00.c",
+but is separated out here so that you can compile the library
+for two word sizes and select a version to initialize at run
+time!  It contains only the function "bnInit()" which does nothing
+but call "bnInit_32()".
+
+The fun comes when you compile version of the library for two word sizes.
+This is currently only supported for the 680x0 and 80x86 processors,
+which come in 16- and 32-bit versions, but this also makes sense on
+MIPS and PowerPC processors that have 32- and 64-bit versions.
+
+To do this, you need to compile 
+
+- bn.c
+- bn16.c
+- bn32.c
+- lbn16.c
+- lbn32.c
+- lbnmem.c
+- legal.c
+- lbn8086.asm (or lbn68000.c and lbn68020.c for the 680x0)
+- bn8086.c (or bn68000.c for the 680x0)
+
+Further, you need to compile all the .c files with -DBNINCLUDE=lbn8086.h
+(or -DBNINCLUDE=lbn68000.h), or somehow get the effect of
+#define BNINCLUDE lbn8086.h
+when compiling all the .c files.
+
+The lbn8086.asm file contains teh assembly-language subroutines
+The lbn8086.h file contains declarations for them and the
+necessary information to call them instead of the C versions
+The bn8086.c file contains the single function bnInit(), which
+determines the word size of the processor when called and calls
+bnInit_16() or bnInit_32(), as appropriate.
+
+To summarize:
+*  To build a 16/32-bit 80x86 version with 16-bit segmented addressing,
+   compile with -DBNINCLUDE=lbn8086.h:
+- bn.c, bn16.c, bn32.c, lbn16.c, lbn32.c, lbnmem.c, legal.c
+  bn8086.c, lbn8086.asm
+
+*  To build a 32-bit-only 80x86 version (x >= 3) with 16-bit segmented
+   addressing, compile with -DBNINCLUDE=lbn8086.h:
+- bn.c, bn00.c (or bn32.c and bninit32.c), lbn00.c (or lbn32.c),
+  lbnmem.c, legal.c, lbn8086.asm
+
+*  To build a 32-bit flat-model DOS 80x86 (x >= 3) version,
+   compile with -DBNINCLUDE=lbn80386.h:
+- bn.c, bn00.c (or bn32.c and bninit32.c), lbn00.c (or lbn32.c),
+  lbnmem.c, legal.c, lbn80386.asm
+lbn80386.asm uses Intel assembler mnemonics.
+
+*  To build a 32-bit flat-model Unix 80x86 (x >= 3) version,
+   compile with -DBNINCLUDE=lbn80386.h:
+- bn.c, bn00.c (or bn32.c and bninit32.c), lbn00.c (or lbn32.c),
+  lbnmem.c, legal.c, lbn80386.s
+lbn80386.s uses AT&T (Unix) assembler mnemonics.
+
+*  To build a 16/32-bit 680x0 version, compile with -DBNINCLUDE=lbn68000.h:
+- bn.c, bn16.c, bn32.c, lbn16.c, lbn32.c, lbnmem.c, legal.c, bn68000.c,
+  lbn68000.c, lbn68020.c	
+lbn68000.c and lbn68020.c use Metrowerks CodeWarrior inline assembler.
+
+*  To build a 32-bit 680x0 (x >= 2) version,
+   compile with -DBNINCLUDE=lbn68020.h:
+- bn.c, bn00.c (or bn32.c and bninit32.c), lbn00.c (or lbn32.c),
+  lbnmem.c, legal.c, lbn68020.c
+lbn68020.c uses Metrowerks CodeWarrior inline assembler.
+
+*  To build a 32-bit PowerPC version, compile with -DBNINCLUDE=lbnppc.h:
+- bn.c, bn00.c (or bn32.c and bninit32.c), lbn00.c (or lbn32.c),
+  lbnmem.c, legal.c, lbnppc.c
+lbnppc.c uses Metrowerks CodeWarrior inline assembler.
+
+The Intel i960 and DEC Alpha versions (the Alpha uses 64 bits!) operate
+similarly.
+
+*  To build a 32-bit Intel i960 version, compile with -DBNINCLUDE=lbn960jx.h:
+- bn.c, bn00.c (or bn32.c and bninit32.c), lbn00.c (or lbn32.c),
+  lbnmem.c, legal.c, lbn960jx.s
+
+*  To build a 64-bit DEC Alpha, compile with -DBNINCLUDE=lbnalpha.h:
+- bn.c, bn00.c (or bn64.c and bninit64.c), lbn00.c (or lbn64.c),
+  lbnmem.c, legal.c, lbnalpha.s
+
+
+Note that the 32- and 64-bit files are all generated automatically
+from the corresponding 16-bit files, according to the Unix makefile.
+If you make changes, it is best to change the 16-bit file and then
+generate the 32- and 64-bit files from that.  To generate the
+32-bit file from the 16-bit,
+- Replace every "32" in the 16-bit file with "64", THEN
+- Replace every "16" in the 16-bit file with "32".
+  (If you do this in the other order it won't work!)
+
+The 64-bit version is similar, except "32" -> "128" and "16" -> "64".

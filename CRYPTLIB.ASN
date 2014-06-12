@@ -1,0 +1,823 @@
+-/ This specification makes three slight deviations from the standard ASN.1
+   syntax to overcome some minor shortcoming in ASN.1.  The most obvious one
+   is the use of -//- comment delimiters (which work like C's /**/) in place
+   of standard ASN.1 delimiters, which require a seperate -- at the start of
+   each and every line of comment.
+
+   Secondly, the specification defines a TAGDEF pseudo-type to make
+   management of explicit tags easier.  Instead of having to keep track of
+   [APPLICATION 2]'s scattered throughout one or more documents or relying on
+   an ASN.1 compiler to juggle automatic tags around, this pseudo-type allows
+   named tags so that the previous declaration would become [APPLICATION
+   TagName].  The tag values are then declared at the start of the
+   specification.  The use of application-specific tags is deprecated by some
+   authors because of the difficulty in managing the resulting confusion of
+   tag values; the TAGDEF pseudo-type attempts to alleviate this problem.
+
+   Finally, ASN.1 has somewhat poor control over variant record structures
+   of the form:
+
+	type of following record
+	record as defined by type taken from a predefined set of possibilities
+
+   There are two ways in which ASN.1 allows this form of record to be
+   specified, the first being to use a CHOICE type:
+
+	FooRecord ::= CHOICE {
+		type1   [0] Type1,
+		type2   [1] Type2,
+		...
+		}
+
+   However the choice is usually taken from a number of record types which
+   have already been allocated either unique ID's or object identifiers.
+   The use of implicit tagging then creates a second set of ID's (the tags)
+   alongside the existing ID's, leading to the same sort of confusion
+   created by the use of application-specific tags.   An alternative to the
+   use of CHOICE is to use ANY DEFINED BY:
+
+	FooRecord ::= SEQUENCE {
+		typeID  INTEGER,
+		ANY DEFINED BY typeID
+		}
+
+   This is similarly problematic since the functionality that is really
+   required of the ANY DEFINED BY is:
+
+	ANY <of the following types> DEFINED BY typeID
+
+   To solve this problem, the following definition extends the ASN.1 CHOICE
+   notation by replacing ANY DEFINED BY with a CHOICE type, but without the
+   usual tagging to differentiate the choices.  In order to distinguish this
+   type of nonstandard use, the text uses TYPED CHOICE instead of CHOICE in
+   the definition.  This does not affect the encoded form, but makes it
+   clearer from looking at the definitions what kind of records we can
+   expect in the ANY DEFINED BY position.
+
+   The usual way around this problem is to use the ASN.1 macro extensions,
+   however requiring people to understand the contents of Annex A of ISO
+   8824:1988 (which has been described as "impenetrable"), with paragraphs
+   like:
+
+	"The resulting type and value of an instance of use of the new value
+	 notation is determined by the value (and the type of the value) finally
+	 assigned to the distinguished local reference identified by the keyword
+	 VALUE, according to the processing of the macrodefinition for the new
+	 type notation followed by that for the new value notation"
+
+   probably contravenes some sections of the Geneva Convention.  The 1993
+   extensions may also be employed to partially circumvent these problems,
+   but would probably make the result incomprehensible to someone unfamiliar
+   with ASN.1.  This specification uses the ASN.1 constraint notation, but
+   nothing more.
+
+   To convert this specification into a form parseable by a standard ASN.1
+   compiler:
+
+	- Insert a -- at the start of every comment line throughout the
+	  document.
+	- Replace all occurrences of tag pseudo-types with their corresponding
+	  values (this will make the resulting document difficult to maintain,
+	  since hard-coded numbers will be scattered throughout the document).
+	- Replace all occurrences of TYPED CHOICE with EXTERNAL (this will make
+	  type checking of the ANY DEFINED BY field impossible)
+
+   The reason why the use of this specification with an unmodified ASN.1
+   compiler isn't considered a major issue is that all the ASN.1 routines
+   should probably be carefully hand-coded to allow for proper error recovery
+   from a denial-of-service attack in which an attacker transmits ASN.1
+   structures chosen to crash or otherwise negatively affect the code which
+   parses them.  After trying (and breaking) three ASN.1 compilers in this
+   way, the code used in cryptlib was hand-coded to perform very paranoid
+   checking of all input data.  This isn't a fault of the ASN.1 compilers,
+   which merely check for normal data errors.  What they don't handle so well
+   are errors specifically chosen by an attacker, after careful analysis of
+   the compiler, to crash the generated ASN.1 parsing code /-
+
+cryptlib DEFINITIONS ::=
+BEGIN
+
+-/ We export a few objects for external use.  Most of the low-level ones are
+   hidden within the library /-
+
+EXPORTS
+	EncryptedKey, PKCEncryptedKey, Signature, EncryptedData, CompressedData,
+	SignedData;
+
+-/ ID's for the algorithm types are defined externally (this is a logical
+   rather than a physical import since the syntax is incompatible as they're
+   declared in a C header file) /-
+
+IMPORTS
+	CryptType, CryptMode FROM capi.h,
+	CRYPT_MAX_KEYSIZE, CRYPT_MAX_IVSIZE, CRYPT_MAX_HASHSIZE FROM capi.h;
+
+-/ The application-specific tags /-
+
+TAGDEF
+	TagEncryptedKey(0), TagPKCEncryptedKey(1), TagSignature(2),
+	TagEncryptedData(3), TagCompressedData(4), TagSignedData(5),
+	TagRawData(6), TagNonData(7), TagContinuation(8),
+	TagPublicKey(15), TagPrivateKey(16)
+
+-/ In its simplest form an encrypted message will be:
+
+	EncryptedKey( KeyInformation )
+	EncryptedData( Data )
+
+   or
+
+	PKCEncryptedKey( KeyInformation )
+	EncryptedData( Data )
+
+   A signed message will be:
+
+	SignedData( Data )
+	Signature
+
+   (the Signature can be before or after the SignedData).
+
+   A more complex message consisting of signed, PKC-encrypted data would be:
+
+	PKCEncrypteKey( KeyInformation )
+	EncryptedData( SignedData( Data ), Signature )
+
+   Note that the inner Data field in each of these cases can itself contain
+   further nestings of data fields /-
+
+------------------------------------------------------------------------------
+--																			--
+--					Data Format Definitions and Structures					--
+--																			--
+------------------------------------------------------------------------------
+
+-/ Compressed plaintext data (the format for this is currently undefined.
+   This data type should be regarded as being reserved for future use) /-
+
+COMPRESSED { Data } ::= OCTET STRING ( CONSTRAINED BY
+	{ -- Must be the result of the compression of -- Data }
+	)
+
+CompressedData ::= [APPLICATION TagCompressedData] SEQUENCE {
+	...								-- Compression info, to be defined
+	dataContinued	BOOLEAN DEFAULT (FALSE)
+									-- Whether the data is further continued
+	data			COMPRESSED{Data}-- Compressed data
+	}
+
+-/ Signed data.  The SignatureCookie ties the signed data to the signature
+   or signatures associated with it.  The signature is stored independantly
+   from the data in a Signature record (typically this follows the SignedData
+   record).  The set of MessageDigestParam's contains information on which
+   types of message digest to compute for the data in order to allow the
+   signature check to be done once the end of the data has been reached.
+   This is stored before the data itself to allow for one-pass processing /-
+
+SignedData ::= [APPLICATION TagSignedData] SEQUENCE {
+	dataContinued	BOOLEAN DEFAULT (FALSE)
+									-- Whether the data is further continued
+	signatureCookie
+			  [ 0 ]	IMPLICIT SignatureCookie,
+									-- Signature cookie
+	signatureDigestInfo	SET OF MessageDigestParams
+									-- Information on hashing for sig.check
+	data			Data			-- The data to be signed
+	}
+
+-/ Encrypted data.  The IV is always present as a fixed-length string to
+   obscure the details of the algorithm and mode being used.  If necessary it
+   is extended to more than CRYPT_MAX_IVSIZE bytes by padding to the right
+   with 0 bits /-
+
+EncryptedData ::= [APPLICATION TagEncryptedData] SEQUENCE {
+	dataContinued	BOOLEAN DEFAULT (FALSE)
+									-- Whether the data is further continued
+	keyCookie [ 0 ]	IMPLICIT KeyCookie,
+									-- Key cookie
+	iv				OCTET STRING (SIZE(CRYPT_MAX_IVSIZE)),	-- IV
+	data			ENCRYPTED{Data}	-- Encrypted data
+	}
+
+-/ Raw data. This is the lowest level of nesting, data encapsulated at this
+   level is the raw data with no further nesting being possible /-
+
+RawData ::= [APPLICATION TagRawData] SEQUENCE {
+	dataContinued	BOOLEAN DEFAULT (FALSE)
+									-- Whether the data is further continued
+	data			OCTET STRING	-- Raw data
+	}
+
+-/ Non-data, used for message padding /-
+
+NonData ::= [APPLICATION TagNonData] SEQUENCE {
+	dataContinued	BOOLEAN DEFAULT (FALSE)
+									-- Whether the data is further continued
+	data			OCTET STRING	-- Random padding
+	}
+
+-/ Generic data.  Of the following options, the data fields of SignedData and
+   EncryptedData may contain nested data types; the data fields of NonData
+   and RawData cannot contain nested types /-
+
+Data ::= CHOICE {
+	compressedData	CompressedData,
+	signedData		SignedData,
+	encryptedData	EncryptedData,
+	nonData			NonData,
+	rawData			RawData
+	}
+
+-/ A continuation of a previous Data field.  This is provided in order to
+   work around the ASN.1 limitation that requires that the length of every
+   object (with potentially infinite levels of nesting) be known before a
+   single byte of data is output, since the TLV encoding requires storing the
+   length of the outer object at the start.  The Continuation record provides
+   a way to break a single larger record into a number of smaller sub-records
+   which are more amenable to processing by an application.  A continuation
+   record continues the type of the previous record.  For example to encrypt
+   a 45K when 16K I/O buffers are available, the encoded output would be:
+
+	TagEncryptedData, 16384, TRUE, ...;
+	TagContinuation, 16384, TRUE, ...;
+	TagContinuation, 13312, ...;
+
+   This allows large objects to be broken down into a palatable size.  The
+   Zip compressed data format uses a similar technique to break a data stream
+   into smaller chunks (typically with a 64K maximum size) for processing.
+   SDSI also uses this form of continuation.
+
+   NOTE: This format isn't finalised yet, because it leads to problems with
+		 multiple layers of encapsulation when the outer layer consists of
+		 continuation records but the inner one doesn't, making it impossible
+		 to strip off a layer at a time which may be necessary, for example,
+		 if multiple signers exist and each one must be checked seperately /-
+
+CONTINUATION { Data } ::= OCTET STRING ( CONSTRAINED BY
+	{ -- Has the same implicit type as the immediately preceding piece --
+	  -- of -- Data }
+	)
+
+Continuation ::= [APPLICATION TagContinuation] SEQUENCE {
+	dataContinued	BOOLEAN DEFAULT (FALSE)
+									-- Whether the data is further continued
+	data			CONTINUATION{ Data }
+	}
+
+------------------------------------------------------------------------------
+--																			--
+--					Message Digest Definitions and Structures				--
+--																			--
+------------------------------------------------------------------------------
+
+-/ The message digest object.  MessageDigest objects are used for various
+   purposes such as digital signatures and to identify other objects like
+   public keys /-
+
+MessageDigest ::= SEQUENCE {
+	algorithm		CryptAlgorithm,	-- Message digest algorithm
+	algorithmInfo
+			  [ 0 ]	IMPLICIT DigestAlgorithmInfo OPTIONAL,
+	digest			OCTET STRING (SIZE(1..CRYPT_MAX_HASHSIZE))
+									-- Message digest data
+	}
+
+DigestAlgorithmInfo ::= TYPED CHOICE {
+	shaInfo			ShaInfo,		-- SHA parameters
+	...
+	}
+
+ShaInfo ::= SEQUENCE {
+	isSHA			BOOLEAN DEFAULT (FALSE)
+									-- Whether to use SHA rather than SHA1
+	}
+
+-/ MessageDigest's are also used as key ID's.  Here they correspond to a MD
+   of the DER-encoded public portion of the key.  This is stored as part of
+   the key record to speed up lookups, and is better than the X.509 use of
+   serial numbers which assume some sort of centralized coordination system
+   for the management of serial numbers, or PGP's use of easily-spoofed key
+   LSB's.  In contrast hash-based ID's are (virtually) guaranteed to be
+   unique, and are much easier to manage /-
+
+KeyID ::= MessageDigest
+
+-/ The DER-encoded form of the MessageDigestInfo record is used as the data
+   value D when signing data as per PKCS #1.  The nonce is included to ensure
+   that no two people ever sign the same data.  This is used in preference
+   to PKCS #1's DigestInfo structure which requires AlgorithmIdentifiers
+   (which won't be defined yet for many newer algorithms, although they do
+   exist for all the broken and insecure digest algorithms), and which
+   doesn't include the nonce /-
+
+MessageDigestInfo ::= SEQUENCE {
+	nonce			OCTET STRING (SIZE(8)),	-- Nonce
+	messageDigest	MessageDigest
+	}
+
+-/ In order to make one-pass processing of signed data possible, we encode
+   the message digest parameters needed to process the data at the start of
+   the data.  This record is just a MessageDigest without the digest field /-
+
+MessageDigestParams ::= SEQUENCE {
+	algorithm		CryptAlgorithm,	-- Message digest algorithm
+	algorithmInfo
+			  [ 0 ]	IMPLICIT DigestAlgorithmInfo OPTIONAL
+	}
+
+------------------------------------------------------------------------------
+--																			--
+--					Key Encryption Definitions and Structures				--
+--																			--
+------------------------------------------------------------------------------
+
+-/ The key control vector.  This contains a restriction bitmap in which each
+   bit, when turned on, locks out some operation for a key.  By default the
+   control vector consists of all zero bits, so that all operations for a key
+   are enabled.  The control vector is applied in the standard IBM-designed
+   way, except that SHA1 is used for the hashing instead of DES, and only a
+   maximum of 160 SHA1 output bits are xor'd into the key (this isn't a
+   problem in the original scheme when only DES was used, but becomes an
+   issue when different algorithms are involved).  If the control vector is
+   all zeroes, it is not applied to the encryption key.  The control vector
+   may also be used by hardware-based cryptlib interfaces which provide
+   access controls for keys stored by the hardware /-
+
+ControlVector ::= BIT STRING {
+	CRYPT_CONTROL_LOCKED(0),		-- Control vector cannot be changed
+	CRYPT_CONTROL_NOENCRYPT(1),		-- Key cannot be used for encryption
+	CRYPT_CONTROL_NODECRYPT(2),		-- Key cannot be used for decryption
+	CRYPT_CONTROL_NOEXPORT(3),		-- Key cannot be exported
+	}
+
+-/ Various parameterized types which codify the mapping from plaintext to
+   the encrypted form of the plaintext.  These are almost the same as the
+   ISO 9594-8 types of the same name, except that we use an OCTET STRING
+   rather than a BIT STRING, and differentiate between conventionally
+   encrypted data and public-key encrypted data, which is really an INTEGER
+   and not a bit/octet string /-
+
+ENCRYPTED { Data } ::= OCTET STRING ( CONSTRAINED BY
+	{ -- Must be the result of the encryption of -- Data }
+	)
+
+PKCENCRYPTED { Data } ::= INTEGER ( CONSTRAINED BY
+	{ -- Must be the result of the public-key encryption of -- Data }
+	)
+
+-/ Algorithm parameters.  These are either present (and protected by
+   conventional or PKC encryption) along with the key in the KeyInformation
+   record, or externally visible in the PKCEncryptedKey record /-
+
+CryptAlgorithmInfo ::= TYPED CHOICE {
+	desInfo			DesInfo,		-- DES parameters
+	des3Info		Des3Info,		-- Triple DES parameters
+	mdcshsInfo		MdcshsInfo,		-- MDC/SHS parameters
+	rc5Info			Rc5Info,		-- RC5 parameters
+	saferInfo		SaferInfo,		-- SAFER parameters
+	blowfishInfo	BlowfishInfo	-- Blowfish parameters
+	...
+	}
+
+DesInfo ::= SEQUENCE {				-- Default { FALSE }
+	isDESX			BOOLEAN			-- Whether to use DESX
+	}
+
+Des3Info ::= SEQUENCE {				-- Default { FALSE }
+	isThreeKey		BOOLEAN			-- Whether to use 3-key triple DES
+	}
+
+MdcShsInfo ::= SEQUENCE {			-- Default { FALSE, 200 }
+	useSHA1			BOOLEAN			-- Whether to use newer variant of SHA
+	keySetupIterations
+					INTEGER			-- Number of key setup iterations
+	}
+
+Rc5Info ::= SEQUENCE {				-- Default { 12 }
+	rounds			INTEGER			-- Number of encryption rounds
+	}
+
+SaferInfo ::= SEQUENCE {			-- Default { FALSE, 6, or 10 for K128 }
+	useSaferSK		BOOLEAN,		-- Whether to use strengthened-key version
+	rounds			INTEGER,		-- No.encryption rounds
+	}
+
+BlowfishInfo ::= SEQUENCE {			-- Default { FALSE, 10 }
+	useBlowfishSK		BOOLEAN		-- Whether to use strengthened-key version
+	keySetupIterations	INTEGER		-- No.iterations for SK user key setup
+	}
+
+-/ The key cookie, which is used both as a check to make sure the session key
+   was recovered properly, and to tie the key with the data it is used to
+   encrypt.  This is defined as the first 4 bytes of the SHA-1 hash of the
+   raw session key (after any other transformation such as the application of
+   the control vector).
+
+   One possible weakness of the use of key cookies is that if the same key is
+   exported multiple times with different control vectors for use by the same
+   recipient, the key cookie can be used to select the less-constrained key.
+   The same effect could normally be obtained by changing the code to ignore
+   control vectors, but it may become a problem in environments where the
+   encryption is implemented as a secure module which actually enforces the
+   use of control vectors.  Although the scenario of multiple identical keys
+   with different control vectors being exported to the same recipient is
+   unlikely, the key cookie is made an optional parameter in order to
+   eliminate this possible problem /-
+
+KeyCookie ::= OCTET STRING (SIZE(4))
+
+-/ The key information object.  This is then encrypted using a conventional
+   or public-key algorithm to create an EncryptedKey or PKCEncryptedKey.
+
+   When a KeyInformation object is encrypted with a conventional algorithm,
+   the padding field should be used to obscure the total size of the object,
+   otherwise it will be possible to infer information on the algorithm type
+   from the size of the KeyInformation object.  As a general guide, adding
+   padding to take the KeyInformation object to the nearest multiple of 64
+   bytes is a good way to obstruct object-size-based traffic analysis /-
+
+KeyInformation ::= SEQUENCE {
+	algorithm		CryptAlgorithm,	-- Encryption algorithm
+	mode			CryptMode,		-- Encryption mode
+	algorithmInfo
+			  [ 0 ]	IMPLICIT CryptAlgorithmInfo OPTIONAL,
+									-- Extra information needed by the
+									-- encryption algorithm
+	key				OCTET STRING (SIZE(1..CRYPT_MAX_KEYSIZE)),
+									-- The key itself
+	padding			OCTET STRING OPTIONAL
+									-- Padding to hide the total data size
+	}
+
+-/ The conventional-key encrypted key object.  This contains a KeyInformation
+   object encrypted with the conventional key, which may or may not have been
+   derived from a longer user key.  If the conventional key was derived from
+   a longer user key, the parameters (hash algorithm used and number of
+   iterations) are included in the record.
+
+   Although the encrypted key could be an EncryptedData record, this just
+   adds another level of unnecessary complexity (and the encrypted key is
+   really an integeral part of the EncryptedKey record, not a seperate
+   EncryptedData record) so we treat the IV (if the encryption mode being
+   used requires one) and encrypted key as intrinsic fields of the
+   EncryptedData record /-
+
+EncryptedKey ::= [APPLICATION TagEncryptedKey] SEQUENCE {
+	algorithm		CryptAlgorithm,	-- Encryption algorithm
+	mode			CryptMode,		-- Encryption mode
+	algorithmInfo
+			  [ 0 ]	IMPLICIT CryptAlgorithmInfo OPTIONAL,
+									-- Extra information needed by the
+									-- encryption algorithm
+	keyDerivationInfo
+			  [ 1 ]	IMPLICIT KeyDerivationInfo OPTIONAL,
+	keyCookie [ 2 ]	IMPLICIT KeyCookie,
+									-- Cookie for the encrypted key
+	controlVector
+			  [ 3 ]	IMPLICIT ControlVector OPTIONAL,
+									-- Key control vector for encrypted key
+	iv		  [ 4 ]	IMPLICIT OCTET STRING (SIZE(1...CRYPT_MAX_IVSIZE)),
+									-- IV
+	encryptedKey	ENCRYPTED{KeyInformation}
+									-- The encrypted keying information
+	}
+
+-/ The parameters used to derive the conventional encryption key from the
+   user key.  Usually we use the key directly, but sometimes it may have
+   been derived from a longer user key by multiple applications of a hash
+   function, which is encoded in this record /-
+
+KeyDerivationInfo ::= SEQUENCE {
+	algorithm		CryptAlgorithm,	-- Hash algorithm used to derive key
+	algorithmInfo
+			  [ 0 ]	IMPLICIT DigestAlgorithmInfo OPTIONAL
+	iterations		INTEGER			-- Number of iterations of hash
+	}
+
+-/ The PKC-encrypted key object.  X.509 uses a BIT STRING, this format is
+   more rigorous.  Normally all information needed to recreate the session
+   key (including the algorithm, mode, and various parameters) is contained
+   inside the KeyInformation object.  However Diffie-Hellman works somewhat
+   differently and doesn't allow the exchange of information, merely the
+   agreement on a shared secret.  For this reason the parameters for the
+   conventional encryption algorithm are explicitly specified in the
+   PKCAlgorithmInfo field rather than being part of the KeyInformation, and
+   the keyCookie field is meaningless and is omitted /-
+
+PKCEncryptedKey ::= [APPLICATION TagPKCEncryptedKey] SEQUENCE {
+	keyID			KeyID,			-- Key ID of encrypting key
+	algorithm		CryptAlgorithm,	-- Key encryption algorithm type
+	algorithmInfo
+			  [ 0 ]	IMPLICIT PKCAlgorithmInfo OPTIONAL,
+									-- Extra information needed by the
+									-- encryption algorithm.
+	keyCookie [ 1 ]	IMPLICIT KeyCookie,
+									-- Cookie for the encrypted key
+	controlVector
+			  [ 2 ]	IMPLICIT ControlVector OPTIONAL,
+									-- Key control vector for encrypted key
+	encryptedKey	PKCEncryptedKeyInformation
+									-- The encrypted keying information
+	}
+
+PKCAlgorithmInfo ::= TYPED CHOICE {
+	dhInfo				DhInfo,		-- Diffie-Hellman parameters
+	...
+	}
+
+DhInfo ::= SEQUENCE {
+	algorithm		CryptAlgorithm,	-- Conventional encryption algorithm
+	mode			CryptMode,		-- Conventional encryption mode
+	algorithmInfo
+			  [ 0 ]	IMPLICIT CryptAlgorithmInfo OPTIONAL,
+									-- Extra information needed by the
+									-- conventional encryption algorithm.
+	}
+
+-/ The encrypted key information itself, which for most algorithms is just an
+   integer containing a KeyInformation record encrypted with the appropriate
+   public-key algorithm.  For Diffie-Hellman the shared secret is taken from
+   the least-significant bits of the resulting integer value, for example an
+   IDEA key would be integer[ length-16 ... length ] if the integer is stored
+   in big-endian form /-
+
+PKCEncryptedKeyInformation ::= TYPED CHOICE {
+	dhEncryptedKey	DHEncryptedKey	-- DH shared information
+	rsaEncryptedKey	RSAEncryptedKey	-- RSA encrypted data
+	...
+	}
+
+DHEncryptedKey ::= PKCENCRYPTED{KeyInformation}
+									-- DH shared information
+RSAEncryptedKey ::= PKCENCRYPTED{KeyInformation}
+									-- RSA encrypted data
+
+------------------------------------------------------------------------------
+--																			--
+--				Digital Signature Definitions and Structures				--
+--																			--
+------------------------------------------------------------------------------
+
+-/ The signature cookie, a 64-bit nonce which is used to tie a signature and
+   data block together /-
+
+SignatureCookie ::= OCTET STRING (SIZE(8))
+
+-/ A parameterized type which codifies the mapping from data to the signed
+   form of the data.  Some sort of SEQUENCE would make more sense here, but
+   X.509 uses a BIT STRING and then encapsulates a SEQUENCE inside it where
+   necessary (this is probably a design defect in X.509, because it wasn't
+   anticipated that a signature would contain more than one primitive
+   component).
+
+   The signature itself is just (usually) a BIT STRING containing an integer
+   which is the result of wrapping up a MessageDigestInfo record as per
+   PKCS #1 and encrypted it with the appropriate public-key algorithm,
+   however in some cases it contains a BIT STRING which encapsulates a
+   SEQUENCE which contains the output of the signature algorithm (eg DSA,
+   ElGamal) /-
+
+SIGNED { Data } ::= BIT STRING ( CONSTRAINED BY
+	{ -- Must be the result of the private-key encryption of -- Data }
+	)
+
+-/ The signature object /-
+
+Signature ::= [APPLICATION TagSignature] SEQUENCE {
+	keyID			KeyID,			-- Key ID of signers key
+	algorithm		CryptAlgorithm,	-- Signature algorithm type
+	algorithmInfo
+			  [ 0 ]	IMPLICIT SignatureAlgorithmInfo OPTIONAL,
+									-- Extra information needed by the
+									-- encryption algorithm.
+	signatureCookie
+			  [ 1 ]	SignatureCookie	-- Signature cookie for this signature
+	signatureInfo	SIGNED {MessageDigestInfo}
+									-- The signature itself
+	}
+
+SignatureAlgorithmInfo ::= TYPED CHOICE {
+	...
+	}
+
+------------------------------------------------------------------------------
+--																			--
+--								Public/Private Keys							--
+--																			--
+------------------------------------------------------------------------------
+
+-/ The general public and private key objects.  Each key is identified by a
+   MessageDigest record containing the MD of the DER-encoded form of the key
+   components.  This is stored as part of the key record to speed up lookups,
+   and is better than the X.509 use of serial numbers which assume some sort
+   of centralized coordination system for the management of serial numbers,
+   or PGP's use of easily-spoofed key LSB's.  In contrast hash-based ID's are
+   (virtually) guaranteed to be unique, and are much easier to manage.
+
+   The key record also contains a validity period for the key, which is
+   independant of the validity period of the keys certification (for example
+   a key certificate may have a validity period of only an hour, or even "for
+   the duration of a single transaction"), whereas the key validity times are
+   for the key itself, not its certification.
+
+   The public key is simply the X.509 SubjectPublicKeyInfo record which
+   comprises the payload of an X.509 CertificateInfo certificate.  It is
+   assumed that this record will be stored in some form of database,
+   indexed by either user ID or key ID which are stored in separate records.
+
+   [Perhaps this should be a full X.509 v3 Certificate with many fields set
+	to NULL if no certifying information is present]
+
+   The private key isn't so simple, since there is no standard format for
+   this (or, rather, there are half a dozen non-standard formats for it), so
+   we define our own one (one more non-standard can't hurt).
+
+   These formats are somewhat vague because there aren't any standards
+   available - X.509 public keys are assumed to be stored in an X.500
+   directory or online, and private keys are assumed to be stored somewhere
+   in hyperspace.  The eventual goal is probably to store full X.509 certs
+   for the public keys and [something] for the private keys /-
+
+PublicKey ::= SubjectPublicKeyInfo	-- X.509 public key information record
+
+PrivateKey ::= [APPLICATION TagPrivateKey] SEQUENCE {
+	keyID			KeyID,			-- Key ID of following record
+	validFrom [ 0 ] Time DEFAULT (0),	-- Valid from date
+	validTo	  [ 1 ]	Time DEFAULT (0),	-- Valid to date
+	algorithm		PKCAlgorithm,	-- PKC algorithm type
+	privateKey		PrivateKeyInfo	-- Private key information
+	}
+
+PrivateKeyInfo ::= TYPED CHOICE {
+	rsaPrivateKey	RSAPrivateKeyInfo,	-- RSA private key
+	dssPrivateKey	DSSPrivateKeyInfo	-- DSS private key
+	...
+	}
+
+-/ The public key information, an X.509 SubjectPublicKeyInfo record.  The
+   definition is given here for completeness, see X.509 and many related
+   standards, along with assorted drafts, alterations, and amendments, for
+   full details /-
+
+SubjectPublicKeyInfo ::= SEQUENCE {
+	algorithm		AlgorithmIdentifier,-- Algorithm identifier for PKC
+	subjectPublicKey BITSTRING			-- Public key fields
+	}
+
+AlgorithmIdentifier ::= SEQUENCE {
+	algorithm		ALGORITHM.&id( { SupportedAlgorithms } ),
+	parameters		ALGORITHM.&Type( { SupportedAlgorithms }{ @algorithm } )
+						OPTIONAL
+	}
+
+SupportedAlgorithms ALGORITHM ::= { ... }
+
+ALGORITHM ::= TYPE-IDENTIFIER
+
+RSAPublicKey ::= SEQUENCE {
+	modulus			INTEGER,		-- Modulus n
+	publicExponent	INTEGER			-- Public exponent e
+	}
+
+DSAPublicKey ::= INTEGER
+
+-/ The RSA private key.  There are two forms of this structure, the normal
+   one which is identical to the PKCS #1 definition, and an encrypted form
+   which protects the private fields.  PKCS #8 defines a method for
+   encrypting the private key, but this is rather limited and doesn't
+   generalize well.  In addition there is no need to encrypt the public
+   fields, which means that part of the private key can be used as a public
+   key if necessary.  In this respect the following format is closer to the
+   one used in PGP (which also only encrypts the private fields), except that
+   again it's more general than the PGP one.
+
+   Of the private key fields, only the fields n and d are really needed.  e
+   is present to allow the public key to be constructed from it.  p, q,
+   d mod (p-1), d mod (p-1), and (q^-1) mod p are intended for efficiency and
+   may not be used by some implementations.  Although these fields aren't
+   absolutely necessary, reconstructing them is inefficient, and the library
+   will assume they are present, along with exponent1 and exponent2.  These
+   last two fields aren't present in PGP keys, and will be created by the
+   library when the keys are loaded if necessary /-
+
+RSAPrivateKeyInfo ::= CHOICE {
+	rsaPrivateKey
+			  [ 0 ]	RSAPrivateKey,	-- RSA private key
+	rsaEncryptedPrivateKey
+			  [ 1 ]	RSAEncryptedPrivateKey
+									-- Encrypted RSA private key
+	}
+
+RSAPrivateKey ::= SEQUENCE {
+	version			INTEGER(0),		-- Version number
+	modulus			INTEGER,		-- Modulus n
+	publicExponent	INTEGER,		-- Public exponent e
+	privateExponent	INTEGER,		-- Private exponent d
+	prime1			INTEGER,		-- Prime factor p of n
+	prime2			INTEGER,		-- Prime factor d of n
+	exponent1		INTEGER,		-- d mod (p-1)
+	exponent2		INTEGER,		-- d mod (q-1)
+	coefficient		INTEGER			-- CRT coefficient (q^-1) mod p
+	}
+
+RSAEncryptedPrivateKey ::= SEQUENCE {
+	version			INTEGER,		-- Always 0, included for PKCS compat.
+	modulus			INTEGER,		-- Modulus n
+	publicExponent	INTEGER,		-- Public exponent e
+
+-/ Make the next bit like an EncryptedKey but have RSAPrivateFields in place
+   of the KeyInformation record?  It needs the EncryptedKey fields, but
+   linking in the structure is a bit messy /-
+	encryptedRSAKey	ENCRYPTED{RSAPrivateFields}
+									-- Encrypted RSA private key fields
+	}
+
+RSAPrivateFields ::= SEQUENCE {
+	{
+	privateExponent	INTEGER,		-- Private exponent d
+	prime1			INTEGER,		-- Prime factor p of n
+	prime2			INTEGER,		-- Prime factor d of n
+	exponent1		INTEGER,		-- d mod (p-1)
+	exponent2		INTEGER,		-- d mod (q-1)
+	coefficient		INTEGER			-- CRT coefficient (q^-1) mod p
+	}
+
+-/ PKCS #8 has the following:
+
+PrivateKeyInfo ::= SEQUENCE {
+	version			INTEGER(0),		-- Version number
+	privateKeyAlgorithm
+					AlgorithmIdentifier,
+									-- Private-key algorithm
+	privateKey		OCTETS STRING,	-- Private key data
+	attributes[ 0 ]	IMPLICIT Attributes OPTIONAL
+									-- Extended attributes for key
+	}
+
+   and then encrypts this.  However this area isn't standardised at all,
+   Netscape wraps this up in an EncryptedPrivateKeyInfo object which is in
+   turn wrapped up in Netscapes own encryption object.  This format has the
+   unfortunate property of providing around 100 bytes of known plaintext
+   for an attacker for a 1024-bit key /-
+
+------------------------------------------------------------------------------
+--																			--
+--					Key Collection Definitions and Structures				--
+--																			--
+------------------------------------------------------------------------------
+
+-/ The following definitions are for records which will allow public-key data
+   to be moved portably from one system to another.  This work is currently
+   incomplete /-
+
+-/ The header for key collections.  This contains useful information about
+   the key collection such as the number of keys in the collection (which can
+   be useful for giving feedback to the user during operations which process
+   the entire key collection), the maximum version number of any object in
+   the key collection, and a description of the key collection (which avoids
+   relying on changeable and often very limited filenames to identify key
+   collections) /-
+
+KeyHeader ::= SEQUENCE {
+	noRecords		INTEGER			-- No.of key records in this collection
+	version			INTEGER			-- Max.vers.no.of any record in collection
+	description
+			  [ 0 ] GeneralizedString OPTIONAL
+									-- Description of this key collection
+	...
+	}
+
+-/ The key record for public key collections.  This contains the public key,
+   any information associated with it, and any certificates for the key.  It
+   may also contain an optional restart marker which allows for error
+   recovery if part of a key collection becomes corrupted.  The a string
+   contains a sequence of values which have been chosen to be unlikely to
+   occur otherwise in a key record and which are sensitive to various types
+   of corruption.  The CR and LF will detect an FTP transfer in text mode.
+   The 0xA0 is an ASCII space character with the high bit set to detect a
+   transfer over a system which isn't 8-bit clean.  The 0x00 rarely occurs in
+   key records since it's not needed to terminate strings.  The entire
+   restart marker as encoded is the hex sequence 0x08, 0x04, 0x0D, 0x0A,
+   0xA0, 0x00 which is what the restart code checks for (conveniently, the
+   octet string header is encoded using backspace and EOT characters,
+   another potential target for/detector of mangling) /-
+
+PublicKeyRecord ::= SEQUENCE {
+	restartMarker	OCTET STRING ('0D0AA000'H),
+	key				PublicKey,		-- The public key itself
+	keyInfo			SET OF KeyInfo,	-- Information associated with the key
+	keyCertificates	SET OF KeyCertificates	-- Key certificates
+	}
+
+KeyInfo ::= CHOICE {
+	address	  [ 0 ] IMPLICIT AddressInfo,	-- Physical address
+	email	  [ 1 ] IMPLICIT EmailInfo,	-- Email address
+	phone	  [ 2 ] IMPLICIT PhoneInfo,	-- Phone/fax/pager number
+	...
+	}
+
+KeyCertificate ::= CHOICE {
+	...
+	}
+
+END
+

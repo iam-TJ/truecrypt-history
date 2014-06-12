@@ -1,0 +1,106 @@
+This file contains various comments on the library which I'd like feedback on
+or help with.
+
+Things I'd like help with:
+
+- An OS/2 port.  This should be more or less identical to the Win32 version
+  except for the randomness-gathering routines.  I expect it's about a day of
+  work.
+
+- Help with the Mac port.  Work is progressing on this, but I need someone to
+  write the randomness-gathering routines.
+
+- A proper Visual Basic interface.  crypt.bas hasn't been updated for ages, I
+  don't have a copy of VB (or a system to run it on), it'd be nice if someone
+  could look at this and get it going again.  A cryptlib OCX would be nice.
+
+- A proper Delphi interface.  Again, I don't use Delphi, someone would need to
+  create the appropriate header file for it.
+
+- A Sparc and MIPS assembly-language version of the bnlib core routines.  There
+  currently exist 8086, 80386, i960, Alpha, 68K, 68020, and PPC versions of
+  this code, Sparc and MIPS versions (especially with code which takes
+  advantage of 64-bit extensions) would be nice.  If someone's really got a lot
+  of time, a VAX asm version would be nice too.  It's not an awful lot of work,
+  there are only a few core routines which are absolutely necessary and these
+  run to about 8K of asm code.
+
+- Help with the VMS port (or a port to anything else, for that matter).  Again,
+  it shouldn't be too hard since only the randomness-gathering code is
+  OS-specific.  A PDP-11 port has been tried, but a 20-year-old compiler on a
+  machine with 64K of core (and I do mean core) just isn't up to the task.
+
+- An FTP site in Europe to distribute betas.  This site should have reasonably
+  good connectivity to the US (some European sites are very slow or hard to get
+  to from the US).  There are a few other requirements which can be worked out
+  later.
+
+
+Future developments:
+
+The next big step is to add the full RDBMS interface for the key databases.
+Currently only portions of this code are included because I don't have access
+to the necessary tools under Unix to work on this.  Parts of the interface
+aren't defined yet because you either need to perform messy querying of
+encrypted objects to find out what sort of keys you'll need, or use callback
+functions, neither of which I'm very fond of.  If anyone can help with this,
+please let me know.  The main thing I need is people to help with Unix DBMS
+interfaces.
+
+The DSA code is present but disabled while I figure out a clean interface for
+it (a DSA signature consists of two values rather than one, which makes the
+existing 'object + length' interface difficult to work with).  This needs to be
+fixed.  If someone can send me a copy of X9.30 and X9.31 it would help the
+situation somewhat.
+
+The key management routines aren't very well documented yet because they will
+probably change based on work on the key database interface.  If you need the
+capability badly enough you can probably figure out how to call the routines in
+cryptdbx.c which read PGP and X.509/SET keys.
+
+Three very common operations seem to be:
+
+  cryptInitContext( ..., DEFAULT, DEFAULT );
+  cryptGenerateContext( ..., DEFAULT );
+
+and:
+
+  cryptInitContext( ..., DEFAULT, DEFAULT );
+  cryptDeriveContext( ..., passPhrase, passPhraseLength );
+
+for export and:
+
+  cryptQueryObject( ..., &cryptObjectInfo );
+  cryptCreateContextEx( ..., cryptObjectInfo.cryptAlgo,
+                        cryptObjectInfo.cryptMode,
+                        cryptObjectInfo.cryptContextExInfo );
+  cryptDeriveKeyEx( ..., userKey, userKeyLength, cryptObjectInfo.keySetupAlgo,
+                    cryptObjectInfo.keySetupIterations );
+
+for import.  It might be worthwhile adding these built-in functions:
+
+  cryptGenerateKeyContext( ... );
+
+and:
+
+  cryptDeriveKeyContext( ..., passPhrase, passPhraseLength );
+
+and:
+
+  cryptDeriveKeyFromObject( ..., passPhrase, passPhraseLength );
+
+which combine the functionality into one call.  In practice it hardly seems
+worth it since there are only two calls, but it makes the library a bit more
+idiot-proof and easier to use, so that:
+
+  cryptGenerateKeyContext( ... );
+  cryptExportKey( ... );
+  cryptDestroyContext( ... );
+
+and:
+
+  cryptDeriveKeyFromObject( ... );
+  cryptImportKey( ... );
+  cryptDestroyContext( ... );
+
+are enough to export and import data via passphrase-derived keys.

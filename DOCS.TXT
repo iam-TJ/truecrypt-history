@@ -1,0 +1,2854 @@
+                                              #    #     #
+                                              #    #  #  #
+                                           ####### #     #
+                ####  # ###   #    #  #####   #    #  #  #####
+              #       ##   #  #    #  #    #  #    #  #  #    #
+              #       #       #    #  #    #  #    #  #  #    #
+              #       #       #   ##  #    #  #    #  #  #    #
+                ####  #        ### #  #####   #    #  #  #####
+                                   #  #
+                              #   ##  #
+                               ###    #
+
+              P o r t a b l e  E n c r y p t i o n  L i b r a r y
+
+                                  Version 2.00
+
+       Copyright Peter Gutmann, Eric Young, and Colin Plumb  1992 - 1996
+
+The cryptlib encryption library provides an easy-to-use interface which allows
+even inexperienced crypto programmers to easily add strong encryption and
+authentication services to their software.  The library contains DES, triple
+DES, IDEA, MDC/SHS, RC2, RC4, RC5, SAFER, SAFER-SK, Blowfish, and Blowfish-SK
+conventional encryption, MD2, MD4, MD5, RIPEMD-160 and SHA hash algorithms, and
+Diffie-Hellman, DSA, and RSA public-key encryption, as well as a comprehensive
+high-level interface with functions such as cryptCreateSignature() and
+cryptExportKey().  The library is supplied as source code for Unix (shared or
+static libraries), DOS, Windows (16- and 32-bit DLL's), and the Amiga.
+
+cryptlib provides a standardised interface to a number of popular encryption
+algorithms, as well as providing a high-level interface which hides most of the
+implementation details and provides an operating-system-independant encoding
+method which makes it easy to transfer encrypted data from one system to
+another.  Although use of the the high-level interface is recommended,
+experience programmers can directly access the lower-level encryption routines
+for implementing custom encryption protocols or methods not provided by the
+library.
+
+The cryptlib API serves as an interface to a range of plug-in encryption
+modules which allow encryption algorithms to be added in a fairly transparent
+manner. The standardised API allows any of the algorithms and modes supported
+by the library to be used with a minimum of coding effort.  As such the main
+function of the library is to provide a standard, portable, easy-to-use
+interface between the underlying encryption routines and the user software.  In
+addition the easy-to-use high-level routines allow for the exchange of
+encrypted session keys and the creation and checking of digital signatures with
+a minimum of programming overhead.
+
+cryptlib has been written to be as idiot-proof as possible.  On initialization
+it performs extensive self-testing against test data from encryption standards
+documents, and the API's check each parameter and function call for errors
+before any actions are performed, with error reporting down to the level of
+individual parameters.
+
+cryptlib implements a security perimeter around the encryption functions, with
+encryption contexts consisting of an arbitrary handle referring to (hidden)
+data held within the library.  No outside access to state variables or keying
+information is possible, provided the underlying OS provides some form of
+memory protection.  If the OS supports it, all sensitive information used by
+the library will be page-locked to ensure it is never swapped to disk.
+
+Author Contact Information:
+
+  Peter Gutmann, pgut001@cs.auckland.ac.nz
+
+  The cryptlib home page, http://www.cs.auckland.ac.nz/~pgut001/cryptlib.html,
+  contains more information on the latest cryptlib developments.
+
+
+Usage Conditions
+----------------
+
+This software is distributed as copyrighted freeware, with copyrights on
+individual encryption modules being held by the contributing authors.  You are
+free to use the code in any way you want, with the following restrictions:
+
+- If you make any changes to the code, you should send a copy of the changes to
+  the author or authors to allow them to integrate the changes into the code.
+  This is to allow a central consistent version to be maintained.
+
+- If you use the library as part of a product, you should offer a copy to the
+  authors of the library.  This is to let the authors know that their work is
+  being usefully applied.  You should also give the authors credit in your
+  software and/or documentation.  This is to let others know that the authors
+  work is being usefully applied :-).
+
+- Any commercial software you create with this code may not be merely a set or
+  subset of the encryption library, with or without minor added functionality.
+  In particular you can't sell the library (or any modified form of it) as
+  "your" encryption product.  You can sell your own product which utilizes the
+  encryption library, but you can't charge for the library itself or claim it
+  as yours.  This is to stop people adding their own wrappers and selling it as
+  "their" encryption product.
+
+These terms are pretty much identical to the library GPL, which seem to be
+about the least restrictive usage terms around apart from outright public
+domain software.
+
+
+Patent Issues
+-------------
+
+This library contains a number of algorithms which are covered by patents.
+These algorithms are Diffie-Hellman, DSA, IDEA, RC5, and RSA.  A number of
+patent holders have very generously granted a license for royalty-free use of
+the algorithms in the library under certain circumstances, as explained below.
+
+Diffie-Hellman and DSA:
+
+  The practice of Diffie-Hellman key exchange is covered by United States
+  Patent No 4,200,770 ('Cryptographic Apparatus and Method') which expires in
+  September 1997.  The Canadian equivalent expires in September 1998.
+
+  The practice of all other public key algorithms is covered by United States
+  Patent No 4,218,582 ('Public Key Cryptographic Apparatus and Method') which
+  expires in October 1998.  Numerous equivalent patents have been issued in
+  Europe and Japan which expire in October 1998.  These patents are licensed
+  exclusively by Cylink Corporation of Sunnyvale, California.  Cylink has
+  granted a license to all users of this library for non-commercial use,
+  including research by non-profit institutions.  This means you may
+  incorporate this library in software which is distributed for free, provided
+  you include the following notice in the software and all collateral
+  documentation which states:
+
+  The use of the public key algorithms in this software is covered by US
+  Patents No 4,200,770 ('Cryptographic Apparatus and Method') and 4,218,582
+  ('Public Key Cryptographic Apparatus and Method') which are licensed
+  exclusively by Cylink Corporation.
+
+  In order to promote open standards for public key algorithms, Cylink has
+  initiated a low cost licensing program for commercial use of public key.  For
+  more information, contact Cylink's web page at www.cylink.com or e-mail
+  legal@cylink.com.
+
+IDEA:
+
+  The IDEA algorithm is patented by Ascom Systec Ltd. of CH-5506 Maegenwil,
+  Switzerland, who allow it to be used on a royalty-free basis for certain
+  non-profit applications.  Commercial users must obtain a license from the
+  company in order to use IDEA.  IDEA may be used on a royalty-free basis under
+  the following conditions:
+
+  Free use for private purposes:
+
+  The free use of software containing the algorithm is strictly limited to non
+  revenue generating data transfer between private individuals, ie not serving
+  commercial purposes.  Requests by freeware developers to obtain a
+  royalty-free license to spread an application program containing the
+  algorithm for non-commercial purposes must be directed to Ascom.
+
+  Special offer for shareware developers:
+
+  There is a special waiver for shareware developers.  Such waiver eliminates
+  the upfront fees as well as royalties for the first US$10,000 gross sales of
+  a product containing the algorithm if and only if:
+
+  1. The product is being sold for a minimum of US$10 and a maximum of US$50.
+  2. The source code for the shareware is available to the public.
+
+  Special conditions for research projects:
+
+  The use of the algorithm in research projects is free provided that it serves
+  the purpose of such project and within the project duration.  Any use of the
+  algorithm after the termination of a project including activities resulting
+  from a project and for purposes not directly related to the project requires
+  a license.
+
+  Ascom Tech requires the following notice to be included for freeware
+  products:
+
+  This software product contains the IDEA algorithm as described and claimed in
+  US patent 5,214,703, EPO patent 0482154 (covering Austria, France, Germany,
+  Italy, the Netherlands, Spain, Sweden, Switzerland, and the UK), and Japanese
+  patent application 508119/1991, "Device for the conversion of a digital block
+  and use of same" (hereinafter referred to as "the algorithm").  Any use of
+  the algorithm for commercial purposes is thus subject to a license from Ascom
+  Systec Ltd. of CH-5506 Maegenwil (Switzerland), being the patentee and sole
+  owner of all rights, including the trademark IDEA.
+
+  Commercial purposes shall mean any revenue generating purpose including but
+  not limited to:
+
+  i) Using the algorithm for company internal purposes (subject to a site
+     license).
+
+  ii) Incorporating the algorithm into any software and distributing such
+      software and/or providing services relating thereto to others (subject to
+      a product license).
+
+  iii) Using a product containing the algorithm not covered by an IDEA license
+       (subject to an end user license).
+
+  All such end user license agreements are available exclusively from Ascom
+  Systec Ltd and may be requested via the WWW at http://www.ascom.ch/systec or
+  by email to idea@ascom.ch.
+
+  Use other than for commercial purposes is strictly limited to non-revenue
+  generating data transfer between private individuals.  The use by government
+  agencies, non-profit organizations, etc is considered as use for commercial
+  purposes but may be subject to special conditions.  Any misuse will be
+  prosecuted.
+
+RC5:
+
+  The RC5 algorithm is patented by RSA Data Security Inc. 100 Marine Parkway,
+  Redwoord City, California 94065, ph.+1 415 595-8782, fax +1 415 595-1873, and
+  cannot be used commercially in the US without a license.
+
+RSA:
+
+  The RSA algorithm is patented by RSA Data Security Inc. 100 Marine Parkway,
+  Redwoord City, California 94065, ph.+1 415 595-8782, fax +1 415 595-1873, and
+  cannot be used commercially in the US without a license.  RSA licenses can
+  most easily be obtained by waiting until the year 2000 when the patent
+  expires.
+
+
+Library Basics
+--------------
+
+Like the standard C file I/O libraries which work with FILE objects, this
+library works with an opaque "encryption context" object of type CRYPT_CONTEXT.
+To encrypt data, you create an encryption context, load a user key into it,
+en/decrypt data, and destroy it when you've finished.  The library also uses an
+opaque "key collection" object of type CRYPT_KEYSET, which will be discussed
+later on.  The CRYPT_CONTEXT type is the more important of the two, and the one
+you'll be using the most.
+
+This concept lends itself to implementation either as a C++ class or as C
+routines.  Throughout this document all examples are given in C, translation to
+C++ is a simple step.
+
+The overall library structure is as follows:
+
+                           Library core              Plug-in
+                                                     modules
+                         +---------------+--------------+--------------+
+                         |               |   Blowfish   | Blowfish-SK  |
+                         |               +--------------+--------------+
+                         |               |     DES      |     DESX     |
+                         |               +--------------+--------------+
+                         |               |2k.Triple DES |3k.Triple DES |
+                         |               +--------------+--------------+
+                         |               |     IDEA     |   MDC/SHS    |
+                         |               +--------------+--------------+
+                         |               |     Safer    |   Safer-SK   |
+                         |               +--------------+--------------+
+                         |               |      RC2     |     RC4      |
+                         |               +--------------+--------------+
+                         |               |      RC5     |
+                         |     Crypt     +--------------+--------------+
+              /      \   |               |Diffie-Hellman|      DSA     |
+     User   /   ----   \ |    Library    +--------------+--------------+
+   Programs \   ----   / |               |      RSA     |
+              \      /   |      API      +--------------+--------------+
+                         |               |      MD2     |      MD4     |
+                         |               +--------------+--------------+
+                         |               |      MD5     |      SHA     |
+                         |               +--------------+--------------+
+                         |               |  RIPEMD-160  |
+                         |               +--------------+--------------+
+                         |                     export encrypted key    |
+                         |                     import encrypted key    |
+                         |                -----------------------------+
+                         |                   create digital signature  |
+                         |                   check digital signature   |
+                         |                -----------------------------+
+                         |                object-manipulation functions|
+                         +---------------------------------------------+
+
+Access to the libraries encryption functionality is provided at two levels, via
+the low-level API which gives direct access to the encryption functions, and
+via the high-level API which provides more abstract functions such as "export
+public-key encrypted session key" and "export encrypted data object".  The
+recommended interface is the high-level one, since it hides all the details
+required to work with the encryption algorithms and takes care of issues like
+managing keys and data types.
+
+The low-level library API serves as an interface to a range of plug-in
+encryption modules which allow encryption algorithms to be added in a fairly
+transparent manner.  The standardised API allows any of the algorithms and
+modes supported by the library to be used with a minimum of coding effort.  As
+such the main function of the library is to provide a standard, portable,
+easy-to-use interface between the underlying encryption routines and the user
+software.
+
+The high-level API provides services such as routines to export and import
+encrypted keys, to create and check digital signatures, and to export, query,
+and import encrypted and signed data objects.
+
+In the following discussion all high-level functions will be marked with a
+`(H)' after the title, all low-level functions will be marked with a `(L)'
+after the title, and universal functions which are used for both high-level and
+low-level work will be marked with a `(U)' after the title.  You can skip the
+sections marked `(L)' unless you want to use the low-level routines as building
+blocks for your own custom encryption protocol.
+
+
+Portability
+-----------
+
+The library automatically takes care of endianness conversion to the form used
+by the local system in a manner invisible to the end user.  In the case of
+public-key (PKC) algorithms which work with integers stored as multibyte
+strings, the user can specify whether the strings are in big- or little-endian
+order.
+
+
+Building the Library
+--------------------
+
+Unix
+
+The makefile by default will build the statically-linked library.  To build the
+shared library, use 'make shared'.  Once the library has been built, use 'make
+testlib' to build the library self-test program and 'make testapp' to build the
+test application.  For example to build the shared library and self-test
+program, you would use 'make shared;make testlib'.  testlib will run fairly
+extensive self-tests of the library, you should run this after you've built the
+library to make sure everything is working OK.  testapp will allow PGP-like
+encryption and signing of data.  Depending on your system setup and priviledges
+you may need to either copy the shared library to /lib or set the
+LD_LIBRARY_PATH environment variable to use the shared library.
+
+For any common Unix system the library will build without any problems, but in
+some cases you may need to edit lib_rand.c and possible cryptapi.c if you're
+running an unusual Unix variant which puts include files in strange places or
+has broken Posix support.  If you get compiler errors from lib_rand.c, you may
+need to change the header files included in the __UNIX__ conditional
+compilation section.  If you get error messages from the linker about mlock(),
+the problem will be in cryptapi.c.
+
+Windows
+
+The crypt.mak and crypt32.mak makefiles are for version 1.5x and 4.x of Visual
+C and will build the 16- and 32-bit DLL versions of the library.  The IDEA code
+will give many warnings, the DES code will give one or two warnings, and the
+bnlib code will give one warning (these are all other peoples code), the
+remaining code should compile without warnings.  Once the DLL has been built,
+test.mak and test32.mak will build the library self-test program, which is a
+console application.  You should run this after you've built the library to
+make sure everything is working OK.
+
+The use of the 16-bit DLL on a Win32 system is not recommended, as the
+randomness-polling required by some of the high-level public-key related
+routines performs very poorly in the emulated 16-bit environment.
+
+DOS
+
+No makefile is provided for the DOS version, but the library can be built from
+the same files as the 16-bit Windows version.  The library is about 300K in
+size (200K of which is code), and any attempt to use the high-level key export
+routines will fail with a CRYPT_NORANDOM error code unless a /dev/random-style
+driver is available because there isn't any way to reliably obtain random data
+under DOS.  Using the library under DOS is possible, but not recommended.
+
+Other systems
+
+The library should be fairly portable to other systems, the only two parts
+which need attention is the memory locking in cryptapi.c (the library will work
+without this, but won't be as secure as a version with memory locking because
+sensitive data may  be paged out to disk) and the randomness-gathering in
+lib_rand.c (the library won't work without this, the code will generate a
+compiler error).  The idea behind the randomness-gathering code is to perform a
+comprehensive poll of every possible entropy source in the system in a separate
+thread or background task ("slowPoll"), as well as providing a less useful but
+much faster poll of quick-response sources ("fastPoll").
+
+To find out what to compile, look at the Unix makefile which contains all the
+necessary source files (the OBJS dependencies) and compiler options (the bnlib
+files need to have NDEBUG and HAVE_CONFIG_H=1 defined).  Link all these into a
+library (as the makefile does) and then compile and link testlib.c and testhl.c
+to create the self-test program.
+
+There is additional code included which will lead to noticeable speedups on
+some systems.  bnlib includes 68000, 68020, and PPC asm routines (as well as
+Unix 80x86, i960 and Alpha code which isn't currently used by the Unix
+makefile).  You should modify your build options as appropriate to use these if
+possible.
+
+Depending on your compiler you may get a few warnings about code in libdes (one
+or two), bnlib (one or two), and the IDEA code (many).  This code is by other
+people and I haven't bothered changing it to get rid of warnings because
+they're mostly related to the use of C as a high-level assembler and changing
+things around could be risky.
+
+
+Interfacing with the Library (U)
+--------------------------------
+
+All necessary constants, types, structures, and function prototypes are defined
+in the crypt API header file capi.h.  You need to include this file in each
+module which uses the encryption library.
+
+In addition in some environments you will need to call the cryptInit() and
+cryptEnd() functions at the start and finish of your program.  cryptInit()
+initializes the library for use, and cryptEnd() performs various cleanup
+functions including automatic garbage collection of any encryption information
+you may have forgotten to destroy.  Where the encryption library is implemented
+as a DLL, there is no need to call cryptInit() or cryptEnd() as these are
+called automatically by the operating system when the DLL is loaded and
+unloaded.  If you call cryptInit() and the library has already been
+initialized, it will return CRYPT_INITED.  If you call cryptEnd() and the
+library hasn't been initialized yet, it will return CRYPT_NOTINITED.  These
+aren't really serious errors, but can serve as a notification that there's
+something wrong in your code.
+
+To make the use of cryptEnd() easier, you may want to use the C atexit()
+function to have cryptEnd() called automatically when your program exits.
+
+Any use of the encryption library when it isn't implemented as a DLL will then
+be as follows:
+
+  #include "capi.h"
+
+  cryptInit();
+
+  /* Use encryption library routines */
+
+  cryptEnd();
+
+
+Creating/Destroying Encryption Contexts (U)
+-------------------------------------------
+
+Encryption contexts are the basic objects which the library works with.  You
+can't do anything without them.  To create an encryption context, you must
+specify the encryption algorithm and mode you want to use for that context.
+The encryption algorithms and modes are given in the library header file, and
+are updated along with the library itself.  For example, to create and destroy
+an encryption context for DES in CBC mode, you would use the following code:
+
+  CRYPT_CONTEXT cryptContext;
+
+  cryptCreateContext( cryptContext, CRYPT_ALGO_DES, CRYPT_MODE_CBC );
+
+  /* Perform en/decryption */
+
+  cryptDestroyContext( cryptContext );
+
+If you don't want to choose an encryption algorithm and mode, you can let the
+library do it for you by using CRYPT_USE_DEFAULT in place of the algorithm or
+mode.  The default encryption algorithm is two-key triple DES, the default
+encryption mode is CFB.
+
+In the case of the public-key (PKC) algorithms the encryption mode is either
+CRYPT_MODE_PUBKEY or CRYPT_MODE_PRIVKEY, depending on whether you want to
+perform private-key or public-key operations within that encryption context.
+For example to create and destroy an encryption context for checking an RSA
+signature you would use the following code:
+
+  CRYPT_CONTEXT cryptContext;
+
+  cryptCreateContext( &cryptContext, CRYPT_ALGO_RSA, CRYPT_MODE_PUBKEY );
+
+  /* Perform signature check */
+
+  cryptDestroyContext( cryptContext );
+
+Like standard encryption contexts, PKC contexts will accept CRYPT_USE_DEFAULT
+for the algorithm to tell the library to choose the algorithm for you.  The
+default PKC algorithm is RSA.
+
+In the case of the hash algorithms the encryption mode is usually
+CRYPT_MODE_NONE since the algorithms require no key, except for keyed hash
+functions (MACs).  For example to create and destroy an encryption context for
+creating an MD5 hash of a message you would use the following code:
+
+  CRYPT_CONTEXT cryptContext;
+
+  cryptCreateContext( &cryptContext, CRYPT_ALGO_MD5, CRYPT_MODE_NONE );
+
+  /* Perform hash */
+
+  cryptDestroyContext( cryptContext );
+
+Like standard encryption contexts, hash contexts will accept CRYPT_USE_DEFAULT
+for the algorithm to tell the library to choose the algorithm for you.  The
+default hash algorithm is SHA-1.
+
+Note that the CRYPT_CONTEXT is passed to cryptCreateContext() by reference, as
+cryptCreateContext() modifies it when it creates the encryption context.  In
+all other routines in the encryption library, CRYPT_CONTEXT is passed by value.
+
+The availability of certain algorithms and encryption modes in the library does
+not mean that their use is recommended.  Some are only present because they are
+needed for certain protocols or required by some standards.  The
+CRYPT_USE_DEFAULT choice for cryptCreateContext() will always choose a secure
+algorithm.
+
+Some high-level functions will create encryption contexts for you, for example
+cryptImportKey() will create an encryption context for the imported key.  These
+can be destroyed with cryptDestroyContext() just as if they had been directly
+created with cryptCreateContext().
+
+The cryptCreateContext() and cryptDestroyContext() functions take care of issues
+like initialization, memory management, and erasure of data after use.
+Although you should try to call cryptDestroyContext() for every
+cryptCreateContext(), this is sometimes not possible, so the library performs
+automatic garbage collection of any remaining encryption contexts when
+cryptEnd() is called.
+
+
+Extended Initialization (U)
+---------------------------
+
+The cryptCreateContext() function has a companion function
+cryptCreateContextEx() which may be used to perform an extended,
+algorithm-specific initialisation. The second parameter passed to the function
+is an algorithm-dependant structure used to specify extra information to be
+used in the initalisation.  Not all algorithms will support extended
+initialisation parameters.
+
+The structures have the name CRYPT_INFO_<algorithm_name>, and are laid out as
+follows:
+
+Structure CRYPT_INFO_DES:
+
+  /* Whether to use DES or DESX.  The default is to use DES */
+  int isDESX;
+
+Structure CRYPT_INFO_3DES:
+
+  /* Whether to use two-key or three-key triple DES.  The default is to use
+     two-key triple DES as per various ANSI and ISO standards */
+  int isThreeKey;
+
+Structure CRYPT_INFO_BLOWFISH:
+
+  /* Whether to use Blowfish or Blowfish-SK.  The default is to use the
+     original algorithm Blowfish.  Blowfish-SK is a version which improves the
+     key schedule to simplify the setup process, allow longer keys, and allow
+     the number of key setup iterations to be specified */
+  int useBlowfishSK;
+
+  /* The number of iterations used during the Blowfish-SK key setup process
+     triggered by a cryptLoadContext() call.  Using a high value (10 or more)
+     will greatly slow down password-guessing attacks by making the key setup
+     process painfully slow.  Values in the range of 10-20 are recommended for
+     most systems */
+  int keySetupIterations;
+
+Structure CRYPT_INFO_MDCSHS:
+
+  /* The number of iterations used during the key setup process triggered
+     by a cryptLoadContext() call.  Using a high value (500 or more) will
+     greatly slow down password-guessing attacks by making the key setup
+     process painfully slow.  Values in the range of 50-100 are recommended for
+     most systems */
+  int keySetupIterations;
+
+Structure CRYPT_INFO_RC5:
+
+  /* The number of rounds of encryption.  The default setting is 12 rounds */
+  int rounds;
+
+Structure CRYPT_INFO_SAFER:
+
+  /* Whether to use SAFER or SAFER-SK.  The default is to use the original
+     algorithm SAFER.  SAFER-SK is a version which improves the key schedule to
+     eliminate some possible weaknesses when SAFER is used as a keyed hash
+     function */
+  int useSaferSK;
+
+  /* The number of rounds of encryption.  The default settings are 6 rounds for
+     SAFER-K64, 8 rounds for SAFER-SK64, and 10 rounds for SAFER-K128 and
+     SAFER-SK128 */
+  int rounds;
+
+Structure CRYPT_INFO_SHA:
+
+  /* Whether to use SHA or SHA1.  The default is to use SHA1 */
+  int isSHA;
+
+You can specify that the default value for the algorithm and mode be loaded
+into a field of the CRYPT_INFO_xxx structure by setting it to
+CRYPT_USE_DEFAULT.  The library will then set the field to the appropriate
+value.  For example to create a SAFER encryption context using the improved
+SAFER-SK key schedule and with the standard number of rounds for SAFER-SK, you
+would use:
+
+  CRYPT_INFO_SAFER cryptInfoEx;
+
+  cryptInfoEx.rounds = CRYPT_USE_DEFAULT;
+  cryptInfoEx.useSaferSK = 1;
+  cryptCreateContextEx( &cryptContext, cryptAlgo, cryptMode, &cryptInfoEx );
+
+
+Generating and Deriving Keys into Encryption Contexts (H)
+---------------------------------------------------------
+
+Once you've created an encryption context, the next step is to load a key into
+it.  These keys will typically be either one-off session keys which are
+discarded after use, or long-term storage keys which are used to protect fixed
+data such as files or private keys.  You can create a session key with
+cryptGenerateContext():
+
+  cryptGenerateContext( cryptContext, CRYPT_USE_DEFAULT );
+
+which will generate a default-length key for the encryption context.  If you
+want to generate a key of a particular length, you can specify it as the second
+parameter.  For example to generate a 256-bit (32-byte) key you would use:
+
+  cryptGenerateContext( cryptContext, 32 );
+
+Keys generated by the library are useful when used with cryptExportKey()/
+cryptImportKey() (described later on).  Since cryptExportKey() usually encrypts
+the generated key using public-key encryption, you shouldn't make it too long
+or it'll be too big to be encrypted.  Unless there's a specific reason for
+choosing the key length you should leave the length parameter set to
+CRYPT_USE_DEFAULT and let the library choose the correct key length for you.
+
+The only time when you may need to explicitly specify a key length is when
+you're using very short (in the vicinity of 512 bits) public keys to export
+Blowfish, MDC/SHS, or triple DESX keys.  In this case the public key isn't
+large enough to export the full-length keys for these algorithms, and
+cryptExportKey() will return the error code CRYPT_DATASIZE to indicate that
+there's too much data to export.  The solution is to either specify a shorter
+key length for cryptGenerateContext(), or, preferably, to use a longer public
+key.  This is only a problem with very short public keys, when using the
+recommended public key size of 1024 bits this situation will never occur.
+
+Before you use cryptGenerateContext() you should read the section "Random
+Numbers" below since an understanding of this is essential before you use
+cryptGenerateContext().  If you don't manage the use of random data properly,
+cryptGenerateContext() will fail with CRYPT_NORANDOM.
+
+cryptGenerateContext() only makes sense for conventional-key encryption
+contexts and will return the error code CRYPT_NOTAVAIL for a PKC or hash
+encryption context to indicate that this operation is not available for PKCs or
+hash algorithms.
+
+To summarise the steps so far, you can set up an encryption context in its
+simplest form so that it's ready to encrypt data with:
+
+  CRYPT_CONTEXT cryptContext;
+
+  cryptCreateContext( &cryptContext, CRYPT_USE_DEFAULT, CRYPT_USE_DEFAULT );
+  cryptGenerateContext( cryptContext, CRYPT_USE_DEFAULT );
+
+  /* Encrypt data */
+
+  cryptDestroyContext( cryptContext );
+
+Note the extensive use of default parameters.  Unless you choose to override
+them, you can rely on the library to choose the correct algorithm and options
+for you in each case.
+
+Sometimes you will need to obtain a fixed-length encryption key from a
+variable-length password or passphrase.  You can do this with the
+cryptDeriveContext() function:
+
+  cryptDeriveContext( cryptContext, passPhrase, passPhraseLength );
+
+which takes a passphrase and converts it into an encryption key in a format
+suitable for use with the encryption context.  By default this will repeatedly
+hash the input passphrase with the SHA1 hash function to generate the key, and
+will iterate the hashing process 100 times to make a passphrase-guessing attack
+more difficult.  If you want to use a hash function other than SHA1 or use an
+iteration count of other than 10 iterations, you can use
+cryptDeriveContextEx(), which takes a hash algorithm and iteration count
+parameters in addition to the other cryptDeriveContext() parameters:
+
+  cryptDeriveContext( cryptContext, passPhrase, passPhraseLength,
+                      hashAlgorithm, iterationCount );
+
+For example to derive an encryption key from the passphrase "This is a
+passphrase", using 100 iterations of RIPEMD-160 instead of the default 10
+iterations of SHA1, you would use:
+
+  char *passPhrase = "This is a passphrase";
+
+  cryptDeriveContextEx( cryptContext, passPhrase, strlen( passPhrase ),
+                        CRYPT_ALGO_RIPEMD160, 100 );
+
+To summarise the steps so far, you can set up an encryption context in its
+simplest form so that it's ready to encrypt data with:
+
+  CRYPT_CONTEXT cryptContext;
+
+  cryptCreateContext( &cryptContext, CRYPT_USE_DEFAULT, CRYPT_USE_DEFAULT );
+  cryptDeriveContext( cryptContext, passPhrase, strlen( passPhrase ) );
+
+  /* Encrypt data */
+
+  cryptDestroyContext( cryptContext );
+
+Note again the use of default parameters.  Unless you choose to override them,
+you can rely on the library to choose the correct algorithm and options for you
+in each case.
+
+
+Loading Keys into Encryption Contexts (L)
+-----------------------------------------
+
+You can also manually load a key into an encryption context with the
+cryptLoadContext() function.  For example to load the key "Secret key" into a
+conventional encryption context you would use:
+
+  cryptLoadContext( cryptContext, "Secret key", 10 );
+
+Unless you need to perform low-level key management yourself, you should use
+the high-level routines to load keys into encryption contexts.  The previous
+key load should really have been done with cryptDeriveContext() rather than
+cryptLoadContext().
+
+Some hardware modules which enforce red/black separation will not allow
+plaintext keys to pass across the library interface.  In this case the key
+parameter passed to cryptLoadContext() will be a key selector or key encryption
+key to be passed to the underlying hardware.  For example to pass a key
+selector to a key stored inside a DES hardware module you would use:
+
+  cryptLoadContext( cryptContext, &keySelector, sizeof( keySelector ) );
+
+For PKC encryption a key will typically have a number of components so you
+can't load the key directly.  Instead you load the key components into a
+CRYPT_PKCINFO structure and then pass this to cryptLoadContext():
+
+  cryptLoadContext( cryptContext, &rsaKey, CRYPT_UNUSED );
+
+More information on working with CRYPT_PKCINFO data structures is given below.
+
+For conventional-key encryption contexts you can also load an IV into the
+context, although for encryption you would usually leave this to the library to
+perform automatically.  To load an IV you would use:
+
+  cryptLoadIV( cryptContext, iv, ivSize );
+
+To retrieve an IV which has been generated by the library you would use:
+
+  cryptRetrieveIV( cryptContext, iv );
+
+cryptLoadIV() and cryptRetrieveIV() will return the error code CRYPT_NOTAVAIL
+for a PKC encryption context to indicate that these operations are not
+available for PKCs.
+
+The hash algorithms usually don't require keys or IV's, and cryptLoadIV() and
+cryptRetrieveIV() will return the error code CRYPT_NOTAVAIL for hash encryption
+contexts.
+
+The cryptLoadContext(), cryptLoadIV(), and cryptRetrieveIV() functions take
+care of issues like initialization, memory management, endianness conversion,
+and key setup.
+
+If you need to reserve space for conventional and PKC keys, IV's, and hash
+values, you can use the CRYPT_MAX_KEYSIZE, CRYPT_MAX_PKCSIZE, CRYPT_MAX_IVSIZE,
+and CRYPT_MAX_HASHSIZE defines to determine the mount of memory you need.  No
+key, IV, or hash value used by the library will ever need more storage than the
+settings given in these defines.
+
+
+Working with PKC Keys (L)
+-------------------------
+
+Since PKC keys have multiple components, you can't pass them directly to
+cryptLoadContext().  Instead, you load them into a CRYPT_PKCINFO structure and
+then pass that to cryptLoadContext().  There are several CRYPT_PKCINFO
+structures, one for each type of PKC supported by the library.  These have the
+following members:
+
+Structure CRYPT_PKCINFO_DH (Diffie-Hellman key exchange):
+
+  p         Prime
+  g         Base
+
+Structure CRYPT_PKCINFO_RSA (Rivest-Shamir-Adelman public-key encryption):
+
+  n         Modulus
+  e         Public exponent
+  d         Private exponent
+  p         Prime factor 1
+  q         Prime factor 2
+  u         Mult.inverse of q, mod p
+  e1        Private exponent 1 (PKCS)
+  e2        Private exponent 2 (PKCS)
+
+Structure CRYPT_PKCINFO_DSA (Digital Signature Algorithm digital signatures):
+
+  p         Prime modulus
+  q         Prime divisor
+  g         Element of order q mod p
+  x         Public random integer
+  y         Private random integer
+
+The components of CRYPT_PKCINFO_DH need not be present for the library routines
+to work.  The library has built-in values for 512-bit, 768-bit, 1024-bit,
+1280-bit, 1536-bit, 2048-bit, 3072-bit, and 4096-bit Diffie-Hellman key
+exchange, and will use those if the components are not set.  The values used by
+the library are taken from the SKIP standard.
+
+The e1 and e2 components of CRYPT_PKCINFO_RSA may not be present in some keys.
+The library will make use of them if they are present, but can also work
+without them.  Private-key operations are marginally faster if these two values
+are present.
+
+The multibyte integer strings which make up PKC keys can be stored in either
+big-endian or little-endian format.  If the integer string is little-endian, it
+will be stored in the format:
+
+    "xxxxxxxxxxxxxxx00000000000000000000000000000000000000"
+
+(where "xxx" are the digits of the number).  If the integer string is
+big-endian, it will be stored in the format:
+
+    "000000000000000000000000000000000000000000000xxxxxxxxxxxxxxx"
+
+For example the number "123456789" would be stored in little-endian format as:
+
+    "987654321000000000000000000000000000000000000000000000000000"
+
+(with the least-significant digit stored first, going through to the
+most-significant digit, and padded with zeroes to fill the number).  In
+big-endian format this is:
+
+    "000000000000000000000000000000000000000000000000000123456789"
+
+In practice the numbers won't be stored with excessively long precision as they
+are in the above examples, so instead of being stored with 60 digits of
+precision of which 51 bytes contain zero padding, they would be stored with 9
+digits of precision:
+
+    "987654321"
+
+and:
+
+    "123456789"
+
+A multibyte integer therefore consists of two parameters, the data itself and
+the precision to which it is stored.  When you load multibyte integer
+components into a CRYPT_PKCINFO structure you need to specify both of these
+parameters.
+
+Before you can use the CRYPT_PKCINFO structure, you need to initialise it with
+cryptInitComponents(), which takes as parameter the endianness of the multibyte
+integer strings which make up PKC keys, either CRYPT_COMPONENTS_LITTLENDIAN or
+CRYPT_COMPONENTS_BIGENDIAN, and the type of the key, either
+CRYPT_KEYTYPE_PRIVATE or CRYPT_KEYTYPE_PUBLIC:
+
+  CRYPT_PKCINFO_RSA rsaKey;
+
+  cryptInitComponents( rsaKey, CRYPT_COMPONENTS_LITTLENDIAN,
+                       CRYPT_KEYTYPE_PRIVATE );
+
+Now you can initialise whatever parameters you need with the multibyte integer
+strings used in PKC's by using cryptSetComponent(), specifying the integer
+length in bits:
+
+  cryptSetComponent( rsaKey.n, modulus, 1024 );
+  cryptSetComponent( rsaKey.e, pubExponent, 17 );
+  cryptSetComponent( rsaKey.d, privExponent, 1024 );
+
+You can now pass the result to cryptLoadContext() as explained above.  Once
+you've finished working with the CRYPT_PKCINFO information, use
+cryptDestroyComponents() to destroy the information:
+
+  cryptDestroyComponents( rsaKey );
+
+Since the library has built-in default values for 512-bit, 768-bit, 1024-bit,
+1280-bit, 1536-bit, 2048-bit, 3072-bit, and 4096-bit Diffie-Hellman key
+exchange, you don't need to specify these unless you've generated your own
+values and would prefer to use these instead of the default ones.  To use the
+default values, call cryptInitComponents() with the size in bits of the key and
+the key type set to CRYPT_UNUSED:
+
+  CRYPT_PKCINFO_DH dhKey;
+
+  cryptInitComponents( dhKey, 1024, CRYPT_UNUSED );
+
+The library will then use its default keys when you call cryptLoadContext().
+
+
+Encrypting/Decrypting Data (U)
+------------------------------
+
+Now that the encryption context is set up, you're ready to encrypt or decrypt
+data.  To encrypt or decrypt a block of data you use:
+
+  cryptEncrypt( cryptContext, buffer, length );
+
+and:
+
+  cryptDecrypt( cryptContext, buffer, length );
+
+If a block encryption mode is being used, these functions will recognise a call
+with length = 0 as a courtesy call to indicate that this is the last data block
+and will take whatever special action is necessary for this case.
+
+Hash algorithms don't actually encrypt the data being hashed and can be called
+via cryptEncrypt() or cryptDecrypt().  They require a final call with length =
+0 as a courtesy call to indicate to the hash function that this is the last
+data block and will take whatever special action is necessary for this case.
+The hash value can be retrieved by calling cryptQueryContext() to query the
+encryption context information, as explained below.  If you call cryptEncrypt()
+or cryptDecrypt() after the final call with length = 0, the function will
+return CRYPT_COMPLETE to indicate that the hashing has completed and cannot be
+continued.
+
+The public-key algorithms encrypt a single block of data equal in length to the
+size of the public key being used.  For example if you are using a 1024-bit
+public key then the length of the data to be encrypted should be 128 bytes.
+Since the length is fixed, the length parameter should be set to
+CRYPT_USE_DEFAULT to tell the function to use whatever length is appropriate
+for the key.  Preparation of the block of data to be encrypted requires special
+care; in general you should use high-level functions such as cryptExportKey()/
+cryptImportKey() and cryptCreateSignature()/cryptCheckSignature() rather than
+cryptEncrypt() and cryptDecrypt() when working with public-key algorithms.  If
+the en/decryption operation fails due to incorrect public or private key
+parameters or incorrectly formatted input data, the function will return
+CRYPT_PKCCRYPT to indicate that the operation failed.
+
+If the encryption context doesn't support the operation you are trying to
+perform (for example calling cryptEncrypt() with a DSA public key), the
+function will return CRYPT_NOTAVAIL to indicate that this functionality is not
+available.
+
+If the key loaded into an encryption context doesn't allow the operation you
+are trying to perform (for example calling cryptDecrypt() with an encrypt-only
+key), the function will return CRYPT_KEYPERM to indicate that the context
+doesn't have the required key permissions to perform the requested operation.
+
+
+Exchanging Keys (H)
+-------------------
+
+Although you can now encrypt and decrypt data with your encryption context, the
+key you're using is locked inside the context and (if you used
+cryptGenerateContext() to create it) won't be known to you or the person you're
+trying to communicate with.  To share the key with another party, you need to
+export it from the context and the other party needs to import it into an
+encryption context of their own.
+
+To do this, you use the cryptExportKey() and cryptImportKey() functions in
+combination with a public-key encryption context.  Let's say you've created a
+key in an encryption context cryptContext and want to send it to someone whose
+public key is in the encryption context publicKeyContext (you can also pass in
+a private key if you want, cryptExportKey() will only use the public key
+components, although unless you're the government it's not clear why you'd want
+to be in posession of someone elses private key).  To do this you'd use:
+
+  CRYPT_CONTEXT publicKeyContext, cryptContext;
+  BYTE *encryptedKey;
+  int encryptedKeyLength;
+
+  /* Generate a key */
+  cryptCreateContext( &cryptContext, CRYPT_USE_DEFAULT, CRYPT_USE_DEFAULT );
+  cryptGenerateContext( cryptContext, CRYPT_USE_DEFAULT );
+
+  /* Export the key using a public-key encrypted blob */
+  cryptExportKey( encryptedKey, &encryptedKeyLength, publicKeyContext,
+                  cryptContext );
+
+The resulting public-key encrypted blob is placed in the memory buffer pointed
+to by encryptedKey, and the length is stored in encryptedKeyLength.  This leads
+to a small problem: How do you know how big to make the buffer?  The answer is
+to use cryptExportKey() to tell you.  If you pass in a null pointer for
+encryptedKey, the function will set encryptedKeyLength to the size of the
+resulting blob, but not do anything else.  You can then use code like:
+
+  cryptExportKey( NULL, &encryptedKeyLength, publicKeyContext, cryptContext );
+  encryptedKey = malloc( encryptedKeyLength );
+  cryptExportKey( encryptedKey, &encryptedKeyLength, publicKeyContext,
+                  cryptContext );
+
+to create the exported key blob.
+
+Alternatively, you can just allocate a reasonably sized block of memory and use
+that to hold the encrypted key.  "Reasonably sized" means a few Kb, a 4K block
+is plenty (an encrypted key blob for a 1024-bit public key is only about 200
+bytes long).
+
+If the encryption context contains too much data to encode using the given
+public key (for example trying to export an encryption context with a 600-bit
+key using a 512-bit public key) the function will return CRYPT_DATASIZE.  As a
+rule of thumb a 1024-bit public key should be large enough to export the
+default key sizes for any encryption context.
+
+You don't need to use public-key encryption to export a key blob, it's also
+possible to use a conventional key to export another conventional key.  For
+example if you were using the key "This is a secret key" in an encryption
+context sharedContext which was also known to the other party, you would use:
+
+  CRYPT_CONTEXT sharedContext, cryptContext;
+  BYTE *encryptedKey;
+  int encryptedKeyLength;
+
+  /* Load the key into an encryption context */
+  cryptCreateContext( &sharedContext, CRYPT_USE_DEFAULT, CRYPT_USE_DEFAULT );
+  cryptDeriveContext( sharedContext, "This is a secret key", 20 );
+
+  /* Generate a key */
+  cryptCreateContext( &cryptContext, CRYPT_USE_DEFAULT, CRYPT_USE_DEFAULT );
+  cryptGenerateContext( cryptContext, CRYPT_USE_DEFAULT );
+
+  /* Export the key using a conventionally encrypted blob */
+  cryptExportKey( encryptedKey, &encryptedKeyLength, sharedContext,
+                  cryptContext );
+
+This kind of key export isn't as convenient as using public keys since it
+requires that both sides know the encryption key in sharedContext.
+
+Now that you've exported the key, the other party needs to import it.  This is
+done using the cryptImportKey() function and the private key corresponding to
+the public key used by the sender:
+
+  CRYPT_CONTEXT privateKeyContext, cryptContext;
+
+  /* Import the key from the public-key encrypted blob */
+  cryptImportKey( encryptedKey, privateKeyContext, &cryptContext );
+
+All the parameters necessary to recreate the encryption context cryptContext
+are transmitted in encrypted form in the exported key blob, and
+cryptImportKey() takes care of initialising the encryption context and setting
+up the key inside it.  A single function call is all it takes to import a key.
+
+To summarise, sharing an encryption context between two parties using
+public-key encryption involves the following steps:
+
+  /* Party A creates the required encryption context and generates a key into
+     it */
+  cryptCreateContext( &cryptContext, CRYPT_USE_DEFAULT, CRYPT_USE_DEFAULT );
+  cryptGenerateContext( cryptContext, CRYPT_USE_DEFAULT );
+
+  /* Party A exports the key using party B's public key */
+  cryptExportKey( encryptedKey, &encryptedKeyLength, publicKeyContext,
+                  cryptContext );
+
+  /* Party B imports the key using their private key */
+  cryptImportKey( encryptedKey, privateKeyContext, &cryptContext );
+
+Doing the same with conventional encryption involves changing the last two
+steps to:
+
+  /* Party A exports the key using the shared conventional key */
+  cryptExportKey( encryptedKey, &encryptedKeyLength, sharedContext,
+                  cryptContext );
+
+  /* Party B imports the key using the shared conventional key */
+  cryptImportKey( encryptedKey, sharedContext, &cryptContext );
+
+The library supports a third kind of key export/import which doesn't actually
+export or import a key but merely provides a means of agreeing on a shared
+secret key with another party.  You don't need to use cryptGenerateContext() or
+cryptDeriveKey()/cryptLoadContext() for this one, the act of performing the key
+exchange will create a random, secret shared key.  To use this form of key
+exchange, both parties call cryptExportKey() to generate the blob to send to
+the other party, and then both in turn call cryptImportKey() to import the blob
+sent by the other party.
+
+Since there's a two-way exchange of messages, either both parties must create
+an identical "template" encryption context so cryptExportKey() knows what kind
+of key to export, or one party has to wait for the initial exported key blob
+from the other party and create an identical template to export.  For now lets
+assume that both sides know they'll be using Blowfish in CFB mode.  The first
+step of the key exchange is thus:
+
+  /* Create the key template */
+  cryptCreateContext( &cryptContext, CRYPT_ALGO_BLOWFISH, CRYPT_MODE_CFB );
+
+  /* Export the key using the template */
+  cryptExportKey( encryptedKey, &encryptedKeyLength, dhContext, cryptContext );
+  cryptDestroyContext( cryptContext );
+
+Note that there's no need to load a key into the template, since this is
+generated automatically as part of the export/import process.  In addition the
+template is destroyed once the key has been exported, since there's no further
+use for it - it acts merely as a template to tell cryptExportKey() what to do.
+
+Both parties now exchange encryptedKey blobs, and then use:
+
+  cryptImportKey( encryptedKey, dhContext, &cryptContext );
+
+to create the cryptContext containing the shared key.
+
+If one side wants to control the encryption type, this exchange becomes
+somewhat more complicated since a simultaneous exchange of encryptedKey blobs
+is no longer possible.  Lets assume that party A gets to set the encryption
+type being used:
+
+  /* Party A creates the key template and exports it to party B */
+  cryptCreateContext( &cryptContext, CRYPT_ALGO_BLOWFISH, CRYPT_MODE_CFB );
+  cryptExportKey( encryptedKey, &encryptedKeyLength, dhContext, cryptContext );
+  cryptDestroyContext( cryptContext );
+
+  /* Party B imports the encrypted key blob and uses the resulting cryptContext
+     as a template to create their own encrypted key blob for party A */
+  cryptImportKey( encryptedKey, dhContext, &cryptContext );
+  cryptExportKey( encryptedKey, &encryptedKeyLength, dhContext, cryptContext );
+
+  /* Party A imports the encrypted key blob created by party B */
+  cryptImportKey( encryptedKey, dhContext, &cryptContext );
+
+If the en/decryption part of the export/import operation fails due to incorrect
+public or private key parameters, the function will return CRYPT_PKCCRYPT to
+indicate that the operation failed.  If the input data or decrypted data is
+corrupt and the key couldn't be recovered, the function will return
+CRYPT_BADDATA.  In general CRYPT_PKCCRYPT will be returned for incorrect public
+or private key parameters and CRYPT_BADDATA will be returned if the input data
+has been corrupted.  You can treat both of these as "key export/import failed"
+unless you want to include special-case error handling for them.
+
+Before you use cryptExportKey() you should read the section "Random Numbers"
+below since an understanding of this is essential before you use
+cryptExportKey().  If you don't manage the use of random data properly,
+cryptExportKey() will fail with CRYPT_NORANDOM.
+
+
+Signing Data (H)
+----------------
+
+PKC's can also be used to generate digital signatures.  A digital signature is
+created by signing the contents of a hash context with a private key to create
+a signature blob and verified by checking the signature blob with the
+corresponding public key.
+
+To do this, you use the cryptCreateSignature() and cryptCheckSignature()
+functions in combination with a public-key encryption context.  Let's say
+you've hashed some data with a hash context hashContext and want to sign it
+with your private key in the encryption context privateKeyContext.  To do this
+you'd use:
+
+  CRYPT_CONTEXT privateKeyContext, hashContext;
+  BYTE *signature;
+  int signatureLength;
+
+  /* Generate a hash context */
+  cryptCreateContext( &hashContext, CRYPT_USE_DEFAULT, CRYPT_USE_DEFAULT );
+
+  /* Hash the data */
+  cryptEncrypt( hashContext, data, dataLength );
+  cryptEncrypt( hashContext, data, 0 );
+
+  /* Sign the hash to create a signature blob */
+  cryptCreateSignature( signature, signatureLength, privateKeyContext,
+                        hashContext );
+
+The resulting signature blob is placed in the memory buffer pointed to by
+signature, and the length is stored in signatureLength.  This leads to the same
+problem with allocating the buffer which was described above with
+cryptExportKey(), and the solution is again the same: You use
+cryptCreateSignature() to tell you how big to make the buffer.  If you pass in
+a null pointer for signature, the function will set signatureLength to the size
+of the resulting blob, but not do anything else.  You can then use code like:
+
+  cryptCreateSignature( NULL, &signatureLength, privateKeyContext,
+                        hashContext );
+  signature = malloc( signatureLength );
+  cryptCreateSignature( signature, &signatureLength, privateKeyContext,
+                        hashContext );
+
+to create the signature blob.
+
+Alternatively, you can just allocate a reasonably sized block of memory and use
+that to hold the signature.  "Reasonably sized" means a few Kb, a 4K block is
+plenty (a signature blob for a 1024-bit public key is only about 200 bytes
+long).
+
+If the hash context contains too much data to encode using the given private
+key (for example trying to sign a hash context with a 768-bit hash using a
+512-bit private key) the function will return CRYPT_DATASIZE.  As a rule of
+thumb a 1024-bit private key should be enough to sign any hash context.
+
+Now that you've created the signature, the other side needs to check it.  This
+is done using the cryptCheckSignature() function and the public key
+corresponding to the private key used to create the signature (you can also
+pass in a private key if you want, cryptCheckSignature() will only use the
+public key components, although it's not clear why you'd be in posession of
+someone elses private key).  To do this you'd use:
+
+  CRYPT_CONTEXT privateKeyContext, hashContext;
+  BYTE *signature;
+  int signatureLength;
+
+  /* Generate a hash context */
+  cryptCreateContext( &hashContext, CRYPT_USE_DEFAULT, CRYPT_USE_DEFAULT );
+
+  /* Hash the data */
+  cryptEncrypt( hashContext, data, dataLength );
+  cryptEncrypt( hashContext, data, 0 );
+
+  /* Check the signature using the signature blob */
+  cryptCheckSignature( signature, publicKeyContext, hashContext );
+
+If the en/decryption part of the signature create/check operation fails due to
+incorrect public or private key parameters, the function will return
+CRYPT_PKCCRYPT to indicate that the operation failed.  If the signature is
+corrupt and couldn't be recovered, the function will return CRYPT_BADDATA.  In
+general CRYPT_PKCCRYPT will be returned for incorrect public or private key
+parameters and CRYPT_BADDATA will be returned if the signature has been
+corrupted.  Finally, if the signature doesn't match the hash context, the
+function will return CRYPT_BADSIG.  You can treat all three of these as
+"signature generation/check failed" unless you want to include special-case
+error handling for them.
+
+
+Encrypted Object Management (H)
+-------------------------------
+
+If you look at the previous sections on key exchange and signature generation
+you'll notice that there are a lot of assumptions made about various
+parameters.  How do you know which private/public keys to use to decrypt an
+encrypted key blob or check a signature?  How do you know which hash algorithm
+to use to hash the data for a signature check?
+
+This is where the libraries object management routines come in.  These are used
+to hide the messy details of working with encrypted and signed data.  Each
+object type wraps up a particular type of data such as signed or encrypted data
+into a format which the library can work with.
+
+The simplest form of object is the RawData object of type
+CRYPT_OBJECT_RAW_DATA, which encapsulates a block of raw data such as an email
+message or a file:
+
+  +--------+
+  |  Data  |
+  +--------+
+
+Once you've created the data object, you can perform other operations on it
+such as encrypting or signing it.  To encrypt the data, you encapsulate it
+within an EncryptedData object of type CRYPT_OBJECT_ENCRYPTED_DATA:
+
+                  +--------------+
+  +---------------+  +--------+  |
+  | EncryptedData |  |  Data  |  |
+  +---------------+  +--------+  |
+                  +--------------+
+
+To sign the data, you encapsulate it within a SignedData object of type
+CRYPT_OBJECT_SIGNED_DATA:
+
+               +--------------+
+  +------------+  +--------+  |  +-----------+
+  | SignedData |  |  Data  |  |  | Signature |
+  +------------+  +--------+  |  +-----------+
+               +--------------+
+
+In this case the SignedData object is followed by a Signature object of type
+CRYPT_OBJECT_SIGNATURE which contains the signature, although this could be
+stored seperately.
+
+These objects can be nested as required.  For example to sign and encrypt a
+block of data, you would combine the previous two types of encapsulation to
+obtain:
+                                                                           //
+                                       +----------------------------------//
+                                       |               +--------------+  //
+  +-----------------+  +---------------+  +------------+  +--------+  | //
+  | PKCEncryptedKey |  | EncryptedData |  | SignedData |  |  Data  |  |//
+  +-----------------+  +---------------+  +------------+  +--------+  //
+                                       |               +-------------//
+                                       +----------------------------//
+                                                                   //
+                                        //
+                                      //-----------+
+                                     //            |
+                                    //-----------+ |
+                                   //| Signature | |
+                                  // +-----------+ |
+                                 //                |
+                                //-----------------+
+                               //
+
+Here another type of object, a PKCEncryptedKey object of type
+CRYPT_OBJECT_PKCENCRYPTED_KEY, is prepended to the outermost EncryptedData
+object to allow the recipient to decrypt it.  This object could also be an
+EncryptedKey object of type CRYPT_OBJECT_ENCRYPTED_KEY.  This data block is
+typical of the kind of structure which a program like PGP would create and
+contains an encrypted session key followed by an encrypted data block
+containing a digitally signed message.
+
+There are three functions which are used to work with these objects,
+cryptExportObject() to create and export them, cryptImportObject() to import
+them, and cryptQueryObject() to return information on them.  The simplest is
+cryptQueryObject(), with returns information on an object in a
+CRYPT_OBJECT_INFO structure:
+
+  CRYPT_OBJECT_INFO cryptObjectInfo;
+
+  cryptQueryObject( object, &cryptObjectInfo );
+
+The CRYPT_OBJECT_INFO structure contains the following fields:
+
+  /* The object type, object size, header size, and payload size */
+  CRYPT_OBJECT_TYPE type;
+  long size;
+  int headerSize;
+  long payloadSize;
+
+  /* The encryption algorithm and mode for EncryptedKey, PKCEncryptedKey,
+     Signature, and SignedData objects */
+  CRYPT_ALGO cryptAlgo;
+  CRYPT_MODE cryptMode;
+
+  /* The key ID for PKCEncryptedKey and Signature objects, consisting of the
+     key ID hash algorithm and the key ID and key ID length */
+  CRYPT_ALGO keyIDalgo;
+  unsigned char keyID[ CRYPT_MAX_HASHSIZE ];
+  int keyIDsize;
+
+  /* The key derivation algorithm and iteration count for EncryptedKey
+     objects */
+  CRYPT_ALGO keySetupAlgo;
+  int keySetupIterations;
+
+  /* The control vector and algorithm-specific information for
+     EncryptedKey objects.  The algorithm-specific information can be
+     passed directly to cryptCreateContextEx() for any algorithm (even
+     those which would normally use cryptCreateContext()) */
+  long controlVector;
+  void *cryptContextExInfo;
+
+  /* The cookie and cookie size for EncryptedKey, PKCEncryptedKey,
+     EncryptedData, and SignedData objects */
+  unsigned char cookie[ CRYPT_MAX_HASHSIZE ];
+  int cookieSize;
+
+  /* The IV and IV size for EncryptedData objects */
+  unsigned char iv[ CRYPT_MAX_IVSIZE ];
+  int ivSize;
+
+You'll never need to use most of these fields (or even know they exist) unless
+you're writing your own object managment routines.  The only really useful
+fields you need to know about for now are the four at the start, which contain
+the object type (such as CRYPT_OBJECT_SIGNED_DATA for a SignedData object), the
+total object size, the size of the objects header, and the payload size.  The
+object header contains information on the object such as type, length, and
+various attributes.  The payload size is the size of the actual data in the
+object:
+
+   <------------- size ------------->
+  +- Object -------+-----------------+
+  |                |                 |
+  |     Header     |     Payload     |
+  |                |                 |
+  +----------------+-----------------+
+   <- headerSize -> <- payloadSize ->
+
+The payload is either another object or raw data.
+
+Now that we have a way of obtaining information on objects, we can construct a
+general-purpose handler for processing them:
+
+  CRYPT_OBJECT_INFO cryptObjectInfo;
+
+  cryptQueryObject( object, &cryptObjectInfo );
+  switch( cryptObjectInfo.type )
+    {
+    case CRYPT_OBJECT_PKCENCRYPTED_KEY:
+      cryptImportKey( object, ... );
+      break;
+
+    case CRYPT_OBJECT_ENCRYPTED_KEY:
+      cryptImportKey( object, ... );
+      break;
+
+    case CRYPT_OBJECT_SIGNATURE:
+      cryptCheckSignature( object, ... );
+      break;
+
+   ...
+   }
+
+In order to process the various types of data objects, we use the
+cryptImportObject() function.  The simplest type of object is the RawData
+object:
+
+  int payloadStart;
+  long payloadLength;
+
+  cryptImportObject( object, &payloadStart, &payloadLength );
+
+The data contained in the object begins at [ object + payloadStart ] and
+continues for payloadLength bytes.
+
+Other object types are more complex and involve the use of encryption contexts.
+These require the use of the extended cryptImportObjectEx() function to import
+them.  For example if cryptQueryObject() reports a SignedData object then we
+need to pass it a pointer to an encryption context:
+
+  CRYPT_CONTEXT hashContext;
+  int payloadStart;
+  long payloadLength;
+
+  cryptImportObjectEx( object, &payloadStart, &payloadLength, &hashContext );
+
+This is how we can tell in advance which hash algorithm we need to use when
+checking a digital signature - the object tells us what to use, and
+cryptImportObjectEx() creates and initialises the hash context for us.
+Checking a SignedData object therefore involves passing the signed data object
+and an empty hash context to cryptImportObjectEx(), which sets up the hash
+context ready for use with the signed data.
+
+The same thing goes for encrypted data objects:
+
+  CRYPT_CONTEXT cryptContext;
+  int payloadStart;
+  long payloadLength;
+
+  cryptImportKey( encryptedKey, privateKeyContext, &cryptContext );
+    [...]
+  cryptImportObjectEx( object, &payloadStart, &payloadLength, &cryptContext );
+
+The object tells us what encryption parameters to use, and cryptImportObject()
+sets the encryption context up appropriately.  Note that we have to import a
+key into the encryption context before we can pass it to cryptImportObject().
+Typically an EncryptedData object is preceded by an EncryptedKey or
+PKCEncryptedKey object to allow it to be decrypted.
+
+We can now extend the encrypted object handler to the following:
+
+  CRYPT_OBJECT_INFO cryptObjectInfo;
+
+  cryptQueryObject( object, &cryptObjectInfo );
+  switch( cryptObjectInfo.type )
+    {
+    case CRYPT_OBJECT_PKCENCRYPTED_KEY:
+      cryptImportKey( object, ... );
+      break;
+
+    case CRYPT_OBJECT_ENCRYPTED_KEY:
+      cryptImportKey( object, ... );
+      break;
+
+    case CRYPT_OBJECT_SIGNATURE:
+      cryptCheckSignature( object, ... );
+      break;
+
+   case CRYPT_OBJECT_ENCRYPTED_DATA:
+     cryptImportObjectEx( object, ... );
+     break;
+
+   case CRYPT_OBJECT_SIGNED_DATA:
+     cryptImportObjectEx( object, ... );
+     break;
+
+   case CRYPT_OBJECT_RAW_DATA:
+     break;
+   }
+
+This code provides a skeleton outline for a function which will unwrap
+arbitrarily nested objects, decrypting and checking signatures as it goes until
+it finds the raw data which makes up the message, at which point it will stop.
+This shows how complex encryption systems can be built up using the object
+management functions.  Of course if you're using a relatively fixed message
+format with (say) an encrypted key followed by encrypted, signed data, you
+don't need to write such general-purpose code.  A simple fixed handler for the
+nested objects example in the previous diagram can be written as:
+
+  CRYPT_CONTEXT decryptContext, sessionKeyContext, hashContext;
+  unsigned char *encryptedData, signedData, payload, signature;
+  int payloadStart;
+  long payloadSize;
+
+  /* Recreate the session key by importing the encrypted key */
+  cryptImportKey( exportedKey, decryptContext, &sessionKeyContext );
+
+  /* Set up the session key to decrypt the encrypted data */
+  encryptedData = exportedKey + payloadStart + payloadSize;
+  cryptImportObjectEx( encryptedData, &payloadStart, &payloadSize,
+
+  /* Decrypt the encrypted data */
+  signedData = encryptedData + payloadStart;
+  cryptDecrypt( sessionKeyContext, signedData, payloadSize );
+  cryptDestroyContext( sessionKeyContext );
+
+  /* Import the signed data object */
+  cryptImportObjectEx( signedData, &payloadStart, &payloadSize,
+                       &hashContext );
+
+  /* Hash the signed data */
+  payload = signedData + payloadStart;
+  cryptEncrypt( hashContext, payload, payloadSize );
+  cryptEncrypt( hashContext, payload, 0 );
+
+  /* Check the signature */
+  signature = signedData + payloadStart + payloadSize;
+  cryptCheckSignature( signature, signContext, hashContext );
+  cryptDestroyContext( hashContext );
+
+  /* Import the raw data object */
+  cryptImportObject( payload, &payloadStart, &payloadSize );
+
+Note the use of the payloadStart and payloadSize values to unwrap each layer of
+nested objects until the raw data is revealed.
+
+The routines used to create objects are slightly more complex than the ones
+used to import them.  They work more or less like cryptExportKey() and
+cryptCreateSignature(), but they export various types of data objects rather
+than keys or signatures.  Unlike the other two functions, they don't export the
+data itself, only the header or wrapper for the blob.  Since the data can be of
+arbitrary length and may not all be available when you export the blob, this
+allows you to create the header seperately and then attach the data to it as
+required.
+
+Let's say you want to create the simplest type of object, a RawData object
+containing 4 bytes of information.  To do this you'd use:
+
+  BYTE *rawDataObject;
+
+  cryptCreateObject( rawDataObject, &rawDataObjectLength,
+                     CRYPT_OBJECT_RAW_DATA, 4 );
+
+The resulting data blob (or at least the header for the blob) is placed in the
+memory buffer pointed to by rawDataObject, and the length of the blob header is
+stored in rawDataObjectLength.  This leads to the same problem with allocating
+the buffer which was described above with cryptExportKey() and
+cryptCreateSignature(), and the solution is again the same: You use
+cryptExportObject() to tell you how big to make the buffer. If you pass in a
+null pointer for rawDataObject, the function will set rawDataObjectLength to
+the size of the resulting blob, but not do anything else.  You can then use
+code like:
+
+  cryptExportObject( NULL, &rawDataObjectLength, CRYPT_OBJECT_RAW_DATA,
+                     4 );
+  rawDataObject = malloc( rawDataObjectLength );
+  cryptExportObject( rawDataObject, &rawDataObjectLength,
+                     CRYPT_OBJECT_RAW_DATA, 4 );
+
+to create the data object blob.
+
+Alternatively, you can just allocate a reasonably sized block of memory and use
+that to hold the object blob.  "Reasonably sized" means a few hundred bytes, a
+1K block is plenty.
+
+Some types of data objects are more complex, and require an extended form of
+the cryptExportObject() function.  This is cryptExportObjectEx(), which takes
+an extra parameter in the form of an encryption context.  For an EncryptedData
+object the context contains the encryption context being used to encrypt the
+data.  For a SignedData object the context contains the hash context being used
+to hash the data.  For example to create a SignedData object you would use:
+
+  CRYPT_CONTEXT hashContext;
+  BYTE *signedDataObject;
+  int signedDataObjectLength;
+
+  /* Generate a hash context */
+  cryptCreateContext( &hashContext, CRYPT_USE_DEFAULT, CRYPT_USE_DEFAULT );
+
+  /* Create the SignedData object */
+  cryptExportContextEx( signedDataObject, &signedDataObjectLength,
+                        CRYPT_OBJECT_SIGNED_DATA, hashContext );
+
+You can now hash the data using the hash context and then sign it with
+cryptCreateSignature().  You don't have to create the SignedData object before
+you hash the data or create the signature, you can create it at any point
+during the hashing or signing operation.  The same goes for the creation of
+EncryptedData objects.  In both cases the encryption contexts are used merely
+as templates to tell the library how to process the object.
+
+With this information you can now create the code to produce the fixed-format
+messages shown the previous diagram:
+
+  CRYPT_CONTEXT sessionKeyContext, hashContext;
+  BYTE *exportedKeyObject, *encryptedDataObject, *signedDataObject;
+  BYTE *rawDataObject, *signature;
+  int encryptedDataObjectSize, signedDataObjectSize, rawDataObjectSize;
+  int signatureSize;
+
+  /* Create an encryption context for the session key and a hash context
+     for the signature */
+  cryptCreateContext( &sessionKeyContext, cryptAlgo, CRYPT_MODE_CFB );
+  cryptGenerateContext( sessionKeyContext );
+  cryptCreateContext( &hashContext, CRYPT_ALGO_SHA, CRYPT_MODE_NONE );
+
+  /* Export the session key */
+  cryptExportKey( exportedKeyObject, &exportedKeySize, cryptContext,
+                  sessionKeyContext );
+
+  /* Assemble the EncryptedData, SignedData, and RawData objects */
+  cryptExportObjectEx( encryptedDataObject, &encryptedDataObjectSize,
+                       CRYPT_OBJECT_ENCRYPTED_DATA, signedDataObjectSize +
+                       rawDataObjectSize + dataLength + signatureSize,
+                       sessionKeyContext );
+  cryptExportObjectEx( signedDataObject, &signedDataObjectSize,
+                       CRYPT_OBJECT_SIGNED_DATA, rawDataObjectSize +
+                       dataLength, hashContext );
+  cryptExportObject( rawDataObject, &rawDataObjectSize, CRYPT_OBJECT_RAW_DATA,
+                     dataLength );
+  memcpy( rawDataObject + rawDataObjectSize, data, dataLength );
+
+  /* Hash the RawData object, sign the hash, and store the result in the
+     SignedData object */
+  cryptEncrypt( hashContext, rawDataObject, dataLength + rawDataObjectSize );
+  cryptEncrypt( hashContext, rawDataObject, 0 );
+  cryptCreateSignature( signature, &signatureSize, signContext, hashContext );
+  cryptDestroyContext( hashContext );
+
+  /* Encrypt the SignedData and Signature objects */
+  cryptEncrypt( sessionKeyContext, signedDataObject, signedDataObjectSize +
+                rawDataObjectSize + dataLength + signatureSize );
+  cryptDestroyContext( sessionKeyContext );
+
+The buffer management hasn't been shown in the code to simplify it, but
+consists of using cryptExportObject() and cryptExportObjectEx() with a NULL
+buffer to query the size of each object, followed by a call to allocate a
+buffer big enough to hold the objects.  The order of the objects in the buffer
+is:
+
+  [ ExportedKey ][ EncryptedData[ SignedData[ RawData[ data ] ][ Signature ] ] ]
+
+with exportedKeyObject pointing to the start of the buffer, encryptedDataObject
+pointing to the start of the EncryptedData object in the buffer, and so on.
+Once everything is complete, the entire buffer can be written to disk or sent
+to a remote machine as required.
+
+A complete example of the above two code fragments is given in the file test.c.
+A longer example which will process arbitrary-length pieces of data and allows
+data to be signed, public-key encrypted, conventional-key encrypted, or signed
+and public/conventional-key encrypted, is given in the file testapp.c.  Most of
+the code in both examples actually consists of buffer management rather than
+encryption.
+
+
+Random Numbers (U)
+------------------
+
+The cryptlib cryptGenerateContext() and cryptExportKey() functions require
+access to a source of cryptographically strong random numbers.  These numbers
+are obtained by taking system information and stirring it into an internal data
+pool using the Secure Hash Algorithm.  The random-data-gathering operation is
+controlled with the cryptAddRandom() function, which can be used to either
+inject your own random information into the internal pool or to tell the
+library to poll the system for random information.  To add your own random data
+(such as keystroke timings when the user enters a password) to the pool, use:
+
+  cryptAddRandom( buffer, bufferLength );
+
+The library can also perform its own polling for random information.  There are
+two polling methods, a fast poll which returns immediately and retrieves a
+moderate amount of random information, and a slow poll which may take some time
+but which retrieves much larger amounts of random information.  A fast poll is
+performed with:
+
+  cryptAddRandom( NULL, CRYPT_RANDOM_FASTPOLL );
+
+In general you should sprinkle these throughout your code to build up the
+amount of randomness in the pool.
+
+A slow poll is performed with:
+
+  cryptAddRandom( NULL, CRYPT_RANDOM_SLOWPOLL );
+
+The effect of this call varies depending on the operating system.  Under DOS
+the call returns immediately (see below).  Under Windows 3.x the call will get
+all the information it can in about 1 second, then return (there is usually
+more information present in the system than can be obtained in 1 second). Under
+Unix, Windows 95, and Windows NT the call will spawn one or more separate
+processes or threads to perform the polling and will return immediately.
+
+Before the first call to cryptGenerateContext() or cryptExportKey() you must
+perform at least one slow poll (or, in some cases, several fast polls - see
+below) in order to accumulate enough random information in the pool to safely
+generate a key into an encryption context or export a key.  Since many systems
+will perform a nonblocking poll, you can usually do this by calling the slow
+poll routine on program startup so that the random information will have
+accumulated by the time you call cryptGenerateContext() or cryptExportKey():
+
+    [ program startup ]
+
+    cryptAddRandom( NULL, CRYPT_RANDOM_SLOWPOLL );
+
+    [ other code, slow poll runs in the background ]
+
+    cryptGenerateContext( cryptContext, ... );
+
+If you forget to perform a slow poll beforehand, the cryptGenerateContext() or
+cryptExportKey() call will block until the slow poll completes.  The fact that
+the call is blocking is usually fairly obvious.  If no reliable random data is
+available then functions such as cryptGenerateContext() and cryptExportKey()
+which require it will return the error CRYPT_NORANDOM.
+
+cryptGenerateContext() spawns another slow poll once it completes to refresh
+the random pool, so after the first call there's no need to perform another
+slow poll, although it can never hurt to do so, especially if your program is
+waiting around for other things such as a network or disk I/O request to
+complete.
+
+The information obtained by the slow and fast polls under various operating
+systems and DOS is as follows:
+
+  DOS
+
+  Since DOS is so simple, it provides very little random information.  A fast
+  poll simply adds the value of the system clock to a 1-second resolution
+  (which is next to useless).  A slow poll relies on the presence of a
+  /dev/random-style driver such as Robert Rothenburg Walking-Owl's noise.sys,
+  which records the timing between keystrokes, variations in disk access times,
+  clock drift while the system is idling at the command line, the variation in
+  EGA/VGA retrace events, and mouse movements.
+
+  The addition of external random data via cryptaddrandom() is strongly
+  recommended under DOS.  Without either this or the presence of a
+  /dev/random-style driver, the random numbers (and therefor the encryption
+  keys) generated by the library will be extremely easy to guess and will
+  provide virtually no security.  For this reason any functions which require
+  random numbers will always return CRYPT_NORANDOM unless a /dev/random driver
+  is present or external randomness is added via cryptAddRandom().
+
+  At least one /dev/random slow poll is required to accumulate enough
+  randomness for use by the library.
+
+  Windows 3.x
+
+  A fast poll adds the number of bytes free in the global heap, the cursor
+  position when the last message was received, a 55ms time for the last
+  message, whether the system queue has any events in it, the number of active
+  tasks, the 55ms time since Windows started, the handle of the window with the
+  mouse capture and input focus, the current mouse cursor and caret position,
+  the largest free memory block, number of lockable pages, number of unlocked
+  pages, number of free and used pages, number of swapped pages, 1ms execution
+  time of the current task and virtual machine, and percentage free and memory
+  segment of the user and GDI heaps.
+
+  A slow poll adds the linear address, size in bytes, handle, lock count,
+  owner, object type, and segment type of every object in the global heap, the
+  module name, handle, reference count, executable path, and next module link
+  of every loaded module, the task handle, parent task handle, instance handle,
+  stack segment and offset, stack size, number of pending events, task queue,
+  code segment and instruction pointer, and the name of the module executing
+  the task for every running task.
+
+  At least one slow poll or five fast polls are required to accumulate enough
+  randomness for use by the library.
+
+  Windows 95
+
+  A fast poll adds the handle of the active window, the handle of the window
+  with mouse capture, the handle of the clipboard owner, the handle of the
+  start of the clipboard viwer list, the pseudohandle of the current process,
+  the current process ID, the pseudohandle of the current thread, the current
+  thread ID, the number of milliseconds since Windows started, the handle of
+  the desktop window, the handle of the window with the keyboard focus, whether
+  the system queue has any events in it, the cursor position for the last
+  message in the queue, the millisecond time for the last message in the queue,
+  the handle of the window with the clipboard open, the handle of the process
+  heap, the handle of the processes window station, a bitmap of the types of
+  events in the input queue, the current caret and mouse cursor position, the
+  percentage of memory in use, bytes of physical memory available, bytes of
+  free physical memory, bytes in the paging file, free bytes in the paging
+  file, user bytes of address space, and free user bytes of memory, the thread
+  and process creation time, exit time, time in kernel mode, and time in user
+  mode in 100ns intervals, the minimum and maximum working set size for the
+  current process, the name of the desktop, console window title, position and
+  size for new windows, window flags, and handles for stdin, stdout, and
+  stderr.
+
+  A slow poll adds the process ID, heap ID, size in bytes, handle, linear
+  address, type, and lock count of every object on the local heap, the module
+  ID, process ID, global usage count, module usage count, base address, size in
+  bytes, handle, and executable path of every module in the system, the usage
+  count, process ID, heap ID, module ID, number of threads, parent process ID,
+  base priority class, and executable path of every running process, and the
+  thread ID, process ID, base priority, and priority level change of every
+  executing thread in the system.
+
+  At least one slow poll or three fast polls are required to accumulate enough
+  randomness for use by the library.
+
+  Windows NT
+
+  A fast poll adds the handle of the active window, the handle of the window
+  with mouse capture, the handle of the clipboard owner, the handle of the
+  start of the clipboard viwer list, the pseudohandle of the current process,
+  the current process ID, the pseudohandle of the current thread, the current
+  thread ID, the number of milliseconds since Windows started, the handle of
+  the desktop window, the handle of the window with the keyboard focus, whether
+  the system queue has any events in it, the cursor position for the last
+  message in the queue, the millisecond time for the last message in the queue,
+  the handle of the window with the clipboard open, the handle of the process
+  heap, the handle of the processes window station, a bitmap of the types of
+  events in the input queue, the current caret and mouse cursor position, the
+  percentage of memory in use, bytes of physical memory available, bytes of
+  free physical memory, bytes in the paging file, free bytes in the paging
+  file, user bytes of address space, and free user bytes of memory, the thread
+  and process creation time, exit time, time in kernel mode, and time in user
+  mode in 100ns intervals, the minimum and maximum working set size for the
+  current process, the name of the desktop, console window title, position and
+  size for new windows, window flags, and handles for stdin, stdout, and
+  stderr.
+
+  A slow poll adds the number of bytes read from and written to disk, the disk
+  read and write time, the number of read and write operations, the depth of
+  the I/O queue, a large number of network statistics such as the number of
+  bytes sent and received, the number of SMB's sent and received, the number of
+  paging, nonpaging, and cached bytes sent and received, the number of failed
+  initial and failed completion operations, the number of reads, random reads,
+  large/small SMB reads, writes, random writes, large and small SMB writes, the
+  number of reads and writes denied, the number of sessions, failed sessions,
+  reconnects, and hung sessions, and various lan manager statistics, and an
+  equally large number of system performance-related statistics such covering
+  virtually every aspect of the operation of the system (the exact details vary
+  from machine to machine, but the library will query every available
+  performance counter and system monitor).
+
+  At least one slow poll or three fast polls are required to accumulate enough
+  randomness for use by the library.
+
+  UNIX
+
+  A fast poll adds the current time to a reasonably high resolution (usually
+  milliseconds or microseconds), the total user and system time, resident set
+  size, page fault statistics, number of I/O operations, messages sent and
+  received, signals received, number of context switches, and various other
+  system statistics.
+
+  A slow poll varies with the Unix flavour being used.  Under Linux the library
+  will try to use the /dev/random driver, which continually accumulates random
+  data from the system.  If this is not present it will use a variety of
+  information on disk I/O, network traffic, NFS traffic, packet filter
+  statistics, multiprocessor statistics, process information, users, VM
+  statistics, process statistics, open files, inodes, terminals, vector
+  processors, streams, and loaded code.  The exact data collected depends on
+  the system, but generally includes quite detailed operating statistics and
+  information.
+
+  At least one slow poll is required to accumulate enough randomness for use by
+  the library.
+
+
+Controlling the Operation of the Library (L)
+--------------------------------------------
+
+In order to allow you to control various parts of its operation, the library
+provides a cryptIoctl() function so you can tune its performance.  This is
+called as:
+
+    cryptIoctl( ioctlCode, ioctlInformation, cryptContext );
+
+The ioctlCode specifies the type of IOCTL function to perform.  The
+ioctlInformation contains the information passed to the library to control its
+operation.  The cryptContext is the context which the option applies to, or
+NULL if the option is to be applied globally.  The IOCTL functions are as
+follows:
+
+CRYPT_IOCTL_NONE    Do nothing.
+
+CRYPT_IOCTL_MEMORY  Change the way in which memory blocks which must store
+                    sensitive information are allocated.  By default the
+                    library will try to lock all pages containing keys and
+                    sensitive information to prevent them from being paged to
+                    disk, but will continue if the memory locking fails.
+                    Specifying CRYPT_MEMORY_NOLOCK as the memory lock type will
+                    disable the locking of memory.  Specifying
+                    CRYPT_MEMORY_LOCK will give the default behaviour.
+                    Specifying CRYPT_MEMORY_FORCELOCK will cause memory
+                    allocations to fail if the pages cannot be locked, and the
+                    library will return the error code CRYPT_NOLOCK.  This is a
+                    more stringent check than CRYPT_MEMORY_LOCK, which will try
+                    to lock the pages but continue anyway if they can't be
+                    locked.
+
+                    A CRYPT_IOCTL_MEMORY call will only affect memory allocated
+                    after the call is made, so you can't pass a cryptContext to
+                    the function.  The settings will continue in effect until
+                    the next call to CRYPT_IOCTL_MEMORY is made.
+
+                    Locking pages is unnecessary under DOS, impossible under
+                    Windows 3.x and Windows 95, possible under Windows NT, and
+                    requires root priviledges under Unix.  Each encryption
+                    context will lock approximately two 4K pages (or equivalent
+                    regions) of memory, each call to cryptExportKey() or
+                    cryptImportKey() will temporarily lock one page, and the
+                    library itself keeps one page locked.  This creates no
+                    noticeable effect on system performance when used in
+                    moderation.
+
+CRYPT_IOCTL_KEYCOOKIE
+CRYPT_IOCTL_SIGCOOKIE
+                    Control the export of key and signature cookies.  By
+                    default the library will export key and signature cookies.
+                    You can disable the export of cookies by setting the IOCTL
+                    parameter to 0, enable it by setting it to 1, and restore
+                    the default behaviour by setting it to CRYPT_USE_DEFAULT.
+
+                    Passing in a cryptContext will set the option for the
+                    encryption context, passing in a NULL pointer will set the
+                    option for the entire library.  An export cookie option set
+                    for an encryption context will override an export cookie
+                    option set for the entire library.  For example if the
+                    library as a whole is set to export key cookies but a
+                    particular cryptContext is set to not export a cookie, the
+                    cookie for that context won't be exported.
+
+The structures used by the cryptIoctl() function are as follows:
+
+Structure CRYPT_IOCTLINFO_MEMORY:
+
+  /* What to do with memory blocks */
+  int memoryLockType;
+
+Structure CRYPT_IOCTLINFO_COOKIE:
+
+  /* What to do with key or signature cookies */
+  int exportCookie;
+
+For example to disable the export of signature cookies for the entire library
+you would use:
+
+  CRYPT_IOCTLINFO_COOKIE cryptIoctlInfoCookie;
+
+  cryptIoctlInfoCookie.exportCookie = FALSE;
+  cryptIoctl( CRYPT_IOCTL_SIGCOOKIE, &cryptIoctlInfoCookie, NULL );
+
+
+Working with Newer Versions of the Library
+------------------------------------------
+
+Your software can automatically support new encryption algorithms and modes as
+they are added to the library if you check for the range of supported
+algorithms and modes instead of hard-coding in the values which existed when
+you wrote the program.  In order to support this, the library predefines the
+values CRYPT_ALGO_FIRST_CONVENTIONAL and CRYPT_ALGO_LAST_CONVENTIONAL for the
+first and last possible conventional encryption algorithms,
+CRYPT_ALGO_FIRST_PKC and CRYPT_ALGO_LAST_PKC for the first and last possible
+public-key encryption algorithms, and CRYPT_ALGO_FIRST_HASH and
+CRYPT_ALGO_LAST_HASH for the first and last possible hash algorithms.  By
+checking each algorithm within this range using cryptAlgoAvailable(), your
+software can automatically incorporate any new algorithms as they are added.
+For example to scan for all available conventional encryption algorithms you
+would use:
+
+  CRYPT_ALGO cryptAlgo;
+
+  for( cryptAlgo = CRYPT_ALGO_FIRST_CONVENTIONAL;
+       cryptAlgo <= CRYPT_ALGO_LAST_CONVENTIONAL; cryptAlgo++ )
+    if( cryptStatusOK( cryptAlgoAvailable( cryptAlgo ) )
+        /* Perform action with algorithm */;
+
+The action to perform would typically be building a list of available
+algorithms and allowing the user to choose the one they preferred.  The same
+can be done for the public-key and hash algorithms.
+
+The library also predefines CRYPT_MODE_FIRST_CONVENTIONAL and
+CRYPT_MODE_LAST_CONVENTIONAL which cover the range of available conventional
+encryption modes.  Once you've determined which conventional algorithm to use
+you can use:
+
+  CRYPT_MODE cryptMode;
+
+  for( cryptMode = CRYPT_MODE_FIRST_CONVENTIONAL;
+       cryptMode <= CRYPT_MODE_LAST_CONVENTIONAL; cryptMode++ )
+    if( cryptStatusOK( cryptModeAvailable( cryptAlgo, cryptMode ) )
+        /* Perform action with algorithm */;
+
+If your code follows these guidelines, it will automatically handle any new
+encryption algorithms and modes which are added in newer versions of the
+library.  If you are using the shared library or DLL form of the encryption
+library, your softwares' encryption capabilities will be upgraded every time
+the library is upgraded.
+
+
+Error Checking
+--------------
+
+When the library is initialised, each of the built-in encryption algorithms
+goes through a self-test procedure which checks the implementation using
+standard test vectors and methods given with the algorithm specification
+(typically FIPS publications, ANSI standards, or standard reference
+implementations).  This self-test is used to verify that each encryption
+algorithm is performing as required.
+
+Each function in the library performs extensive error checking (although
+monitoring of error codes has been left out in the code samples below for
+readability).  The file TEST.C, included with the crypt library, includes
+better error handling than the short examples below.
+
+For functions which complete with no error, the library will return CRYPT_OK.
+For functions which complete with some form of error internal to the library
+itself, the library will return CRYPT_ERROR (this situation should never occur
+and should be reported to the library author).
+
+Other errors are:
+
+CRYPT_SELFTEST      The encryption code or hardware has failed an internal
+                    self-test.  This code is returned if an attempt is made to
+                    use the encryption module which failed the self-test.
+
+CRYPT_BADPARM1...   There is a problem with a parameter passed to a library
+  CRYPT_BADPARM15   function.  The exact code depends on the parameter in
+                    error.  If the function cannot resolve the exact parameter
+                    error type it will return CRYPT_BADPARM.
+
+CRYPT_NOMEM         There is not enough memory available to perform this
+                    operation (generally the operation would be the creation of
+                    an encryption context or a signature or key export or
+                    import operation).
+
+CRYPT_NOTINITED     The encryption context you have tried to use hasn't been
+                    initialised yet.
+
+CRYPT_INITED        The encryption context you have tried to initialise has
+                    already been initialised previously.
+
+CRYPT_NOALGO        The requested encryption algorithm or mode is unavailable.
+CRYPT_NOMODE
+
+CRYPT_NOKEY         The encryption key or IV hasn't been loaded into an
+CRYPT_NOIV          encryption context yet.
+
+CRYPT_NOLOCK        The operating system cannot lock pages containing sensitive
+                    information in memory to prevent them from being swapped to
+                    disk.
+
+CRYPT_NORANDOM      Not enough randomness information is available to the
+                    library to perform the requested operation.
+
+CRYPT_NOTAVAIL      The requested operation is not available for this algorithm
+                    (for example an attempt to load an encryption key into a
+                    hash algorithm context, or to decrypt a Diffie-Hellman
+                    shared integer with an RSA key).
+CRYPT_KEYPERM       The key used does not have the permission to perform this
+                    type of operation (for example an encrypt-only key being
+                    used for a decrypt operation).
+CRYPT_WRONGKEY      The key being used to decrypt a piece of data is incorrect.
+
+CRYPT_INCOMPLETE    An operation which consists of multiple steps (such as a
+                    message hash) is still in progress and requires further
+                    steps before it can be regarded as having completed.
+CRYPT_COMPLETE      An operation which consists of multiple steps (such as a
+                    message hash) is complete and cannot be continued.
+
+CRYPT_ORPHAN        There were were still encryption contexts allocated when
+                    cryptEnd() was called.  This error type is not serious
+                    since the library performs automatic garbage collection of
+                    any orphaned encryption contexts, but may serve as a
+                    warning that something is wrong in a user program.
+
+CRYPT_DATASIZE      There is too much data for this function to work with.  For
+                    a public-key encryption or signature function this means
+                    there is too much data for this public/private key to
+                    encrypt/sign.  You should either use a larger
+                    public/private key (in general a 1024-bit or larger key
+                    should be sufficient for most purposes) or less data (for
+                    example by reducing the key size in the encryption context
+                    passed to cryptExportKey()).  For a key certificate
+                    function this means the amount of data you have supplied is
+                    more than what is allowed for the field you are trying to
+                    store it in.
+
+CRYPT_PKCCRYPT      The public/private key encryption/decryption failed,
+                    probably due to incorrect public or private key parameters.
+CRYPT_BADDATA       The object (typically encrypted or signed data, or a key
+                    certificate) was corrupt and can't be processed.
+CRYPT_BADSIG        The signature did not match the data.
+
+The macros cryptStatusError() and cryptStatusOK() can be used to determine
+whether a return value denotes an error condition, for example:
+
+  CRYPT_CONTEXT cryptContext;
+  int status;
+
+  status = cryptCreateContext( &cryptContext, CRYPT_ALGO_IDEA, CRYPT_MODE_CFB );
+  if( cryptStatusError( status ) )
+      /* Perform error processing */
+
+The macros cryptIsParamError(), cryptIsResourceError(), cryptIsSecurityError(),
+cryptIsHighlevelError(), cryptIsKeysetError(), and cryptIsCertError() can be
+used to determine whether a return value denotes a function parameter error, an
+error due to insufficient resources, a cryptlib API security violation, a
+high-level function related error, a key collection related error, or a
+certificate management error.  Note that high-level errors also cover key
+collection and certificate operations (for example checking a certificate might
+return CRYPT_BADSIG), so you should check for these as well when you check for
+classes of key collection or certificate errors.
+
+
+Examples
+--------
+
+The following examples have had error checking removed for readability.  See
+the test code in TEST.C for an example with full error checking.
+
+To encrypt a buffer using DES in CFB mode with the password 0x0123456789ABCDEF
+and an IV generated automatically by the library:
+
+  CRYPT_CONTEXT cryptContext;
+  unsigned char key[] = { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF };
+
+  /* Load the key, encrypt the buffer (the IV is automatically generated if we
+     don't specify one, it can be obtained with cryptRetrieveIV()), and destroy
+     the encryption context */
+  cryptCreateContext( &cryptContext, CRYPT_ALGO_DES, CRYPT_MODE_CFB );
+  cryptLoadContext( cryptContext, key, sizeof( key ) );
+  cryptEncrypt( cryptContext, buffer, length );
+  cryptDestroyContext( cryptContext );
+
+To hash an arbitrary-size passphrase down to the one used by a particular
+cryptosystem (in this case triple DES) using MD5:
+
+  CRYPT_QUERY_INFO cryptQueryInfo;
+  CRYPT_CONTEXT cryptContext;
+  unsigned char key[ CRYPT_MAX_KEYSIZE ];
+  int keySize;
+
+  /* Find out how long we can make the key */
+  cryptQueryAlgoMode( CRYPT_ALGO_3DES, CRYPT_MODE_CBC, &cryptQueryInfo );
+  keySize = cryptQueryInfo->maxKeySize;   /* Use all we can */
+
+  /* Hash the user key with MD5 and query the encryption context to get the
+     final hash value */
+  cryptCreateContext( &cryptContext, CRYPT_ALGO_MD5, CRYPT_MODE_NONE );
+  cryptEncrypt( cryptContext, passphrase, strlen( passphrase ) );
+  cryptEncrypt( cryptContext, passphrase, 0 );
+  cryptQueryContext( cryptContext, &cryptQueryInfo );
+  cryptDestroyContext( cryptContext );
+
+  /* Use the hashed value of the passphrase as the key */
+  memcpy( key, cryptQueryInfo.hashValue, keySize );
+
+Note that this code uses the encryption library querying functions, which will
+be explained in the next section of the documentation.
+
+To encrypt a file using triple DES in CBC mode with the key generated in the
+previous example:
+
+  int firstTime = 1;
+
+  /* Load the previously-generated key */
+  cryptCreateContext( &cryptContext, CRYPT_ALGO_3DES, CRYPT_MODE_CBC );
+  cryptLoadContext( cryptContext, key, keySize );
+
+  /* Copy the data across, encrypting as we go */
+  while( ( length = fread( buffer, 1, BUFSIZE, inFile ) ) != 0 )
+      {
+      /* Encrypt the data in the buffer */
+      cryptEncrypt( cryptContext, buffer, length );
+
+      /* If it's the first block, retrieve the IV and prepend it to the output
+         data.  Note the since we've let the library generate the IV for us
+         automatically, we can't retrieve it until after the first
+         cryptEncrypt() call */
+      if( firstTime )
+          {
+          CRYPT_QUERY_INFO cryptQueryInfo;
+          unsigned char iv[ CRYPT_MAX_IVSIZE ];
+          int ivSize;
+
+          /* Find out how long the IV we're using is */
+          cryptQueryContext( cryptContext, &cryptQueryInfo );
+          ivSize = cryptQueryInfo->ivSize;
+
+          /* Retrieve the IV and write it to the output file */
+          cryptRetrieveIV( cryptContext, iv );
+          fwrite( iv, 1, ivSize, outFile );
+
+          firstTime = 0;
+          }
+
+      /* Write the encrypted data to the output file */
+      fwrite( buffer, 1, length, outFile );
+      }
+
+  /* Since CBC is a block cipher, we perform a courtesy close call to let the
+     encryption routines handle the last block */
+  cryptEncrypt( cryptContext, buffer, 0 );
+
+  cryptDestroyContext( cryptContext );
+
+To decrypt the previously encrypted file with the key generated in the previous
+example:
+
+  CRYPT_QUERY_INFO cryptQueryInfo;
+  unsigned char iv[ CRYPT_MAX_IVSIZE ];
+  int ivSize;
+
+  /* Load the previously-generated key */
+  cryptCreateContext( &cryptContext, CRYPT_ALGO_3DES, CRYPT_MODE_CBC );
+  cryptLoadContext( cryptContext, key, keySize );
+
+  /* Find out how long the IV we're using is */
+  cryptQueryContext( cryptContext, &cryptQueryInfo );
+  ivSize = cryptQueryInfo.ivSize;
+
+  /* Read the IV from the input file and load it into the encryption context */
+  fread( iv, 1, ivSize, inFile );
+  cryptLoadIV( cryptContext, iv, ivSize );
+
+  /* Copy the data across, decrypting as we go */
+  while( ( length = fread( buffer, 1, BUFSIZE, inFile ) ) != 0 )
+      {
+      /* Encrypt the data in the buffer */
+      cryptDecrypt( cryptContext, buffer, length );
+
+      /* Write the decrypted data to the output file */
+      fwrite( buffer, 1, length, outFile );
+      }
+
+  /* Since CBC mode implements a block cipher, we perform a courtesy close call
+     to let the encryption routines handle the last block */
+  cryptDecrypt( cryptContext, buffer, 0 );
+
+  cryptDestroyContext( cryptContext );
+
+To export an RSA-encrypted triple DES session key contained in the
+sessionKeyContext encryption context for an encrypted message exchange:
+
+  CRYPT_CONTEXT cryptContext, sessionKeyContext;
+  CRYPT_PKCINFO_RSA rsaKey;
+  BYTE *encryptedKey;
+  int encryptedKeyLength;
+
+  /* Create an RSA encryption context */
+  cryptCreateContext( cryptContext, CRYPT_ALGO_RSA, CRYPT_MODE_PKC );
+  cryptInitComponents( rsaKey, CRYPT_COMPONENTS_BIGENDIAN,
+                       CRYPT_KEYTYPE_PUBLIC );
+  cryptSetComponent( rsaKey.n, ... );
+  cryptSetComponent( rsaKey.e, ... );
+  cryptLoadContext( cryptContext, &rsaKey, CRYPT_UNUSED );
+  cryptDestroyComponents( rsaKey );
+
+  /* Create and export the session key */
+  cryptCreateContext( sessionKeyContext, CRYPT_ALGO_3DES, CRYPT_MODE_CFB );
+  cryptGenerateContext( sessionKeyContext, CRYPT_USE_DEFAULT );
+  cryptExportKey( cryptContext, sessionKeyContext, NULL,
+                  &encryptedKeyLength );
+  encryptedKey = malloc( encryptedKeyLength );
+  cryptExportKey( cryptContext, sessionKeyContext, encryptedKey,
+                  &encryptedKeyLength );
+
+  cryptDestroyContext( cryptContext );
+
+You can now encrypt the data using the session key context, and send both the
+encrypted key and encrypted data to the recipient (remember to destroy the
+session key context when you've finished).
+
+To import the RSA-encrypted triple DES session key at the other end of the
+communications channel:
+
+  CRYPT_CONTEXT cryptContext, sessionKeyContext;
+
+  /* Create an RSA decryption context */
+  cryptCreateContext( decryptContext, CRYPT_ALGO_RSA, CRYPT_MODE_PKC );
+  cryptInitComponents( rsaKey, CRYPT_COMPONENTS_BIGENDIAN,
+                       CRYPT_KEYTYPE_PRIVATE );
+  cryptSetComponent( rsaKey.n, ... );
+  cryptSetComponent( rsaKey.e, ... );
+  cryptSetComponent( rsaKey.d, ... );
+  cryptSetComponent( rsaKey.p, ... );
+  cryptSetComponent( rsaKey.q, ... );
+  cryptSetComponent( rsaKey.u, ... );
+  cryptSetComponent( rsaKey.e1, ... );
+  cryptSetComponent( rsaKey.e2, ... );
+  cryptLoadContext( decryptContext, &rsaKey, CRYPT_UNUSED );
+  cryptDestroyComponents( rsaKey );
+
+  /* Import the session key */
+  cryptImportKey( decryptContext, &sessionKeyContext, encryptedKey );
+  cryptDestroyContext( decryptContext );
+
+You can now decrypt the encrypted data using the session key context (remember
+to destroy the session key context when you've finished).
+
+To sign a message using the message hash contained in the hashContext
+encryption context:
+
+  CRYPT_CONTEXT signContext;
+  BYTE signature;
+  int signatureSize;
+
+  /* Create an RSA signature context */
+  cryptCreateContext( signContext, CRYPT_ALGO_RSA, CRYPT_MODE_PKC );
+  cryptInitComponents( rsaKey, CRYPT_COMPONENTS_BIGENDIAN,
+                       CRYPT_KEYTYPE_PRIVATE );
+  cryptSetComponent( rsaKey.n, ... );
+  cryptSetComponent( rsaKey.e, ... );
+  cryptSetComponent( rsaKey.d, ... );
+  cryptSetComponent( rsaKey.p, ... );
+  cryptSetComponent( rsaKey.q, ... );
+  cryptSetComponent( rsaKey.u, ... );
+  cryptSetComponent( rsaKey.e1, ... );
+  cryptSetComponent( rsaKey.e2, ... );
+  cryptLoadContext( signContext, &rsaKey, CRYPT_UNUSED );
+  cryptDestroyComponents( rsaKey );
+
+  /* Sign the hashed data */
+  cryptCreateSignature( signContext, hashContext, NULL, &signatureSize );
+  signature = malloc( &signatureSize );
+  cryptCreateSignature( signContext, hashContext, buffer, &signatureSize );
+  cryptDestroyContext( signContext );
+
+You can now send the signature and the data it pertains to to the recipient.
+
+To check the signature at the other end of the communications channel against a
+hash of the data contained in the hashContext encryption context:
+
+  CRYPT_CONTEXT checkContext;
+
+  /* Create an RSA signature check context */
+  cryptCreateContext( checkContext, CRYPT_ALGO_RSA, CRYPT_MODE_PKC );
+  cryptInitComponents( rsaKey, CRYPT_COMPONENTS_BIGENDIAN,
+                       CRYPT_KEYTYPE_PUBLIC );
+  cryptSetComponent( rsaKey.n, ... );
+  cryptSetComponent( rsaKey.e, ... );
+  cryptLoadContext( checkContext, &rsaKey, CRYPT_UNUSED );
+  cryptDestroyComponents( rsaKey );
+
+  /* Check the signature on the hash */
+  if( cryptCheckSignature( checkContext, hashContext, signature ) == CRYPT_BADSIG )
+        /* Signature check failed */
+
+A longer usage example including proper error checking and with various other
+test routines can be found in the file test.c included with the code.
+
+
+Querying the Encryption Library Capabilities (L)
+------------------------------------------------
+
+The previous examples showed the use of the cryptQueryAlgoMode() and
+cryptQueryContext() calls to retrieve information about the characteristics of
+a particular algorithm as implemented by the encryption library.  There are
+four such calls in total, of which two query the existence of an implementation
+of an algorithm or an algorithm/mode combination, and two return information
+about the implementation itself.
+
+The library can be interrogated about the existence of a particular encryption
+algorithm or algorithm and encryption mode combination with:
+
+  status = cryptAlgoAvailabile( algorithm );
+
+or:
+
+  status = cryptModeAvailabile( algorithm, mode );
+
+In addition to requesting information on the availability of an encryption
+algorithm and mode, you can request extra information to be returned in a
+CRYPT_QUERY_INFO structure with:
+
+  status = cryptQueryAlgoMode( algorithm, mode, &cryptQueryInfo );
+
+or
+
+  status = cryptQueryContext( cryptContext, &cryptQueryInfo );
+
+with the former being used to request information on a given algorithm/mode
+combination and the latter being used to request information about the
+current encryption context being used.
+
+The CRYPT_QUERY_INFO structure contains the following fields:
+
+  /* The encryption algorithm, encryption mode, and algorithm and mode names
+     ASCII strings */
+  CRYPT_ALGO cryptAlgo;
+  CRYPT_MODE cryptMode;
+  char *algoName;
+  char *modeName;
+
+  /* The algorithm block size in bytes, the minimum, recommended, and
+     maximum key size in bytes (if the algorithm uses a key), and the minimum,
+     recommended, and maximum IV size in bytes (if the algorithm uses an IV) */
+  int blockSize;
+  int minKeySize;
+  int keySize;
+  int maxKeySize;
+  int minIVsize;
+  int ivSize;
+  int maxIVsize;
+
+  /* The algorithm speed relative to a block copy operation.  This value
+     ranges from 1 ... CRYPT_MAX_SPEED, or CRYPT_ERROR if no speed rating is
+     available */
+  int speed;
+
+  /* The hash value (set to 0 if the encryption context isn't for a hash
+     algorithm) */
+  unsigned char hashValue[ CRYPT_MAX_HASHSIZE ];
+
+  /* The key ID information (set to 0 if the encryption context isn't for a
+     public-key algorithm */
+  CRYPT_ALGO keyIDalgo;
+  unsigned char *keyID;
+  unsigned char keyIDlength;
+
+  /* The control vector (set to 0 if the encryption context isn't for a
+     conventional encryption algorithm */
+  long controlVector;
+
+
+Algorithm-Specific Notes
+------------------------
+
+DES:
+Triple DES:
+
+  Although the library routines use 64, 128, or 192-bit DES keys (depending on
+  whether one, two, or three-key DES is being used), only 56, 112, or 168 bits
+  of the key are actually used.  The high bit in each byte is used as a parity
+  bit (the library will set the correct parity values for you, so you don't
+  have to worry about this).  You can treat the algorithms as having 64, 128,
+  or 192-bit keys, but bear in mind that only 7 of the 8 bits in each byte
+  are actually used as keying material.
+
+  cryptLoadContext() will return a bad parameter code if the key is a weak key
+  (CRYPT_BADPARM2 in this case).
+
+  cryptEncrypt() and cryptDecrypt() will return a bad parameter code if the
+  encryption mode is ECB, CBC, or PCBC and the encrypted data length is not a
+  multiple of the block size (CRYPT_BADPARM3 in this case).
+
+  cryptExportKey() will export the correct parity-adjusted version of the key,
+  not the raw version as passed to cryptLoadContext().
+
+Diffie-Hellman
+DSA
+
+  These algorithms are covered by patents, see the section "Patents" above.
+
+IDEA:
+
+  cryptEncrypt() and cryptDecrypt() will return a bad parameter code if the
+  encryption mode is ECB, CBC, or PCBC and the encrypted data length is not a
+  multiple of the block size (CRYPT_BADPARM3 in this case).
+
+  This algorithm is covered by patents, see the section "Patents" above.
+
+MDCSHS:
+
+  None
+
+Blowfish:
+Blowfish-SK:
+RC2:
+SAFER:
+SAFER-SK:
+
+  cryptEncrypt() and cryptDecrypt() will return a bad parameter code if the
+  encryption mode is ECB, CBC, or PCBC and the encrypted data length is not a
+  multiple of the block size (CRYPT_BADPARM3 in this case).
+
+RC4:
+
+  None
+
+RC5:
+
+  cryptEncrypt() and cryptDecrypt() will return a bad parameter code if the
+  encryption mode is ECB, CBC, or PCBC and the encrypted data length is not a
+  multiple of the block size (CRYPT_BADPARM3 in this case).
+
+  This algorithm is covered by patents, see the section "Patents" above.
+
+RSA:
+
+  cryptEncrypt() and cryptDecrypt() will return a bad parameter code if the
+  length parameter is not CRYPT_USE_DEFAULT (CRYPT_BADPARM3 in this case).
+
+  This algorithm is covered by patents, see the section "Patents" above.
+
+
+Plug-In Module Implementation
+-----------------------------
+
+These notes are rather brief since there is a lot of ground to cover, and the
+easiest way to see what is required is to look at the crypt.c code and the way
+it interfaces to the lib_XXX.c code, which may be regarded as standard
+implementations of a plug-in module (the triple DES module is a good example).
+Note that internally the library uses pointers to CRYPT_INFO structures rather
+than the opaque CRYPT_CONTEXT cookies which exist outside the libraries'
+security perimeter.
+
+Implementors must provide the following services in their plug-in modules (if
+the algorithm doesn't require this service, the pointer to it should be set to
+NULL in the capabilityInfo table):
+
+int selfTestFunction( void );
+
+  Perform a self-test on the encryption hardware/software module.  This
+  function is called once before any other function is called.
+
+int initFunction( CRYPT_INFO *cryptInfo );
+
+  Initialise the appropriate private CRYPT_INFO fields.
+
+int initExFunction( CRYPT_INFO *cryptInfo, void *cryptInfoEx );
+
+  Initialiase the appropriate private CRYPT_INFO fields based on the extended
+  information given in the second parameter.
+
+int endFunction( CRYPT_INFO *cryptInfo );
+
+  Clear the appropriate private CRYPT_INFO fields.
+
+int initKeyFunction( CRYPT_INFO *cryptInfo );
+
+  Initialise the internal key based on the user key.  Typically this might
+  perform one or more of the following:
+
+    Hash the user key down to the size of the key used by the algorithm
+
+    Perform some type of key schedule operation
+
+    Perform endianness conversion for the current operating environment
+
+    Load the key into external crypto hardware.
+
+    Perform a key selection in external hardware based on the specified key
+    selector.
+
+  For algorithms with asymmetric internal keys, both an encryption and a
+  decryption key will have to be generated, as a crypt context may be used for
+  encryption or decryption.
+
+int initIVFunction( CRYPT_INFO *cryptInfo );
+
+  Initialise the IV.  Typically this might perform one or more of the
+  following:
+
+    Perform endianness conversion for the current operating environment
+
+    Load the IV into external crypto hardware.
+
+int getKeysizeFunction( CRYPT_INFO *cryptInfo );
+
+   Return the maximum key size for this encryption context in bits if the
+   algorithm can have multiple maximum key sizes (for example triple DES can
+   have 112 or 168 bit maximum key sizes).
+
+int getDataFunction( CRYPT_INFO *cryptInfo );
+
+   Returns any user-visible data created by the algorithm for this encryption
+   context.  Currently only used to get the result of a hash operation for hash
+   encryption contexts.
+
+int encryptFunction( CRYPT_INFO *cryptInfo, void *buffer, int length );
+int decryptFunction( CRYPT_INFO *cryptInfo, void *buffer, int length );
+
+  Encrypt/decrypt a block of data based on the algorithm and keying information
+  in CRYPT_INFO.  Some algorithms may require special handling for the last
+  block (eg block truncation in CBC) so both routines should recognise a call
+  with length = 0 to indicate the end of the encrypted data block.
+
+
+Standards Conformance
+---------------------
+
+Blowfish/Blowfish-SK:
+
+Blowfish has been implemented as per:
+
+  "Description of a New Varible-Length Key, 64-bit Block Cipher (Blowfish)",
+  Bruce Schneier, "Fast Software Encryption", Lecture Notes in Computer Science
+  No. 809, Springer-Verlag 1994.
+
+The Blowfish modes of operation are given in:
+
+  ISO/IEC 8372, "Information Technology - Modes of Operation for a 64-bit Block
+  Cipher Algorithm".
+
+The Blowfish code has been validated against the Blowfish reference
+implementation test vectors.
+
+DES:
+
+DES has been implemented as per:
+
+  ANSI X3.92, "American National Standard, Data Encryption Algorithm", 1981.
+
+  FIPS PUB 46-2, "Data Encryption Standard", 1994.
+
+  FIPS PUB 74, "Guidelines for Implementing and Using the NBS Data Encryption
+  Standard", 1981.
+
+  ISO/IEC 8731:1987, "Banking - Approved Algorithms for Message Authentication
+  - Part 1: Data Encryption Algorithm (DEA)".
+
+The DES modes of operation are given in:
+
+  ANSI X3.106, "American National Standard, Information Systems - Data
+  Encryption Algorithm - Modes of Operation", 1983.
+
+  FIPS PUB 81, "DES Modes of Operation", 1980.
+
+  ISO/IEC 8372, "Information Technology - Modes of Operation for a 64-bit Block
+  Cipher Algorithm".
+
+The DES code has been validated against the test vectors given in:
+
+  NIST Special Publication 500-20, "Validating the Correctness of Hardware
+  Implementations of the NBS Data Encryption Standard".
+
+Triple DES:
+
+Triple DES has been implemented as per:
+
+  ANSI X9.17, "American National Standard, Financial Institution Key Management
+  (Wholesale)", 1985.
+
+  ISO/IEC 8732:1987, "Banking - Key Management (Wholesale)".
+
+The triple DES modes of operation are given in:
+
+  ISO/IEC 8372, "Information Technology - Modes of Operation for a 64-bit Block
+  Cipher Algorithm".
+
+Diffie-Hellman:
+
+DH has been implemented as per:
+
+  PKCS #3, "Diffie-Hellman Key Agreement Standard", 1991.
+
+DSA:
+
+DSA has been implemented as per:
+
+  ANSI X9.30-1, "American National Standard, Public-Key Cryptography Using
+  Irreversible Algorithms for the Financial Services Industry", 1993.
+
+  FIPS PUB 186, "Digital Signature Standard", 1994.
+
+IDEA:
+
+IDEA has been implemented as per:
+
+  "Device for the Conversion of a Digital Block and the Use Thereof", James
+  Massey and Xuejia Lai, International Patent PCT/CH91/00117, 1991.
+
+  "Device for the Conversion of a Digital Block and Use of Same", James Massey
+  and Xuejia Lai, US Patent #5,214,703, 1993.
+
+  "On the Design and Security of Block Ciphers", Xuejia Lai, ETH Series in
+  Information Processing, Vol.1, Hartung-Gorre Verlag, 1992.
+
+  ISO/IEC 9979, "Data Cryptographic Tecniques - Procedures for the Registration
+  of Cryptographic Algorithms".
+
+The IDEA modes of operation are given in:
+
+  ISO/IEC 8372, "Information Technology - Modes of Operation for a 64-bit Block
+  Cipher Algorithm".
+
+The IDEA code has been validated against the ETH reference implementation test
+vectors.
+
+MD2:
+
+MD2 has been implemented as per:
+
+  RFC 1319, "The MD2 Message Digest Algorithm", Burt Kaliski, 1992.
+
+The MD2 code has been validated against the RFC 1319 reference implementation
+test vectors.
+
+
+MD4:
+
+MD4 has been implemented as per:
+
+  RFC 1320, "The MD4 Message Digest Algorithm", Ronald Rivest, 1992.
+
+The MD4 code has been validated against the RFC 1320 reference implementation
+test vectors.
+
+MD5:
+
+MD5 has been implemented as per:
+
+  RFC 1321, "The MD5 Message Digest Algorithm", Ronald Rivest, 1992.
+
+The MD5 code has been validated against the RFC 1321 reference implementation
+test vectors.
+
+MDC/SHS:
+
+The SHS code in MDC/SHS has been implemented as per:
+
+  ANSI X9.30-2, ""American National Standard, Public-Key Cryptography Using
+  Irreversible Algorithms for the Financial Services Industry", 1993.
+
+  FIPS PUB 180, "Secure Hash Standard", 1993
+
+The MDC/SHS mode of operation is given in:
+
+  ISO/IEC 10116, "Information Technology - Security Techniques - Modes of
+  Operation for an n-bit Block Cipher Algorithm".
+
+The SHS code has been validated against the test vectors given in:
+
+  FIPS PUB 180, "Secure Hash Standard", 1993
+
+RSA:
+
+The RSA code is implemented as per:
+
+  ANSI X9.31-1, "American National Standard, Public-Key Cryptography Using
+  Reversible Algorithms for the Financial Services Industry", 1993.
+
+  PKCS #1, "RSA Encryption Standard", 1991.
+
+  ISO IEC 9594-8/ITU-T X.509, "Information Technology - Open Systems
+  Interconnection - The Directory: Authentication Framework".
+
+RC2:
+
+The RC2 code is implemented as per:
+
+  "The RC2 Encryption Algorithm", Ronald Rivest, RSA Data Security Inc, 1992.
+
+The RC2 modes of operation are given in:
+
+  ISO/IEC 8372, "Information Technology - Modes of Operation for a 64-bit Block
+  Cipher Algorithm".
+
+The RC2 code has been validated against RSADSI BSAFE test vectors.
+
+RC4:
+
+The RC4 code is implemented as per:
+
+  "The RC4 Encryption Algorithm", Ronald Rivest, RSA Data Security Inc, 1992.
+
+The RC4 code has been validated against RSADSI BSAFE test vectors.
+
+RC5:
+
+The RC5 code is implemented as per:
+
+  "The RC5 Encrypion Algorithm", Ronald Rivest, "Fast Software Encryption II",
+  Lecture Notes in Computer Science No.1008, Springer-Verlag 1995.
+
+The RC5 modes of operation are given in:
+
+  ISO/IEC 8372, "Information Technology - Modes of Operation for a 64-bit Block
+  Cipher Algorithm".
+
+The RC5 code has been validated against the RC5 reference implementation test
+vectors.
+
+SHA/SHA1:
+
+The SHA code has been implemented as per:
+
+  ANSI X9.30-2, "American National Standard, Public-Key Cryptography Using
+  Irreversible Algorithms for the Financial Services Industry", 1993.
+
+  FIPS PUB 180, "Secure Hash Standard", 1993
+
+  FIPS PUB 180-1, "Secure Hash Standard", 1994
+
+The SHA code has been validated against the test vectors given in:
+
+  FIPS PUB 180, "Secure Hash Standard", 1993
+
+The SHA1 code has been validated against the test vectors given in:
+
+  FIPS PUB 180-1, "Secure Hash Standard", 1994
+
+Safer/Safer-SK:
+
+The Safer code has been implemented as per:
+
+  "SAFER K-64: A Byte-Oriented Block-Ciphering Algorithm", James L.Massey,
+  "Fast Software Encryption", Lecture Notes in Computer Science No. 809,
+  Springer-Verlag 1994.
+
+The Safer-SK code has been implemented as per:
+
+  "SAFER K-64: One Year Later", James L.Massey, "Fast Software Encryption II",
+  Lecture Notes in Computer Science No.1008, Springer-Verlag 1995.
+
+The Safer/Safer-SK modes of operation are given in:
+
+  ISO/IEC 8372, "Information Technology - Modes of Operation for a 64-bit Block
+  Cipher Algorithm".
+
+The Safer/Safer-SK code has been validated against the ETH reference
+implementation test vectors.
+
+Data Structures:
+
+All message exchange data structures are specified as per:
+
+  ISO/IEC 8824-1:1993/ITU-T X.680, "Information Technology - Open Systems
+  Interconnection - Abstract Syntax Notation One (ASN.1) - Part 1:
+  Specification of Basic Notation".
+
+The encoding is as per:
+
+  ISO/IEC 8825-3:1993/ITU-T X.692, "Information Technology - Open Systems
+  Interconnection - Specification of ASN.1 Encoding Rules - Part 3:
+  Distinguished Canonical Encoding Rules".
+
+The ASN.1 specifications for the message structures are given in the file
+cryptlib.asn.
+
+General:
+
+The encryption subsystem has been implemented at a level equivalent to level 1
+of the standard given in:
+
+  FIPS PUB 140-1, "Security Requirements for Cryptographic Modules", 1993.
+
+The random-data acquisition routines follow the guidelines laid out in:
+
+  "Randomness Recommendations for Security", RFC 1750, Donald Eastlake, Stephen
+  Crocker, and Jeffrey Schiller, December 1994.
+
+  "Cryptographic Random Numbers", IEEE P1363 Appendix E, Draft version 1.0, 11
+  November 1995.
+
+
+Revisions
+---------
+
+Version 0.99
+
+  First public release.
+
+Version 1.10
+
+  Added RC2, RC5, and Blowfish/Blowfish-SK encryption algorithms.
+
+  Added MD4, MD5, and SHA hash algorithms.
+
+  Moved encryption context information into the library, making the information
+  contained within it opaque to end users.
+
+Version 1.20
+
+  Added MD2 hash algorithm.
+
+  Added Diffie-Hellman and RSA public-key encryption algorithm.
+
+  Cleaned up the name space.
+
+  Added locking of memory objects to stop them being paged to disk.
+
+  Added random number management routines
+
+  Added high-level encrypted object management routines
+
+
+Acknowledgements
+----------------
+
+The DES and 3DES encryption code was contributed by Eric Young
+<eay@psych.psy.uq.oz.au> and is part of his libdes package.  The primary ftp
+site for the full libdes is
+ftp://ftp.psy.uq.oz.au/pub/Crypto/DES/libdes-x.xx.tar.gz.  libdes is now also
+shipped with SSLeay.  The primary site for this is
+ftp://ftp.psy.uq.oz.au/pub/Crypto/SSL/SSLeay-x.xx.tar.gz.
+
+The IDEA code was written by Colin Plumb, and scanned from the book "PGP Source
+Code and Internals", MIT Press, 1995 (see the comments in the code for more
+information).
+
+The bignum maths library used for the public-key encryption was contributed by
+Colin Plumb.
+
+Matt Thomlinson and Blake Coverett helped fix up and debug the Win32 random
+data gathering routines.
+
+Chris Wedgwood and Paul Kendall wrote the Unix random data gathering routines.
+
+Scott Morris did the VMS port.
+
+Cylink Corporation very generously granted permission for the use of their
+patents for non-commercial purposes.

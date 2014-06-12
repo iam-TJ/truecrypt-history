@@ -1,0 +1,38 @@
+; Definition file for Crypt DLL
+
+LIBRARY		CRYPT
+DESCRIPTION	'Encryption DLL'
+EXETYPE		WINDOWS
+CODE		PRELOAD MOVEABLE DISCARDABLE
+DATA		PRELOAD MOVEABLE SINGLE
+HEAPSIZE	8192
+EXPORTS		cryptAddRandom
+			cryptAlgoAvailable
+			cryptCheckSignature
+			cryptCreateContextEx
+			cryptCreateSignature
+			cryptDecrypt
+			cryptDeriveKeyEx
+			cryptDestroyContext
+			cryptEncrypt
+			cryptEnd
+			cryptExportKey
+			cryptExportObjectEx
+			cryptExtKeysetOpen
+			cryptGenerateContextEx
+			cryptGetKeyEx
+			cryptGetKeyFromObjectEx
+			cryptImportKey
+			cryptImportObjectEx
+			cryptInit
+			cryptIoctl
+			cryptKeysetClose
+			cryptKeysetOpenEx
+			cryptLoadContext
+			cryptLoadIV
+			cryptModeAvailable
+			cryptQueryAlgoMode
+			cryptQueryContext
+			cryptQueryObject
+			cryptRetrieveIV
+

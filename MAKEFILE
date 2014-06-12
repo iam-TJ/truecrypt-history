@@ -1,0 +1,445 @@
+#****************************************************************************
+#*																			*
+#*						Makefile for the encryption library					*
+#*																			*
+#****************************************************************************
+
+# Naming information: Major and minor version numbers, project and library
+# names, and default target (this is changed depending on whether we're
+# building the static or shared library).
+
+MAJ		= 1
+MIN		= 20
+PROJ	= crypt
+LIBNAME	= lib$(PROJ).a
+SLIBNAME = lib$(PROJ).so
+TARGET	= $(LIBNAME)
+
+# Compiler and linker options
+
+CFLAGS	= -c -D__UNIX__ -O2 -I. $(ENDIAN) $(CMDC)
+SCFLAGS = -fpic -c -D__UNIX__ -O2 -I. $(ENDIAN) $(CMDC)
+LFLAGS	= $(CMDL)
+
+# Paths and command names
+
+OUTPATH	=					# Where object files go (/tmp is a good place)
+LD		= $(CC)				# Linker
+
+# The object files which make up the library
+
+OBJS	= $(OUTPATH)crypt.o $(OUTPATH)cryptapi.o $(OUTPATH)cryptcap.o \
+		  $(OUTPATH)cryptdbx.o $(OUTPATH)cryptobj.o $(OUTPATH)lib_3des.o \
+		  $(OUTPATH)lib_blow.o $(OUTPATH)lib_cert.o $(OUTPATH)lib_des.o \
+		  $(OUTPATH)lib_dh.o $(OUTPATH)lib_dsa.o $(OUTPATH)lib_idea.o \
+		  $(OUTPATH)lib_md2.o $(OUTPATH)lib_md4.o $(OUTPATH)lib_md5.o \
+		  $(OUTPATH)lib_mdc.o $(OUTPATH)lib_null.o $(OUTPATH)lib_pkcs.o \
+		  $(OUTPATH)lib_rc2.o $(OUTPATH)lib_rc4.o $(OUTPATH)lib_rc5.o \
+		  $(OUTPATH)lib_rand.o $(OUTPATH)lib_ripe.o $(OUTPATH)lib_rsa.o \
+		  $(OUTPATH)lib_safr.o $(OUTPATH)lib_sha.o $(OUTPATH)asn1.o \
+		  $(OUTPATH)asn1keys.o $(OUTPATH)asn1objs.o $(OUTPATH)pgp_idea.o \
+		  $(OUTPATH)pgp_key.o $(OUTPATH)x509_key.o $(OUTPATH)bn.o \
+		  $(OUTPATH)bn00.o $(OUTPATH)lbn00.o $(OUTPATH)lbnmem.o \
+		  $(OUTPATH)legal.o $(OUTPATH)blowfish.o $(OUTPATH)idea.o \
+		  $(OUTPATH)ecb3_enc.o $(OUTPATH)ecb_enc.o $(OUTPATH)set_key.o \
+		  $(OUTPATH)md2.o $(OUTPATH)md4.o $(OUTPATH)md5.o \
+		  $(OUTPATH)ripemd.o $(OUTPATH)rc2.o $(OUTPATH)rc4.o \
+		  $(OUTPATH)rc5.o $(OUTPATH)safer.o $(OUTPATH)sha.o \
+		  $(OUTPATH)sha1.o $(OUTPATH)stream.o
+
+# The key management functions all make use of the ASN.1 library, so we
+# define the dependancies once here
+
+ASN1_DEP = capi.h crypt.h keymgmt/asn1.h keymgmt/asn1keys.h \
+		   keymgmt/asn1objs.h keymgmt/asn1oid.h keymgmt/ber.h keymgmt/stream.h
+
+#****************************************************************************
+#*																			*
+#*							Default and High-level Targets					*
+#*																			*
+#****************************************************************************
+
+# Build the endianness-test program, find the system type and use a
+# conditional make depending on that and the endianness (who needs autoconf
+# in order to be ugly).
+
+default:
+		@make endian > /dev/null
+		@make ENDIAN=`./endian` `uname`
+
+endian:					endian.c
+						@$(CC) endian.c -o endian
+
+# Build the shared library
+
+shared:
+		@make TARGET=$(SLIBNAME) CFLAGS="$(SCFLAGS)"
+
+# Frohe Ostern.
+
+babies:
+		@echo "Good grief, what do you think I am?  The Unix environment is capable, but"
+		@echo "not that capable."
+
+cookies:
+		@echo "Mix 250g flour, 150g sugar, 125g butter, an egg, a few drops of vanilla"
+		@echo "essence, and 1 tsp baking powder into a dough, cut cookies from rolls of"
+		@echo "dough, bake for about 15 minutes at 180C until they turn very light brown"
+		@echo "at the edges."
+
+love:
+		@echo "Nicht wahr?"
+		@echo
+
+#****************************************************************************
+#*																			*
+#*					Rules to build the encryption library					*
+#*																			*
+#****************************************************************************
+
+# Main directory
+
+$(OUTPATH)crypt.o:		capi.h crypt.h crypt.c
+						$(CC) $(CFLAGS) crypt.c
+
+$(OUTPATH)cryptapi.o:	capi.h crypt.h hash/md2.h hash/md4.h hash/md5.h \
+						hash/sha.h cryptapi.c
+						$(CC) $(CFLAGS) cryptapi.c
+
+$(OUTPATH)cryptcap.o:	capi.h crypt.h cryptcap.c
+						$(CC) $(CFLAGS) cryptcap.c
+
+$(OUTPATH)cryptdbx.o:	capi.h crypt.h keymgmt/keymgmt.h cryptdbx.c
+						$(CC) $(CFLAGS) cryptdbx.c
+
+$(OUTPATH)cryptobj.o:	capi.h crypt.h $(ASN1_DEP) cryptobj.c
+						$(CC) $(CFLAGS) cryptobj.c
+
+$(OUTPATH)lib_3des.o:	capi.h crypt.h libdes/des.h lib_3des.c
+						$(CC) $(CFLAGS) lib_3des.c
+
+$(OUTPATH)lib_blow.o:	capi.h crypt.h blowfish/blowfish.h lib_blow.c
+						$(CC) $(CFLAGS) lib_blow.c
+
+$(OUTPATH)lib_cert.o:	capi.h crypt.h lib_cert.c
+						$(CC) $(CFLAGS) lib_cert.c
+
+$(OUTPATH)lib_des.o:	capi.h crypt.h testdes.h libdes/des.h lib_des.c
+						$(CC) $(CFLAGS) lib_des.c
+
+$(OUTPATH)lib_dh.o:		capi.h crypt.h lib_dh.c
+						$(CC) $(CFLAGS) lib_dh.c
+
+$(OUTPATH)lib_dsa.o:	capi.h crypt.h bnlib/bn.h lib_dsa.c
+						$(CC) $(CFLAGS) lib_dsa.c
+
+$(OUTPATH)lib_idea.o:	capi.h crypt.h idea/idea.h testidea.h lib_idea.c
+						$(CC) $(CFLAGS) lib_idea.c
+
+$(OUTPATH)lib_md2.o:	capi.h crypt.h hash/md2.h lib_md2.c
+						$(CC) $(CFLAGS) lib_md2.c
+
+$(OUTPATH)lib_md4.o:	capi.h crypt.h hash/md4.h lib_md4.c
+						$(CC) $(CFLAGS) lib_md4.c
+
+$(OUTPATH)lib_md5.o:	capi.h crypt.h hash/md5.h lib_md5.c
+						$(CC) $(CFLAGS) lib_md5.c
+
+$(OUTPATH)lib_mdc.o:	capi.h crypt.h hash/sha.h lib_mdc.c
+						$(CC) $(CFLAGS) lib_mdc.c
+
+$(OUTPATH)lib_null.o:	capi.h crypt.h lib_null.c
+						$(CC) $(CFLAGS) lib_null.c
+
+$(OUTPATH)lib_pkcs.o:	capi.h crypt.h $(ASN1_DEP) lib_pkcs.c
+						$(CC) $(CFLAGS) lib_pkcs.c
+
+$(OUTPATH)lib_rc2.o:	capi.h crypt.h rc/rc2.h lib_rc2.c
+						$(CC) $(CFLAGS) lib_rc2.c
+
+$(OUTPATH)lib_rc4.o:	capi.h crypt.h testrc4.h rc/rc4.h lib_rc4.c
+						$(CC) $(CFLAGS) lib_rc4.c
+
+$(OUTPATH)lib_rc5.o:	capi.h crypt.h rc/rc5.h lib_rc5.c
+						$(CC) $(CFLAGS) lib_rc5.c
+
+$(OUTPATH)lib_ripe.o:	capi.h crypt.h hash/ripemd.h lib_ripe.c
+						$(CC) $(CFLAGS) lib_ripe.c
+
+$(OUTPATH)lib_rand.o:	capi.h crypt.h lib_rand.c
+						$(CC) $(CFLAGS) lib_rand.c
+
+$(OUTPATH)lib_rsa.o:	capi.h crypt.h bnlib/bn.h lib_rsa.c
+						$(CC) $(CFLAGS) lib_rsa.c
+
+$(OUTPATH)lib_safr.o:	capi.h crypt.h testsafr.h safer/safer.h lib_safr.c
+						$(CC) $(CFLAGS) lib_safr.c
+
+$(OUTPATH)lib_sha.o:	capi.h crypt.h hash/sha.h lib_sha.c
+						$(CC) $(CFLAGS) lib_sha.c
+
+$(OUTPATH)testapp.o:	capi.h testapp.c
+						$(CC) $(CFLAGS) testapp.c
+
+$(OUTPATH)testhl.o:		capi.h crypt.h testhl.c
+						$(CC) $(CFLAGS) testhl.c
+
+$(OUTPATH)testlib.o:	capi.h crypt.h testlib.c
+						$(CC) $(CFLAGS) testlib.c
+
+# bnlib subdirectory
+
+$(OUTPATH)bn.o:			bnlib/bn.h bnlib/bn.c
+						$(CC) $(CFLAGS) -DNDEBUG -DHAVE_CONFIG_H=1 bnlib/bn.c
+
+$(OUTPATH)bn00.o:		bnlib/bn.h bnlib/bn00.c
+						$(CC) $(CFLAGS) -DNDEBUG -DHAVE_CONFIG_H=1 bnlib/bn00.c
+
+$(OUTPATH)lbn00.o:		bnlib/bn.h bnlib/lbn00.c
+						$(CC) $(CFLAGS) -DNDEBUG -DHAVE_CONFIG_H=1 bnlib/lbn00.c
+
+$(OUTPATH)lbnmem.o:		bnlib/bn.h bnlib/lbnmem.c
+						$(CC) $(CFLAGS) -DNDEBUG -DHAVE_CONFIG_H=1 bnlib/lbnmem.c
+
+$(OUTPATH)legal.o:		bnlib/legal.c
+						$(CC) $(CFLAGS) -DNDEBUG -DHAVE_CONFIG_H=1 bnlib/legal.c
+
+# blowfish subdirectory
+
+$(OUTPATH)blowfish.o:	crypt.h blowfish/blowfish.h blowfish/blowfish.c
+						$(CC) $(CFLAGS) blowfish/blowfish.c
+
+# hash subdirectory
+
+$(OUTPATH)md2.o:		crypt.h hash/md2.h hash/md2.c
+						$(CC) $(CFLAGS) hash/md2.c
+
+$(OUTPATH)md4.o:		crypt.h hash/md4.h hash/md4.c
+						$(CC) $(CFLAGS) hash/md4.c
+
+$(OUTPATH)md5.o:		crypt.h hash/md5.h hash/md5.c
+						$(CC) $(CFLAGS) hash/md5.c
+
+$(OUTPATH)ripemd.o:		crypt.h hash/ripemd.h hash/ripemd.c
+						$(CC) $(CFLAGS) hash/ripemd.c
+
+$(OUTPATH)sha.o:		crypt.h hash/sha.h hash/shacore.c hash/sha.c
+						$(CC) $(CFLAGS) hash/sha.c
+
+$(OUTPATH)sha1.o:		crypt.h hash/sha.h hash/shacore.c hash/sha1.c
+						$(CC) $(CFLAGS) hash/sha1.c
+
+# idea subdirectory
+
+$(OUTPATH)idea.o:		crypt.h idea/idea.h idea/idea.c
+						$(CC) $(CFLAGS) idea/idea.c
+
+# keymgmt subdirectory
+
+$(OUTPATH)asn1.o:		$(ASN1_DEP) keymgmt/asn1.c
+						$(CC) $(CFLAGS) keymgmt/asn1.c
+
+$(OUTPATH)asn1keys.o:	$(ASN1_DEP) keymgmt/asn1keys.c
+						$(CC) $(CFLAGS) keymgmt/asn1keys.c
+
+$(OUTPATH)asn1objs.o:	$(ASN1_DEP) keymgmt/asn1objs.c
+						$(CC) $(CFLAGS) keymgmt/asn1objs.c
+
+$(OUTPATH)pgp_idea.o:	crypt.h keymgmt/pgp_idea.h keymgmt/pgp_idea.c
+						$(CC) $(CFLAGS) keymgmt/pgp_idea.c
+
+$(OUTPATH)pgp_key.o:	crypt.h keymgmt/keymgmt.h keymgmt/pgp_idea.h \
+						keymgmt/pgp_key.c
+						$(CC) $(CFLAGS) keymgmt/pgp_key.c
+
+$(OUTPATH)stream.o:		$(ASN1_DEP) keymgmt/stream.c
+						$(CC) $(CFLAGS) keymgmt/stream.c
+
+$(OUTPATH)x509_key.o:	$(ASN1_DEP) keymgmt/keymgmt.h keymgmt/x509_key.c
+						$(CC) $(CFLAGS) keymgmt/x509_key.c
+
+# libdes subdirectory
+
+$(OUTPATH)ecb3_enc.o:	libdes/des.h libdes/des_locl.h libdes/ecb3_enc.c
+						$(CC) $(CFLAGS) libdes/ecb3_enc.c
+
+$(OUTPATH)ecb_enc.o:	libdes/des.h libdes/des_locl.h libdes/spr.h \
+						libdes/version.h libdes/ecb_enc.c
+						$(CC) $(CFLAGS) libdes/ecb_enc.c
+
+$(OUTPATH)pcbc_enc.o:	libdes/des.h libdes/des_locl.h libdes/pcbc_enc.c
+						$(CC) $(CFLAGS) libdes/pcbc_enc.c
+
+$(OUTPATH)set_key.o:	libdes/des.h libdes/des_locl.h libdes/podd.h \
+						libdes/sk.h libdes/set_key.c
+						$(CC) $(CFLAGS) libdes/set_key.c
+
+# rc subdirectory
+
+$(OUTPATH)rc2.o:		rc/rc2.h rc/rc2.c
+						$(CC) $(CFLAGS) rc/rc2.c
+
+$(OUTPATH)rc4.o:		rc/rc4.h rc/rc4.c
+						$(CC) $(CFLAGS) rc/rc4.c
+
+$(OUTPATH)rc5.o:		rc/rc5.h rc/rc5.c
+						$(CC) $(CFLAGS) rc/rc5.c
+
+# safer subdirectory
+
+$(OUTPATH)safer.o:		safer/safer.h safer/safer.c
+						$(CC) $(CFLAGS) safer/safer.c
+
+# Create the library, either as a static or shared library.  The main test
+# program is also listed as a dependency since we need to use OS-specific
+# compiler options for it which a simple 'make testlib' won't give us (yuck).
+
+$(LIBNAME):				$(OBJS) $(OUTPATH)testhl.o $(OUTPATH)testlib.o
+						ar rc $(LIBNAME) $(OBJS)
+
+$(SLIBNAME):			$(OBJS) $(OUTPATH)testhl.o $(OUTPATH)testlib.o
+						$(LD) -shared -o $(SLIBNAME).$(MAJ).$(MIN) $(OBJS)
+
+# Link everything into the test programs
+
+testlib:	$(LIBNAME) $(OUTPATH)testhl.o $(OUTPATH)testlib.o
+			@$(LD) -o testlib $(LFLAGS) $(OUTPATH)testhl.o \
+			$(OUTPATH)testlib.o -L. -l$(PROJ)
+
+testapp:	$(LIBNAME) $(OUTPATH)testapp.o
+			@$(LD) -o testapp $(LFLAGS) $(OUTPATH)testapp.o -L. -l$(PROJ)
+
+stestlib:	$(SLIBNAME) $(OUTPATH)testhl.o $(OUTPATH)testlib.o
+			@$(LD) -o testlib $(LFLAGS) $(OUTPATH)testhl.o \
+			$(OUTPATH)testlib.o $(SLIBNAME).$(MAJ).$(MIN)
+
+stestapp:	$(SLIBNAME) $(OUTPATH)testapp.o
+			@$(LD) -o testapp $(LFLAGS) $(OUTPATH)testapp.o \
+			$(SLIBNAME).$(MAJ).$(MIN)
+
+#****************************************************************************
+#*																			*
+#*						Defines for each variation of Unix					*
+#*																			*
+#****************************************************************************
+
+# Aches: Use cc (it may be buggy, but it sure can optimize (actually the
+#		 bugs only appear when you turn on optimization)).
+
+AIX:
+		@make $(TARGET)
+
+# Apollo: Use cc
+
+Apollo:
+		@make $(TARGET)
+
+# AUX: The only Unix so bloated it has /etc.etc.etc
+
+# 386 BSD's: Use gcc (which is the default anyway)
+
+BSD386:
+		@make $(TARGET)
+iBSD:
+		@make $(TARGET)
+
+# Convex: Use cc.
+
+Convex:
+		@make $(TARGET)
+
+# DGUX: Use cc (which is a modified gcc)
+
+dgux:
+		@make $(TARGET) CMDC="-ansi"
+
+# Esix: Run away!!  Run away!!
+
+# PHUX: Use cc.  Need to use '-Aa -D_HPUX_SOURCE' as compiler options to get
+#		the C compiler into ANSI C mode with UNIX symbols.  In addition the
+#		PHUX compilers don't recognise the -O2 in CFLAGS but use +O3 instead,
+#		however we need to retain both in case someone is using gcc instead
+#		of cc/c89.  Unfortunately this leads to two compiler warnings for
+#		each compiled file.
+
+HP-UX:
+		@make $(TARGET) CMDC="-Aa -D_HPUX_SOURCE +O3"
+
+# Irix: Use cc with the -acpp flag for maximum ANSI-ness
+
+IRIX:
+		@make $(TARGET) CMDC="-acpp"
+IRIX64:
+		@make $(TARGET) CMDC="-acpp"
+
+# ISC Unix: Use gcc
+
+ISC:
+		@make $(TARGET) CC=gcc
+
+# Linux: Use gcc (which is the default anyway)
+
+Linux:
+		@make $(TARGET)
+
+# MiNT: Use gcc
+
+MiNT:
+		@make $(TARGET) CC=gcc
+
+# NeXT 3.0: Use cc
+
+NeXT:
+		@make $(TARGET) CMDL="-object -s"
+
+# OSF 1: Use gcc
+
+OSF1:
+		@make $(TARGET) CC=gcc
+
+# QNX 4.x: Use cc -ml, ld -N32768 -ml
+
+QNX:
+		@make $(TARGET) CMDC="-ml" CMDL="-N32768 -ml"
+
+# SCO: Use cc.
+
+SCO:
+		@make $(TARGET) CC=cc
+
+# Sun/Slowaris: Use gcc.  Interesting note:  There has never been a single
+#				report of this makefile not working on a Sun box.  Shows how
+#				popular the Sun compiler is...
+#				SunOS 4.x doesn't have memmove() so we use bcopy() instead
+#				(this doesn't hurt for Solaris, and means we don't have to
+#				try to detect the OS version).
+
+SunOS:
+		@make $(TARGET) CC=gcc CMDC="-D\"memmove(d,s,n)=bcopy(s,d,n)\""
+
+# SVR4: Use cc.  Better results can be obtained by upgrading your OS to
+#		4.4 BSD.
+
+SVR4:
+		@make $(TARGET)
+
+# Ultrix: Use vcc or gcc
+
+ULTRIX:
+		@make $(TARGET) CC=gcc
+
+# Amdahl UTS 4: Use cc
+
+UTS4:
+		@make $(TARGET) CMDC="-Xc"
+
+#****************************************************************************
+#*																			*
+#*						Clean up after make has finished					*
+#*																			*
+#****************************************************************************
+
+clean:
+		rm -f *.o core testlib stestlib testapp stestapp endian $(LIBNAME) \
+		$(SLIBNAME)
+
