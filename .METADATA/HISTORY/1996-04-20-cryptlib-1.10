@@ -1,0 +1,8 @@
+PROJECT="Cryptlib by Peter Gutmann"
+URL="http://www.cs.auckland.ac.nz/~pgut001/cryptlib/"
+URL_ARCHIVE="https://web.archive.org/web/19990203145634/http://www.cs.auckland.ac.nz/~pgut001/cryptlib/"
+URL_SRC="ftp://ftp.funet.fi/pub/crypt/cryptography/libs/crypl110.zip"
+RELEASE_DATE="1996-04-20"
+RETRIEVED_DATE="2014-06-12"
+RETRIEVED_BY="TJ <crypto@iam.tj>"
+
