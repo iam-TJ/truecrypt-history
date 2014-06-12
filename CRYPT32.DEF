@@ -1,0 +1,21 @@
+; Definition file for 32-bit Crypt DLL
+
+LIBRARY		CRYPT32
+DESCRIPTION	'Encryption DLL'
+CODE		PRELOAD MOVEABLE DISCARDABLE
+DATA		PRELOAD MOVEABLE SINGLE
+HEAPSIZE	8192
+EXPORTS		initLibrary
+			endLibrary
+			queryModeAvailability
+			queryAlgoAvailability
+			queryAlgoModeInformation
+			queryContextInformation
+			initCryptContext
+			initCryptContextEx
+			destroyCryptContext
+			loadCryptContext
+			loadIV
+			retrieveIV
+			encryptBuffer
+			decryptBuffer

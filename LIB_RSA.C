@@ -1,0 +1,308 @@
+#include <stdlib.h>
+#include "crypt.h"
+
+#include "bnlib/bnstub.h"	/* Disable RSA routines for now */
+
+/****************************************************************************
+*																			*
+*							RSA Self-test Routines							*
+*																			*
+****************************************************************************/
+
+/* Test the RSA implementation using a sample public and private key */
+
+typedef struct {
+	BYTE n[ 256 ];
+	BYTE e[ 256 ];
+	BYTE d[ 256 ];
+	BYTE p[ 256 ];
+	BYTE q[ 256 ];
+	BYTE u[ 256 ];
+	BYTE exponent1[ 256 ];
+	BYTE exponent2[ 256 ];
+	} RSA_PRIVKEY;
+
+static RSA_PRIVKEY rsaPrivKey0 = {
+	{ 0xC6, 0x5E, 0xA5, 0x38, 0xE4, 0x18, 0x80, 0xFB,
+	  0x7C, 0xB3, 0x31, 0xD8, 0x95, 0xBA, 0x45, 0x4F,
+	  0x83, 0x0D, 0xE2, 0xF9, 0xA0, 0x15, 0x43, 0xDF,
+	  0x7C, 0x81, 0x0F, 0xB0, 0x8C, 0x7B, 0xC7, 0xB2,
+	  0xE0, 0xF0, 0x45, 0xA0, 0x93, 0xCD, 0x37, 0xC4,
+	  0x50, 0xFC, 0x2B, 0x72, 0xC5, 0xC5, 0x0A, 0xF8,
+	  0x5C, 0xD7, 0x09, 0x93, 0x3F, 0x83, 0x3F, 0x18,
+	  0x3E, 0x39, 0xA2, 0xF1, 0x13, 0xAF, 0x79, 0x51,
+	  0x8B, 0xBD, 0x5A, 0x38, 0xF2, 0x09, 0xB4, 0xB3,
+	  0x9F, 0xE1, 0x4B, 0xB7, 0xF3, 0x6C, 0x8A, 0xFF,
+	  0x77, 0x41, 0xDA, 0xFA, 0xC5, 0x92, 0x19, 0x30,
+	  0xD1, 0x23, 0x81, 0x0A, 0x9D, 0x38, 0x43, 0x42,
+	  0xBD, 0xCA, 0x4F, 0x6D, 0x39, 0xB2, 0xAC, 0x56,
+	  0x1B, 0x65, 0xA4, 0x3E, 0xFF, 0xE5, 0xDB, 0x68,
+	  0x92, 0x5B, 0xB4, 0x25, 0x4C, 0x4E, 0x5F, 0xD2,
+	  0xE8, 0xAA, 0xA7, 0x41, 0xEE, 0xE6, 0x89, 0xDD },
+	{ 0x11 },
+	{ 0x17, 0x56, 0x6D, 0xCA, 0x75, 0x30, 0x0F, 0x2C,
+	  0xA5, 0x42, 0x42, 0x19, 0x7B, 0x06, 0xDA, 0xFA,
+	  0x4B, 0xA7, 0x47, 0xE1, 0x21, 0xE4, 0x62, 0x56,
+	  0x87, 0x1E, 0x3E, 0x14, 0xC5, 0x3B, 0xBD, 0x24,
+	  0x1A, 0x76, 0x9E, 0xC7, 0x98, 0xEA, 0xF7, 0x80,
+	  0x81, 0xFF, 0x8C, 0xA4, 0x17, 0x44, 0x5B, 0xA4,
+	  0xBF, 0xA0, 0xD3, 0xF3, 0x34, 0xA6, 0x07, 0x6C,
+	  0x43, 0x8E, 0x4F, 0x67, 0xA7, 0xF6, 0x86, 0xBE,
+	  0x17, 0xA2, 0x72, 0xFD, 0x6D, 0x24, 0x82, 0x94,
+	  0xDE, 0xD0, 0x51, 0x53, 0xD3, 0x63, 0xC1, 0x82,
+	  0x51, 0x85, 0x67, 0xB7, 0x7A, 0x87, 0x80, 0xE9,
+	  0xEA, 0xE8, 0x88, 0xE6, 0x62, 0x05, 0x08, 0x97,
+	  0xD6, 0xAB, 0x0F, 0x7E, 0xAE, 0xB9, 0x97, 0x3E,
+	  0xC0, 0xAC, 0xC0, 0x4A, 0x54, 0xF5, 0xAE, 0x76,
+	  0xF3, 0xCA, 0xEC, 0xDB, 0xF9, 0x6B, 0xAC, 0x67,
+	  0x50, 0x11, 0x9D, 0x40, 0x7B, 0x3A, 0x2F, 0xA9 },
+	{ 0xDB, 0xB1, 0x13, 0x0C, 0xF2, 0xF2, 0xCF, 0xF1,
+	  0x4E, 0xDB, 0x17, 0xD3, 0xDE, 0xB0, 0x55, 0xE3,
+	  0xE4, 0x30, 0x4E, 0x4E, 0xC8, 0x9D, 0x41, 0xFA,
+	  0x9C, 0xB3, 0xC3, 0x1E, 0x70, 0x6C, 0xB4, 0xB9,
+	  0x6B, 0xE6, 0xD1, 0x2D, 0xD4, 0x43, 0x88, 0xA0,
+	  0x9A, 0xFA, 0x98, 0x78, 0x4B, 0xC9, 0xC8, 0x31,
+	  0x09, 0x66, 0x38, 0x42, 0xA9, 0xB1, 0xCD, 0x14,
+	  0x38, 0xDD, 0x13, 0xB0, 0xC5, 0x77, 0x40, 0x37 },
+	{ 0xE7, 0x27, 0x75, 0xC1, 0xDF, 0x60, 0x8E, 0xD0,
+	  0xEB, 0x1B, 0x80, 0x9B, 0x8F, 0xEC, 0x48, 0x47,
+	  0xDE, 0x23, 0x9B, 0x14, 0x6B, 0x75, 0x0F, 0x71,
+	  0xE7, 0xB7, 0x32, 0x45, 0xEB, 0xA0, 0xC5, 0x7E,
+	  0xB1, 0x35, 0x7A, 0x8A, 0x98, 0x45, 0x9E, 0x20,
+	  0x1A, 0xAE, 0xA9, 0x4E, 0xE1, 0xF3, 0xC8, 0x44,
+	  0x70, 0xB8, 0x9E, 0x94, 0xDA, 0x89, 0x59, 0x50,
+	  0x87, 0x37, 0xDA, 0xED, 0x12, 0x00, 0xB4, 0x8B },
+	{ 0xA5, 0xED, 0xD1, 0xE1, 0x3A, 0xD9, 0xC2, 0xE6,
+	  0xAB, 0x3D, 0x94, 0x43, 0x95, 0x8A, 0x5B, 0xE5,
+	  0x6C, 0xA6, 0xCD, 0x36, 0x3C, 0x54, 0xCC, 0x0F, 
+	  0x44, 0x29, 0xBF, 0x60, 0x91, 0xC9, 0x75, 0x8F, 
+	  0xB6, 0xDB, 0xEA, 0xD9, 0xAE, 0x83, 0x5D, 0x8E, 
+	  0xD7, 0x9F, 0x4E, 0x7E, 0x8B, 0xD0, 0xA9, 0x44, 
+	  0xF1, 0x18, 0x10, 0x1B, 0xEB, 0xC6, 0xA8, 0xC9,
+	  0x5D, 0xAE, 0xCB, 0xFD, 0x11, 0x52, 0x95, 0x60 },
+	{ 0xCE, 0xC4, 0xC6, 0xA2, 0xC6, 0x8A, 0x2D, 0x1F, 
+	  0x59, 0x46, 0xAD, 0x03, 0xA4, 0x69, 0xBA, 0x3F, 
+	  0xE5, 0xD3, 0x1C, 0x86, 0x62, 0x75, 0xE3, 0xBE,
+	  0xB1, 0x9A, 0x21, 0x0D, 0x96, 0xFC, 0xE6, 0x54, 
+	  0x29, 0x51, 0xB5, 0xD0, 0xC7, 0xC7, 0x17, 0x2D, 
+	  0xBF, 0x09, 0xF8, 0xE9, 0xB0, 0xBD, 0xE9, 0x97, 
+	  0x90, 0x60, 0x34, 0xF3, 0x72, 0x89, 0x39, 0x7C, 
+	  0x71, 0xC1, 0x03, 0x79, 0x32, 0x52, 0x1E, 0x51 },
+	{ 0x1B, 0x31, 0xD1, 0x9E, 0x56, 0x83, 0xD4, 0x91, 
+	  0x0C, 0x99, 0xD2, 0xE5, 0x1F, 0xFD, 0xAE, 0x26, 
+	  0x92, 0x9A, 0xC6, 0xF3, 0x57, 0xEF, 0xA7, 0x76, 
+	  0xCF, 0xF7, 0x6F, 0x53, 0x85, 0x21, 0xF9, 0x1D,
+	  0xF6, 0xBA, 0xFF, 0x5B, 0x99, 0x71, 0x9A, 0x21,
+	  0xE5, 0x05, 0x7D, 0x54, 0x93, 0x0D, 0x9F, 0x17,
+	  0x1C, 0x51, 0xF4, 0x89, 0xFB, 0x97, 0xB0, 0x27,
+	  0x97, 0x6F, 0xFB, 0xA3, 0x6B, 0x87, 0x9C, 0xC5 }
+	};
+
+int rsaSelfTest( void )
+	{
+	CRYPT_CONTEXT cryptContext;
+	CRYPT_PKCINFO_RSA rsaKey;
+	BYTE buffer[ 100 ];
+
+	/* Create the encryption context */
+	initCryptContext( &cryptContext, CRYPT_ALGO_RSA, CRYPT_MODE_PRIVKEY );
+
+	/* Load key */
+	initComponents( rsaKey, CRYPT_COMPONENTS_BIGENDIAN );
+	setComponent( rsaKey.n, rsaPrivKey0.n, 1024 );
+	setComponent( rsaKey.e, rsaPrivKey0.e, 17 );
+	loadCryptContext( cryptContext, &rsaKey, CRYPT_UNUSED );
+	destroyComponents( rsaKey );
+
+	/* Encrypt and decrypt data */
+	memset( buffer, 0, sizeof( buffer ) );
+	memcpy( buffer, "\x89\x67\x45\x23\x01", 5 );
+	encryptBuffer( cryptContext, buffer, bitsToBytes( 40 ) );
+	decryptBuffer( cryptContext, buffer, bitsToBytes( 40 ) );
+
+	/* Destroy the encryption context */
+	destroyCryptContext( cryptContext );
+
+	return( CRYPT_OK );
+	}
+
+/****************************************************************************
+*																			*
+*							Init/Shutdown Routines							*
+*																			*
+****************************************************************************/
+
+/* Not needed for the RSA routines */
+
+/****************************************************************************
+*																			*
+*							RSA En/Decryption Routines						*
+*																			*
+****************************************************************************/
+
+/* Encrypt a single block of data  */
+
+int rsaEncrypt( CRYPT_INFO *cryptInfo, BYTE *buffer, int noBytes )
+	{
+	BIGNUM n;
+	int status = CRYPT_OK;
+
+	/* Move the data from the buffer into a bignum, perform the modexp,
+	   and move the result back into the buffer */
+	bnBegin( &n );
+	bnInsertLittleBytes( &n, buffer, 0, noBytes );
+	if( bnExpMod( &n, &n, &cryptInfo->rsaParam_e, &cryptInfo->rsaParam_n ) != 0 )
+		status = CRYPT_ERROR;
+	bnExtractLittleBytes( &n, buffer, 0, noBytes );
+	bnEnd( &n );
+
+	return( status );
+	}
+
+/* Use the Chinese Remainder Theorem shortcut for RSA decryption.
+   M is the output plaintext message, C is the input ciphertext message,
+   d is the secret decryption exponent, p and q are the prime factors of n,
+   u is the multiplicative inverse of q, mod p.  n, the common modulus, is not
+   used because of the Chinese Remainder Theorem shortcut */
+
+int rsaDecrypt( CRYPT_INFO *cryptInfo, BYTE *buffer, int noBytes )
+	{
+	BIGNUM *p = &cryptInfo->rsaParam_p, *q = &cryptInfo->rsaParam_q;
+	BIGNUM *d = &cryptInfo->rsaParam_d, *u = &cryptInfo->rsaParam_u;
+	BIGNUM data, p2, q2, temp1, temp2;
+	BIGNUM zero;
+
+	/* Initialise the bignums */
+	bnBegin( &p2 );
+	bnBegin( &q2 );
+	bnBegin( &temp1 );
+	bnBegin( &temp2 );
+	bnBegin( &data );
+	bnInsertLittleBytes( &data, buffer, 0, noBytes );
+
+	/* This shouldn't be necessary any more when bnCmpQ() appears */
+	bnBegin( &zero );
+	bnSetQ( &zero, 0 );
+
+	/* Make sure that p < q */
+	if( bnCmp( p, q ) >= 0 )
+		bnSwap( p, q );
+
+	/* Rather than decrypting by computing modexp with full mod n precision,
+	   compute a shorter modexp with mod p precision:
+
+	   p2 = ( ( C mod p ) ** ( d mod ( p - 1 ) ) ) mod p */
+	bnCopy( &temp1, p );
+	bnSubQ( &temp1, 1 );		/* temp1 = p - 1 */
+	bnMod( &temp2, d, &temp1 );	/* temp2 = d mod ( p - 1 ) ) */
+	bnMod( &temp1, &data, p );	/* temp1 = C mod p  */
+	bnExpMod( &p2, &temp1, &temp2, p );
+
+	/* Now compute a short modexp with mod q precision:
+
+	   q2 = ( ( C mod q ) ** ( d mod ( q - 1 ) ) ) mod q */
+	bnCopy( &temp1, q );
+	bnSubQ( &temp1, 1 );		/* temp1 = q - 1 */
+	bnMod( &temp2, d, &temp1 );	/* temp2 = d mod ( q - 1 ) */
+	bnMod( &temp1, &data, q );	/* temp1 = C mod q  */
+	bnExpMod( &q2, &temp1, &temp2, q );
+
+	/* Now use the multiplicative inverse u to glue together the two halves,
+	   saving a lot of time by avoiding a full mod n exponentiation.  At key
+	   generation time, u was computed with the secret key as the
+	   multiplicative inverse of p, mod q such that ( p * u ) mod q = 1,
+	   assuming p < q */
+	if( bnCmp( &p2, &q2 ) == 0 )
+		/* Only happens if C < p */
+		bnCopy( &data, &p2 );
+	else
+		{
+		/* q2 = q2 - p2; if q2 < 0 then q2 = q2 + q */
+		bnSub( &q2, &p2 );
+		if( bnCmp( &q2, &zero ) )
+			/* If the result went negative, add q to q2 */
+			bnAdd( &q2, q );
+
+		/* M = ( ( ( q2 * u ) mod q ) * p ) + p2 */
+		bnMul( &temp1, &q2, u );	/* temp1 = q2 * u  */
+		bnMod( &temp2, &temp1, q );	/* temp2 = temp1 mod q */
+		bnMul( &temp1, p, &temp2 );	/* temp1 = p * temp2 */
+		bnAdd( &temp1, &p2 );		/* temp1 = temp1 + p2 */
+		bnCopy( &data, &temp1 );	/* M = temp1 */
+		}
+
+	/* Copy the result to the output buffer and destroy sensitive data */
+	bnExtractLittleBytes( &data, buffer, 0, noBytes );
+	bnEnd( &p2 );
+	bnEnd( &q2 );
+	bnEnd( &temp1 );
+	bnEnd( &temp2 );
+
+	return( CRYPT_OK );
+	}
+
+/****************************************************************************
+*																			*
+*							RSA Key Management Routines						*
+*																			*
+****************************************************************************/
+
+/* Load RSA public/private key components into an encryption context */
+
+int rsaInitKey( CRYPT_INFO *cryptInfo )
+	{
+	CRYPT_PKCINFO_RSA *rsaKey = ( CRYPT_PKCINFO_RSA * ) cryptInfo->keyComponentPtr;
+
+	/* Load the key component from the external representation into the
+	   internal BigNums */
+	if( cryptInfo->keyComponentsLittleEndian )
+		{
+		bnInsertLittleBytes( &cryptInfo->rsaParam_n, rsaKey->n, 0,
+							 bitsToBytes( rsaKey->nLen ) + 1 );
+		bnInsertLittleBytes( &cryptInfo->rsaParam_e, rsaKey->e, 0,
+							 bitsToBytes( rsaKey->eLen ) + 1 );
+		if( cryptInfo->capabilityInfo->cryptMode == CRYPT_MODE_PRIVKEY )
+			{
+			bnInsertLittleBytes( &cryptInfo->rsaParam_d, rsaKey->d, 0,
+								 bitsToBytes( rsaKey->dLen ) + 1 );
+			bnInsertLittleBytes( &cryptInfo->rsaParam_p, rsaKey->p, 0,
+								 bitsToBytes( rsaKey->pLen ) + 1 );
+			bnInsertLittleBytes( &cryptInfo->rsaParam_q, rsaKey->q, 0,
+								 bitsToBytes( rsaKey->qLen ) + 1 );
+			bnInsertLittleBytes( &cryptInfo->rsaParam_exponent1,
+								 rsaKey->e1, 0,
+								 bitsToBytes( rsaKey->e1Len ) + 1 );
+			bnInsertLittleBytes( &cryptInfo->rsaParam_exponent2,
+								 rsaKey->e2, 0,
+								 bitsToBytes( rsaKey->e2Len ) + 1 );
+			}
+		}
+	else
+		{
+		bnInsertBigBytes( &cryptInfo->rsaParam_n, rsaKey->n, 0,
+							 bitsToBytes( rsaKey->nLen ) + 1 );
+		bnInsertBigBytes( &cryptInfo->rsaParam_e, rsaKey->e, 0,
+							 bitsToBytes( rsaKey->eLen ) + 1 );
+		if( cryptInfo->capabilityInfo->cryptMode == CRYPT_MODE_PRIVKEY )
+			{
+			bnInsertBigBytes( &cryptInfo->rsaParam_d, rsaKey->d, 0,
+							  bitsToBytes( rsaKey->dLen ) + 1 );
+			bnInsertBigBytes( &cryptInfo->rsaParam_p, rsaKey->p, 0,
+							  bitsToBytes( rsaKey->pLen ) + 1 );
+			bnInsertBigBytes( &cryptInfo->rsaParam_q, rsaKey->q, 0,
+							  bitsToBytes( rsaKey->qLen ) + 1 );
+			bnInsertBigBytes( &cryptInfo->rsaParam_exponent1,
+							  rsaKey->e1, 0,
+							  bitsToBytes( rsaKey->e1Len ) + 1 );
+			bnInsertBigBytes( &cryptInfo->rsaParam_exponent2,
+							  rsaKey->e2, 0,
+							  bitsToBytes( rsaKey->e2Len ) + 1 );
+			}
+		}
+
+	/* Set the nominal keysize in bits */
+	cryptInfo->keySizeBits = 1024;
+
+	return( CRYPT_OK );
+	}
+
