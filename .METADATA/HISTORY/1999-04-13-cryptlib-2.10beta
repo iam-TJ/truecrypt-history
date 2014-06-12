@@ -1,0 +1,8 @@
+PROJECT="Cryptlib by Peter Gutmann"
+URL="http://www.cs.auckland.ac.nz/~pgut001/cryptlib/"
+URL_ARCHIVE="https://web.archive.org/web/19990203145634/http://www.cs.auckland.ac.nz/~pgut001/cryptlib/"
+URL_SRC="ftp://ftp.digiater.nl/openvms/decus/vmslt99b/net/cr/cryptlib-2-1-beta.zip"
+RELEASE_DATE="1999-04-13"
+RETRIEVED_DATE="2014-06-12"
+RETRIEVED_BY="TJ <crypto@iam.tj>"
+
