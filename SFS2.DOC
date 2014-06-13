@@ -1,0 +1,2045 @@
+The Care and Feeding of Passwords
+---------------------------------
+
+With the inherent strength of an encryption system like the one used by SFS,
+the password used for encryption is becoming more the focus of attack than the
+encryption system itself.  The reason for this is that trying to guess an
+encryption password is far simpler than trying to break the encryption system.
+
+SFS allows keys of up to 100 characters in length.  These keys can contain
+letters, numbers, spaces, punctuation, and most control and extended characters
+except backspace (which is used for editing), escape (which is used to abort
+the password entry), and carriage return or newline, which are used to signify
+the end of the password.  This fact should be made use of to the fullest, with
+preferred passwords being entire phrases rather than individual words (in fact
+since very few words are longer than the SFS absolute minimum password length
+of 10 characters, the complete set of these words can be checked in moments).
+There exist programs designed to allow high-speed password cracking of standard
+encryption algorithms which can, in a matter of hours (sometimes minutes, even
+seconds in the case of very weak algorithms), attempt to use the contents of a
+number of very large and complete dictionaries as sample passwords[1].
+
+Virtually all passwords composed of single words can be broken with ease in
+this manner, even in the case of encryption methods like the one which is used
+by SFS, which has been specially designed to be resistant to this form of
+attack (doing a test of all possible 10-letter passwords assuming a worst-case
+situation in which the password contains lowercase letters only, can be
+accomplished in 450,000 years on a fast workstation (DEC Alpha) if the attacker
+knows the contents of the encrypted volume in advance - or about 4 1/2 years on
+a network of 100,000 of these machines).  Of course no attacker would use this
+approach, as few people will use every possible combination of 10 letter
+passwords.  By using an intelligent dictionary-based cracking program, this
+time can be reduced to only a few months.  Complete programs which perform this
+task and libraries for incorporation into other software are already widely
+available. This problem is especially apparent if the encryption algorithm used
+is very weak - the encryption used by the popular Pkzip archiver, for example,
+can usually be broken in this manner in a few seconds on a cheap personal
+computer using the standard wordlist supplied with all Unix systems.
+
+Simple modifications to passwords should not be trusted.  Capitalizing some
+letters, spelling the words backwards, adding one or two digits to the end, and
+so on, only present a slightly more difficult challenge to the average
+password-cracker than plain unadorned passwords.  Any phrase which could be
+present in any kind of list (song lyrics, movie scripts, books, plays, poetry,
+famous sayings, and so on) should not be used - again, these can be easily and
+automatically checked by computers.  Using foreign languages offers no extra
+security, since it means an attacker merely has to switch to using
+foreign-language dictionaries (or phrase lists, song lyrics, and so on).
+Relying on an attacker not knowing that a foreign language is being used ("If I
+use Swahili they'll never think of checking for it" - the so-called "Security
+through obscurity" technique) offers no extra security, since the few extra
+days or months it will take them to check every known language are only a minor
+inconvenience.
+
+Probably the most difficult passwords to crack are ones comprising unusual
+phrases or sentences, since instead of searching a small body of text like the
+contents of a dictionary, book, or phrase list, the cracker must search a much
+larger corpus of data, namely all possible phrases in the language being used.
+Needless to say, the use of common phrases should be avoided, since these will
+be an obvious target for crackers.
+
+Some sample bad passwords might be:
+
+    misconception               Found in a standard dictionary
+    noitpecnocsim               Reversed standard dictionary word
+    miskonseption               Simple misspelling of a standard word
+    m1skon53pshun               Not-so-simple misspelling of a standard word
+    MiScONcepTiON               Standard word with strange capitalization
+    misconception1234           Standard word with simple numeric code appended
+    3012261726                  Simple numeric code, probably a US phone number
+    YKYBHTLWYS                  Simple mnemonic
+
+In general coming up with a secure single-word password is virtually impossible
+unless you have a very good memory for things like unique 20-digit numbers.
+
+Some sample bad passphrases might be:
+
+    What has it got in its
+     pocketses?                 Found in a common book
+    Ph'n-glui mgl'w naf'h
+      Cthulhu R'yleh w'gah      Found in a somewhat less common book
+    For yesterday the word of
+      Caesar might have stood   Found in a theatrical work
+    modify the characteristics
+      of a directory            Found in a technical manual
+    T'was brillig, and the
+      slithy toves              Found in a book of poetry
+    I've travelled roads that
+      lead to wonder            Found in a list of music lyrics
+    azetylenoszilliert in
+      phaenomenaler kugelform   Found in an obscure foreign journal
+    Arl be back                 Found in several films
+    I don't recall              Associated with a famous person (although
+                                it does make a good answer to the question
+                                "What's the password?" during an
+                                interrogation)
+
+Footnote [1]: A large collection of dictionaries suitable for this kind of
+              attack can be found on black.ox.ac.uk in the `wordlists'
+              directory.  These dictionaries contain, among other things, 2MB
+              of Dutch words, 2MB of German words, 600KB of Italian words,
+              600KB of Norwegian words, 200KB of Swedish words, 3.3MB of
+              Finnish words, 1MB of Japanese words, 1.1MB of Polish words,
+              700KB of assorted names, and a very large collection of assorted
+              wordlists covering technical terms, jargon, the Koran, the works
+              of Lewis Carrol, characters, actors, and titles from movies and
+              plays, Monty Python, Star Trek, US politics, US postal areas, the
+              CIA world fact book, the contents of several large standard
+              dictionaries and thesaurii, and common terms from Australian,
+              Chinese, Danish, Dutch, French, German, Italian, Japanese,
+              Norwegian, Polish, Spanish, Swedish, Yiddish, computers,
+              literature, places, religion, and scientific terms.
+
+              The black.ox.ac.uk site also contains, in the directory
+              /src/security/cracklib25.tar.Z, a word dictionary of around 10MB,
+              stored as a 6MB compressed tar file.
+
+              A large dictionary of English words which also contains
+              abbreviations, hyphenations, and misspelled words, is available
+              from wocket.vantage.gte.com in the pub/standard_dictionary as
+              dic-0294.tar, an uncompressed 8.9MB file, or dic-0294.tar.Z, a
+              compressed 4.1MB file, and contains around 880,000 entries.  In
+              combination with a Markov model for the English language built
+              from commonly-available texts, this wordlist provides a powerful
+              tool for attacking even full passphrases.
+
+              A Unix password dictionary is available from ftp.spc.edu as
+              .unix/password-dictionary.txt.
+
+              Grady Ward <grady@netcom.com> has collected very large
+              collections of words, phrases, and other items suitable for
+              dictionary attacks on cryptosystems.  Even the NSA has used his
+              lists in their work.
+
+
+Other Software
+--------------
+
+There are a small number of other programs available which claim to provide
+disk security of the kind provided by SFS.  However by and large these tend to
+use badly or incorrectly implemented algorithms, or algorithms which are known
+to offer very little security.  One such example is Norton's Diskreet, which
+encrypts disks using either a fast proprietary cipher or the US Data Encryption
+Standard (DES).  The fast proprietary cipher is very simple to break, and
+offers protection only against a casual browser.  Certainly anyone with any
+programming skill won't be stopped for long by a system as simple as this.
+
+The more secure DES algorithm is also available in Diskreet, but there are
+quite a number of implementation errors which greatly reduce the security it
+should provide.  Although accepting a password of up to 40 characters, it then
+converts this to uppercase-only characters and then reduces the total size to 8
+characters of which only a small portion are used for the encryption itself.
+This leads to a huge reduction in the number of possible encryption keys, so
+that not only are there a finite (and rather small) total number of possible
+passwords, there are also a large number of equivalent keys, any of which will
+decrypt a file (for example a file encrypted with the key 'xxxxxx' can be
+decrypted with 'xxxxxx', 'xxxxyy', 'yyyyxx', and a large collection of other
+keys, too many to list here).
+
+These fatal flaws mean that a fast dictionary-based attack can be used to check
+virtually all possible passwords in a matter of hours in a standard PC.  In
+addition the CBC (cipher block chaining) encryption mode used employs a known,
+fixed initialisation vector (IV), which means that data patterns on the
+encrypted disk are not hidden by the encryption.  Using these two
+implementation errors, a program can be constructed which will examine a
+Diskreet-encrypted disk and produce the password used to encrypt it (or at
+least one of the many, many passwords capable of decrypting it) within moments.
+
+These problems are in fact explicitly warned against in any of the documents
+covering DES and its modes of operation, such as ISO Standards 10116 and
+10126-2, US Government FIPS Publication 81, or basic texts like Dennings
+"Cryptography and Data Security".  It appears that the authors of Diskreet
+never even bothered to read any of the standard texts on encryption to make
+sure they were doing things right.  In addition the Diskreet encryption code
+appears to be taken from a separate library rather than being written by the
+people who sell Diskreet, with implementation errors in both the encryption
+code and the rest of Diskreet.
+
+The DES routines used in Da Vinci, a popular groupware product, are similarly
+poorly implemented.  Not only is an 8-character password used directly as the
+DES key, but the DES encryption method used is the electronic codebook (ECB)
+mode, whose use is warned against in even the most basic cryptography texts
+and, in a milder form, in various international encryption standards.  For
+example, Annex A.1 of ISO 10116:1991 states "The ECB mode is in general not
+recommended".  ISO 10126-2:1991 doesn't even mention ECB as being useful for
+message encryption.  The combination of Da Vinci's very regular file structure
+(which provides an attacker with a large amount of known data in very file),
+the weak ECB encryption mode, and the extremely limited password range, makes a
+precomputed dictionary attack (which involves a single lookup in a pre-set
+table of plaintext-ciphertext pairs) very easy.  As ECB mode has no pattern
+hiding ability whatsoever, all that is necessary is to encrypt a common pattern
+(such as a string of spaces) with all possible dictionary password values, and
+sort and store the result in a table.  Any password in the dictionary can then
+be broken just as fast as the value can be read out of the table.
+
+PC Tools is another example of a software package which offers highly insecure
+encryption.  The DES implementation used in this package has had the number of
+rounds reduced from the normal 16 to a mere 2, making it trivial to break on
+any cheap personal computer.  This very weak implementation is distributed
+despite a wide body of research which documents just how insecure 2-round DES
+really is.
+
+Even a correctly-implemented and applied DES encryption system offers only
+marginal security against a determined attacker.  It has long been rumoured
+that certain government agencies and large corporations (and, no doubt,
+criminal organizations) possessed specialized hardware which allowed them to
+break the DES encryption.  However only in August of 1993 have complete
+constructional details for such a device been published.  This device, for
+which the budget version can be built for around $100,000, can find a DES key
+in 3.5 hours for the somewhat more ambitious $1 million version (the budget
+version takes 1 1/2 days to perform the same task). The speed of this device
+scales linearly with cost, so that the time taken can be reduced to minutes or
+even seconds if enough money is invested.  This is a one-off cost, and once a
+DES-breaking machine of this type is built it can sit there day and night
+churning out a new DES key every few minutes, hours, or days (depending on the
+budget of the attacker).
+
+In the 1980's, the East German company Robotron manufactured hundreds of
+thousands of DES chips for the former Soviet Union.  This means one of two
+things: Either the Soviet Union used the chips to build a DES cracker, or they
+used DES to encrypt their own communications, which means that the NSA built
+one.
+
+The only way around the problem of fast DES crackers is to run DES more than
+once over the data to be encrypted, using so-called triple DES (using DES twice
+is as easy to attack as single DES, so in practice three iterations must be
+used).  DES is inherently slow.  Triple DES is three times as slow.  A hard
+drive which performs like a large-capacity floppy drive may give users a sense
+of security, but won't do much for their patience.
+
+The continued use of DES, mainly in the US, has been more due to a lack of any
+replacement than to an ongoing belief in its security.  The National Bureau of
+Standards (now National Institute of Standards and Technology) has only
+relucatantly re-certified DES for further use every five years.  Interestingly
+enough, the Australian government, which recently developed its own replacement
+for DES called SENECA, now rates DES as being "inappropriate for protecting
+government and privacy information" (this includes things like taxation
+information and social security and other personal data).  Now that an
+alternative is available, the Australian government seems unwilling to even
+certify DES for information given under an "in confidence" classification,
+which is a relatively low security rating.
+
+Finally, the add-on "encryption" capabilities offered by general software
+packages are usually laughable.  Various programs exist which will
+automatically break the "encryption" offered by software such as Arc, Arj,
+Lotus 123, Lotus Symphony, Microsoft Excel, Microsoft Word, Paradox, Pkzip 1.x,
+the "improved encryption" in Pkzip 2.x, Quattro Pro, Unix crypt(1), Wordperfect
+5.x and ealier, the "improved" encryption in Wordperfect 6.x, and many others.
+Indeed, these systems are often so simple to break that at least one package
+which does so adds several delay loops simply to make it look as if there were
+actually some work involved in the process. Although the manuals for these
+programs make claims such as "If you forget the password, there is absolutely
+no way to retrieve the document", the "encryption" used can often be broken
+with such time-honoured tools as a piece of paper, a pencil, and a small amount
+of thought.  Some programs which offer "password protection security" don't
+even try to perform any encryption, but simply do a password check to allow
+access to the data.  Two examples of this are Stacker and Fastback, both of
+which can either have their code patched or have a few bytes of data changed to
+ignore any password check before granting access to data.
+
+
+Data Security
+-------------
+
+This section presents an overview of a range of security problems which are, in
+general, outside the reach of SFS.  These include relatively simple problems
+such as not-quite-deleted files and general computer security, through to
+sophisticated electronic monitoring and surveillance of a location in order to
+recover confidential data or encryption keys.  The coverage is by no means
+complete, and anyone seriously concerned about the possibility of such an
+attack should consult a qualified security expert for further advice.
+
+
+Information Leakage
+
+There are several ways in which information can leak from an encrypted SFS
+volume onto other media.  The simplest kind is in the form of temporary files
+maintained by application software and operating systems, which are usually
+stored in a specific location and which, when recovered, may contain file
+fragments or entire files from an encrypted volume.  This is true not only for
+the traditional word processors, spreadsheets, editors, graphics packages, and
+so on which create temporary files on disk in which to save data, but also for
+operating systems such as OS/2, Windows NT, and Unix, which reserve a special
+area of a disk to store data which is swapped in and out of memory when more
+room is needed.
+
+This information is usually deleted by the application after use, so that the
+user isn't even aware that it exists.  Unfortunately "deletion" usually
+consists of setting a flag which indicates that the file has been deleted,
+rather than overwriting the data in any secure way.  Any information which is
+"deleted" in this manner can be trivially recovered using a wide variety of
+tools.  In the case of a swap file there is no explicit deletion as the swap
+area is invisible to the user anyway. In a lightly-loaded system, data may
+linger in a swap area for a considerable amount of time.
+
+The only real solution to this is to redirect all temporary files and swap
+files either to an encryption volume or to a RAM disk whose contents will be
+lost when power is removed.  Most programs allow this redirection, either as
+part of the program configuration options or by setting the TMP or TEMP
+environment variables to point to the encrypted volume or RAM disk.
+
+Unfortunately moving the swap area and temporary files to an encrypted volume
+results in a slowdown in speed as all data must now be encrypted.  One of the
+basic premises behind swapping data to disk is that very fast disk access is
+available.  By slowing down the speed of swapping, the overall speed of the
+system (once swapping becomes necessary) is reduced.  However once a system
+starts swapping there is a significant slowdown anyway (with or without
+encryption), so the decision as to whether the swap file should be encrypted or
+not is left to the individual user.
+
+The other major form of information leakage with encrypted volumes is when
+backing up encrypted data.  Currently there is no generally available secure
+backup software (the few applications which offer "security" features are
+ridiculously easy to circumvent), so that all data stored on an encrypted
+volume will be backed up in unencrypted form.  Like the decision on where to
+store temporary data and swap files, this is a tradeoff between security and
+convenience.  If it were possible to back up an encrypted volume in its
+encrypted form, the entire volume would have to be backed up as one solid block
+every time a backup was made.  This could mean a daily five-hundred-megabyte
+backup instead of only the half megabyte which has changed recently.
+Incremental backups would be impossible.  Backing up or restoring individual
+files would be impossible.  Any data loss or errors in the middle of a large
+encrypted block could be catastrophic (in fact the encryption method used in
+SFS has been carefully selected to ensure that even a single encrypted data bit
+changed by an attacker will be noticeable when the data is decrypted[1]).
+
+Since SFS volumes in their encrypted form are usually invisible to the
+operating system anyway, the only way in which an encrypted volume can be
+backed up is by accessing it through the SFS driver, which means the data is
+stored in its unencrypted form.  This has the advantage of allowing standard
+backup software and schedules to be used, and the disadvantage of making the
+unencrypted data available to anyone who has access to the backups.  User
+discretion is advised.
+
+If it is absolutely essential that backups be encrypted, and the time (and
+storage space) is available to back up an entire encrypted volume, then the
+Rawdisk 1.1 device driver written by Juergen Prang
+<prang@du9ds4.fb9dv.uni-duisburg.de> may be used to make the entire encrypted
+SFS volume appear as a file on a DOS drive which can be backed up using
+standard DOS backup software.  The instructions which come with Rawdisk give
+details on setting the driver up to allow non-DOS volumes to be backed up as
+standard DOS drives.  The SFS volume will appear as a single enormous file
+RAWDISK.DAT which entirely fills the DOS volume.
+
+Footnote [1]: This is not a serious limitation, since it will only affect
+              deliberate changes in the data.  Any accidental corruption due to
+              disk errors will result in the drive hardware reporting the whole
+              sector the data is on as being unreadable.  If the data is
+              deliberately changed, the sector will be readable without errors,
+              but won't be able to be decrypted.
+
+
+Eavesdropping
+
+The simplest form of eavesdropping consists of directly overwiewing the system
+on which confidential data is being processed.  The easiest defence is to
+ensure that no direct line-of-sight path exists from devices such as computer
+monitors and printers to any location from which an eavesdropper can view the
+equipment in question.  Copying of documents and the contents of computer
+monitors is generally possible at up to around 100 metres (300 feet) with
+relatively unsophisticated equipment, but is technically possible at greater
+distances.  The possibility of monitoring from locations such as
+office-corridor windows and nearby rooms should also be considered.  This
+problem is particularly acute in open-plan offices and homes.
+
+The next simplest form of eavesdropping is remote eavesdropping, which does not
+require access to the building but uses techniques for information collection
+at a distance.  The techniques used include taking advantage of open windows or
+other noise conveying ducts such as air conditioning and chimneys, using
+long-range directional microphones, and using equipment capable of sensing
+vibrations from surfaces such as windows which are modulated by sound from the
+room they enclose.  By recording the sound of keystrokes when a password or
+sensitive data is entered, an attacker can later recreate the password or data,
+given either access to the keyboard itself or enough recorded keystrokes to
+reconstruct the individual key sound patterns.  Similar attacks are possible
+with some output devices such as impact printers.
+
+Another form of eavesdropping involves the exploitation of existing equipment
+such as telephones and intercoms for audio monitoring purposes.  In general any
+device which handles audio signals and which can allow speech or other sounds
+to be transmitted from the place of interest, which can be modified to perform
+this task, or which can be used as a host to conceal a monitoring device and
+provide power and possibly microphone and transmission capabilites to it (such
+as, for example, a radio) can be the target for an attacker.  These devices can
+include closed-circuit television systems (which can allow direct overviewing
+of confidential information displayed on monitors and printers), office
+communication systems such as public address systems, telephones, and intercoms
+(which can either be used directly or modified to transmit sound from the
+location to be monitored), radios and televisions (which can be easily adapted
+to act as transmitters and which already contain power supplies, speakers (to
+act as microphones), and antennae), and general electrical and electronic
+equipment which can harbour a range of electronic eavesdropping devices and
+feed them with their own power.
+
+Another eavesdropping possibility is the recovery of information from hardcopy
+and printing equipment.  The simplest form of this consists of searching
+through discarded printouts and other rubbish for information.  Even shredding
+a document offers only momentary protection against a determined enough
+attacker.  The recovery of text from the one-pass ribbon used in high-quality
+impact printers is trivial.  Recovery of text from multipass ribbons is also
+possible, albeit with somewhat more difficulty.  Recovery of the last few pages
+printed on a laser printer may also be possible.
+
+Possibly the ultimate form of eavesdropping currently available, usually
+referred to as TEMPEST (or occasionally van Eck) monitoring, consists of
+monitoring the signals generated by all electrically-powered equipment.  These
+signals can be radiated in the same way as standard radio and television
+transmissions, or conducted along wiring or other metal work.  Some of these
+signals will be related to information being processed by the equipment, and
+can be easily intercepted (even at a significant distance) and used to
+reconstruct the information in question.  TEMPEST monitoring is usually
+relatively expensive in resources, difficult to mount, and unpredictable in
+outcome.  It is most likely to be carried out where other methods of
+eavesdropping are impractical and where general security measures are effective
+in stopping monitoring.  However, once in place, the amount of information
+available through this form of eavesdropping is immense.  In general it allows
+the almost complete recovery of all data being processed by a certain device
+such as a monitor or printer, almost undetectably, and over a long period of
+time.  Protection against TEMPEST monitoring is difficult and expensive, and is
+best left to computer security experts.
+
+
+Trojan Horses
+
+It may be possible for an attacker to replace the SFS software with a copy
+which seems to be identical but which has major weaknesses in it which make an
+attack much easier, for example by using only a few characters of the password
+to encrypt the disk.  The least likely target is mksfs, since changing the way
+this operates would require a similar change to mountsfs and the SFS driver
+which would be easily detectable by comparing them with and independant,
+original copy.  Since a changed mksfs would require the long-term use of a
+similarly changed mountsfs and driver, the changes of detection are greatly
+increased.
+
+A much more subtle attack involves changing mountsfs.  By substituting a
+version which saves the user's password or encryption key to an unused portion
+of the disk and then replaces itself with an unmodified, original copy, an
+attacker can return at their leisure and read the password or key off the disk,
+with the user none the wiser that their encryption key has been compromised.
+The SFS driver may be modified to do this as well, although the task is slighly
+more difficult than changing mountsfs.
+
+Detecting this type of attack is very difficult, since although it is possible
+to use security software which detects changes, this itself might be modified
+to give a false reading.  Software which checks the checking software may in
+turn be modified, and so on ad infinitum.  In general someone who is determined
+enough can plant an undetectable trojan[1], although precautions like using
+modification-detection programs, keeping physically separate copies of the SFS
+software, and occasionally checking the installed versions against other,
+original copies, may help reduce the risk somewhat.  The eventual creation of a
+hardware SFS encryption card will reduce the risk further, although it is still
+possible for an attacker to substitute their own fake encryption card.
+
+Another possibility is the creation of a program unrealted to SFS which
+monitors the BIOS character write routines for the printing of the password
+prompt, or video RAM for the appearance of the prompt, or the BIOS keyboard
+handler, or any number of other possibilities, and then reads the password as
+it is typed in.  This is a generic attack against all types of encryption
+software, and doesn't rely on a compromised copy of the software itself.  The
+only real way to defeat this is to use custom hardware which performs its task
+before any user software has time to run, such as the hardware SFS version
+currently under development.
+
+Footnote [1]: An attacker could employ, for example, what David Farber has
+              described as "supplemental functionality in the keyboard driver".
+
+
+Dangers of Encryption
+
+The use of very secure encryption is not without its downsides, however.
+Making the data completely inaccessible to anyone but the holder of the correct
+password can be hazardous if the data being protected consists of essential
+information such as the business records for a company which are needed in its
+day-to-day operation.  If the holder of the encryption password is killed in an
+accident (or even just rendered unconscious for a time), the potential complete
+loss of all business records is a serious concern.
+
+Another problem is the question of who the holder of the password(s) should be.
+If the system administrator at a particular site routinely encrypts all the
+data held there for security purposes, then later access to the entire
+encrypted dataset is dependant on the administrator, who may forget the
+password, or die suddenly, or move on to another job and have little incentive
+to inform their previous employer of the encryption password (for example if
+they were fired from the previous job).  Although there are (as yet) no known
+cases of this happening, it could occur that the ex-administrator has forgotten
+the password used at his previous place of employment and might require a
+small, five-figure consideration to help jog his memory.  The difficulty in
+prosecuting such a case would be rather high, as proving that the encryption
+system wasn't really installed in good faith by the well-intentioned
+administrator to protect the company data and that the password wasn't
+genuinely forgotten would be well nigh impossible.
+
+
+Politics
+--------
+
+Many governments throughout the world have an unofficial policy on cryptography
+which is to reserve all knowledge and use of encryption to the government in
+general and the elite in particular.  This means that encryption is to be used
+firstly (in the form of restrictions on its use) for intelligence-gathering,
+and secondly for protecting the secret communications of the government.
+Therefore the government uses encryption to protect its own dealings, but
+denies its citizens the right to use it to protect their own privacy, and
+denies companies the right to use it to protect their business data.
+
+This policy is enforced in many ways.  In the US it is mainly through the use
+of the ITAR, the International Traffic in Arms Regulations, a law dating back
+to the second world war and passed with no public debate.  This defines all
+encryption material (hardware and software) as "munitions", subject to special
+governmental control.  These "munitions" in fact have no violent uses (unless,
+say, you tried beating someone to death with a box of disks).  Their only
+possible use is to protect your personal privacy, and the privacy of your
+business data.
+
+In limiting the use (and export) of encryption technology, the US (and many
+other countries which follow the lead of the US) are not only denying their
+citizens the means to ensure the privacy of personal information stored on
+computer, they are also placing businesses at risk.  With no easy way to
+protect their data, companies are losing billions of dollars a year to
+industrial espionage which even a simple measure like SFS would help to reduce.
+Some real-life examples of what the lack of secure encryption can do:
+
+    - The head of the French DGSE (Direction Generale de la Securite
+      Exterieure) secret service has publicly boasted that his organisation,
+      through industrial espionage, helped French companies acquire over a
+      billion dollars worth of business deals from foreign competitors[1][2].
+
+    - A US company was being consistently underbid by a Japanese competitor
+      which was intercepting their electronic traffic.  When they started
+      encrypting their messages, the underbidding stopped.  A few days later
+      they were requested by the US government to stop using encryption in
+      their traffic[3].
+
+    - A New Zealand computer dealer acquired 90 used disks which turned out to
+      contain sensitive financial records from a large bank.  The evening after
+      he turned them over to the bank (for a $15,000 cash "finders fee") he was
+      killed in a road accident.  The finders fee was never recovered [4].
+
+      Despite this major security hole, the bank wouldn't learn from their
+      mistakes.  A few weeks later a large networked disk drive originally used
+      by them was supplied to another company as a supposedly "new" replacement
+      for a drive which had died.  This drive was found to contain the complete
+      financial records from one of their branches.  Not wanting to be scraped
+      off the side of the road one night, the system manager decided to erase
+      the contents of the disk[5].
+
+      It isn't known how many more of their confidential financial records this
+      bank has handed out to the public over the years.
+
+In the latter case the lack of encryption not only had the potential to cause
+serious financial harm to the bank involved but resulted in the death of the
+main player.  The use of a program like SFS would have made the contents of the
+disks unreadable to anyone but the bank.
+
+In 1991 the US Justice Department tried to introduce legislation that would
+require all US digital communications systems to be reengineered (at enormous
+cost) to support monitoring of message traffic by the FBI.  This measure was
+never passed into law.  The next year the FBI tried to introduce a similar
+measure, but could find no-one willing to back the bill.
+
+In April 1993, the US government announced a piece of hardware called the
+Clipper Chip.  They proposed that this device, whose details are classified and
+which contains a self-destruct mechanism which is activated if attempts are
+made to examine it too closely, be built into all telephones.  Each chip has a
+special serial number which identifies all communications carried out with that
+phone.  At the beginning of each transmission, telephones equipped with a
+Clipper Chip negotiate a connection which involves sending identifying
+information across the phone network, and setting up a common key to use for
+encrypting the conversation.
+
+Built into this setup is a special back door which allows the government, and
+anyone who works for the government, and anyone who has a friend who works for
+the government, and anyone with enough money or force to bribe or coerce the
+aforementioned people, to monitor the conversation.  The job is made much
+easier by the extra identification information which the Clipper Chip attaches
+to the data stream.  The Clipper Chip allows monitoring on a scale even George
+Orwell couldn't have imagined when he wrote his novel "1984"[6].
+
+A somewhat less blatant attempt to bypass communications privacy is gradually
+appearing in the rest of the world.  The GSM digital telephone system uses a
+special encryption algorithm called A5X which is a modified form of a stronger
+system called A5.  A5X exists solely as a deliberately crippled A5, and is
+almost trivial to bypass for electronic monitoring purposes.  Although the
+details of A5 are classified "for national security purposes", various sources
+have commented that even the original unmodified A5 probably provides only
+limited security against a determined attack, and the actual implementation
+exhibits some fundamental flaws (such as a 3-hour key rollover) which can
+greatly aid an attacker.
+
+It is against this worrying background that SFS was created.  Right from the
+start, the idea behind SFS was to provide the strongest possible cryptographic
+security.  No compromises were made, there are no back doors or weaknesses
+designed into the system, nor will there ever be the deliberate crippling of
+the system or undermining of its integrity which some organizations would like.
+The algorithms and methods used in SFS have been selected specifically for
+their acknowledged strength and general acceptance by the worldwide
+cryptographic community, and conform to a wide variety of national and
+international standards for secure encryption.  As new algorithms and
+cryptographic processes appear, SFS will be updated to always provide the best
+possible security available.
+
+Footnote [1]  This was reported by cryptographer Martin Hellman at the 1993 RSA
+              Data Security conference on 14-15 January 1993.
+
+Footnote [2]  Some quotes from FBI Director Louis Freeh from a talk given to
+              the Executives' Club of Chicago on 17 March 1994:
+
+              "A nation's power is increasingly measured by economic prosperity
+               at home and competitiveness abroad.  And in some ways, the
+               United States is a sitting duck for countries and individuals
+               who want to take a short cut to power".
+
+               [At least 20 nations are] "actively engaged in economic
+               espionage".
+
+              "This kind of information [cost and price structure, research and
+               development results, marketing plans, bids and customer lists]
+               can be intercepted from fax and satellite communications.  It
+               can be monitored from cellular and microwave telephone links.
+               It can be retrieved from inadequately protected computer
+               systems".
+
+Footnote [3]: Private communications from one of the people involved.
+
+Footnote [4]: This event received nationwide TV, radio, and newspaper coverage
+              at the time.  For example, any New Zealand paper published on 7
+              September 1992 should provide more information.
+
+Footnote [5]: Private communications from the system manager involved.
+
+Footnote [6]: It has been claimed that the Clipper proposal is an example of
+              the government servicing the people in the sense of the term used
+              in the sentence "The farmer got a bull to service his cows".
+
+
+Security Analysis
+-----------------
+
+This section attempts to analyse some of the possible failure modes of SFS and
+indicate which strategies have been used to minimise problems.
+
+
+Incorrect Encryption Algorithm Implementations
+
+When implementing something as complex as most encryption algorithms, it is
+very simple to make a minor mistake which greatly weakens the implementation.
+It is a well-known fact that making even the smallest change to the DES
+algorithm reduces its strength considerably.  There is a body of test data
+available as US National Bureau of Standards (NBS) special publication 500-20
+which can be used to validate DES implementations.  Unfortunately the
+programmers who produce many commercial DES implementations either don't know
+it exists or have never bothered using it to verify their code (see the section
+"Other Software" above), leading to the distribution of programs which perform
+some sort of encryption which is probably quite close to DES but which
+nevertheless has none of the security of the real DES.
+
+In order to avoid this problem, the SHS code used in SFS has a self-test
+feature which can be used to test conformance with the data given in Federal
+Information Processing Standards (FIPS) publication 180, which is the
+specification for the SHS algorithm.  This self-test can be invoked in the
+mksfs program by giving it the option `-t' for `test':
+
+    mksfs -t
+
+mountsfs and the SFS driver itself use exactly the same code, so testing it in
+mksfs is enough to ensure correctness of the other two programs.  The following
+tests can take a minute or so to run to completion.
+
+The self-test, when run, produces the following output:
+
+  Running SHS test 1 ... passed, result=0164B8A914CD2A5E74C4F7FF082C4D97F1EDF880
+  Running SHS test 2 ... passed, result=D2516EE1ACFA5BAF33DFC1C471E438449EF134C8
+  Running SHS test 3 ... passed, result=3232AFFA48628A26653B5AAA44541FD90D690603
+
+The test values can be compared for correctness with the values given in
+Appendix 1 of the FIPS publication.  If any of the tests fail, mksfs will exit
+with an error message.  Otherwise it will perform a speed test and display a
+message along the lines of:
+
+  Testing speed for 10MB data... done.  Time = 31 seconds, 323 kbytes/second
+
+  All SHS tests passed
+
+Note that the speed given in this test is only vaguely representative of the
+actual speed, as the test code used slows the implementation down somewhat.  In
+practice the overall speed should be higher than the figure given.
+
+
+Weak passwords
+
+Despite the best efforts of security specialists to educate users about the
+need to chose good keys, people persist in using very weak passwords to protect
+critical data.  SFS attempts to ameliorate this problem by forcing a minimum
+key length of 10 characters and making a few simple checks for insecure
+passwords such as single words (since the number of words of length 10 or more
+characters is rather small, it would allow a very fast dictionary check on all
+possible values).  The checking is only rudimentary, but in combination with
+the minimum password length should succeed in weeding out most weak passwords.
+
+Another possible option is to force a key to contain at least one punctuation
+character, or at least one digit as some Unix systems do.  Unfortunately this
+tends to lead people to simply append a single punctuation character or a fixed
+digit to the end of an existing key, with little increase in security.
+
+More password issues are discussed in the section "The Care and Feeding of
+Passwords" above.
+
+
+Data left in program memory by SFS programs
+
+Various SFS utilities make use of critical keying information which can be used
+to access an SFS volume.  Great care has been taken to ensure that all critical
+information stored by these programs is erased from memory at the earliest
+possible moment.  All encryption-related information is stored in static
+buffers which are accessed through pointers passed to various routines, and is
+overwritten as soon as it is no longer needed.  All programs take great care to
+acquire keying information from the user at the last possible moment, and
+destroy this information as soon as either the disk volume has been encrypted
+or the keying information has been passed to the SFS driver.  In addition, they
+install default exit handlers on startup which systematically erase all data
+areas used by the program, both for normal exits and for error or
+special-condition exits such as the user interrupting the programs execution.
+
+
+Data left in program memory by the SFS driver
+
+The SFS driver, in order to transparently encrypt and decrypt a volume, must
+store at all times the keying information needed to encrypt and decrypt the
+volume.  It is essential that this information be destroyed as soon as the
+encrypted volume is unmounted.  SFS does this by erasing all encryption-related
+information held by the driver as soon as it receives an unmount command.  In
+addition, the driver's use of a unique disk key for each disk ensures that even
+if a complete running SFS system is captured by an opponent, only the key for
+the volume currently mounted will be compromised, even if several volumes are
+encrypted with the same user password (see the section "Controlled Disclosure
+of Encrypted Information" below for more details on this).
+
+
+Data left in system buffers by mksfs
+
+mksfs must, when encrypting a volume, read and write data via standard system
+disk routines.  This data, consisting of raw disk sectors in either plaintext
+or encrypted form, can linger inside system buffers and operating system or
+hard disk caches for some time afterwards.  However since none of the
+information is critical (the plaintext was available anyway moments before
+mksfs was run, and at worst knowledge of the plaintext form of a disk sector
+leads to a known plaintext attack, which is possible anyway with the highly
+regular disk layout used by most operating systems), and since accessing any of
+this information is highly nontrivial, this is not regarded as a weakness.
+
+
+Data left in system buffers by mountsfs
+
+As part of its normal operation, mountsfs must pass certain keying information
+to the SFS driver through a DOS system call.  DOS itself does not copy the
+information, but simply passes a pointer to it to the SFS driver.  After the
+driver has been initialised, mountsfs destroys the information as outlined
+above.  This is the only time any keying information is passed outside the
+control of mountsfs, and the value is only passed by reference.
+
+
+Data left in system buffers by the SFS driver
+
+Like mksfs, the SFS driver reads and writes data via standard system disk
+routines.  This data, consisting of raw disk sectors in either plaintext or
+encrypted form, can linger inside system buffers and operating system or hard
+disk caches for some time afterwards.  Once the encrypted volume is unmounted,
+it is essential that any plaintext information still held in system buffers be
+destroyed.
+
+In order to accomplish this, the SFS driver, when issued with an unmount
+command, performs two actions intended to destroy any buffered information.
+First, it issues a cache flush command followed by a cache reset command to any
+DOS drive cacheing software it recognizes, such as older versions of
+Microsoft's SmartDrive (with IOCTL commands), newer versions of SmartDrive
+(version 4.0 and up), the PCTools 5.x cache, Central Point Software's PC-Cache
+6.0 and up, the more recent PC-Cache 8.x, Norton Utilities' NCache-F, NCache-S,
+and the newer NCache 6.0 and up, the Super PC-Kwik cache 3.0 and up, and
+Qualitas' QCache 4.0 and up.  Some other cacheing software can be detected but
+doesn't support external cache flushing.  This step is handled by mountsfs
+rather than the driver due to the rather complex nature of the procedures
+necessary to handle the large variety of cacheing software, and the fact that
+most cacheing software can't be accessed from a device drvier.
+
+After this the SFS driver itself issues a disk reset command which has the
+effect of flushing all buffered and cached data scheduled to be written to a
+disk, and of marking those cache and buffer entries as being available for
+immediate use.  In addition to the explicit flushing performed by the mountsfs
+program, many cacheing programs will recognise this as a signal to flush their
+internal buffers (quite apart from the automatic flushing performed by the
+operating system and the drive controller).
+
+Any subsequent disk accesses will therefore overwrite any data still held in
+the cache and system buffers.  While this does not provide a complete guarantee
+that the data has gone (some software disk caches will only support a cache
+flush, not a complete cache reset), it is the best which can be achieved
+without using highly hardware and system-specific code.
+
+
+SFS volumes left mounted
+
+It is possible that an SFS volume may be unintentionally left mounted on an
+unattended system, allowing free access to both the in-memory keying
+information and the encrypted volume.  In order to lessen this problem
+somewhat, a fast-unmount hotkey has been incorporated into the SFS driver which
+allows an unmount command to be issued instantly from the keyboard (see the
+sections "Mounting an SFS Volume" and "Advanced SFS Driver Options" above).
+The ease of use of this command (a single keystroke) is intended to encourage
+the unmounting of encrypted volumes as soon as they are no longer needed,
+rather than whenever the system is next powered down.
+
+As an extra precaution, the driver's use of a unique disk key for each disk
+ensures that even if a complete running SFS system with an encrypted volume
+still mounted is captured by an opponent, only the key for the volume currently
+mounted will be compromised, even if several volumes are encrypted with the
+same user password (see the section "Controlled Disclosure of Encrypted
+Information" below for more details on this).
+
+Finally, a facility for an automatic timed unmount for volumes left mounted is
+provided, so that volumes mistakenly left mounted while the system is
+unattended may be automatically unmounted after a given period of time.  This
+ensures that, when the inevitable distractions occur, encrypted volumes are
+safely unmounted at some point rather than being left indefinitely accessible
+to anyone with access to the system.
+
+
+Controlled disclosure of encrypted information
+
+To date there are no known laws which can be used to enforce disclosure of
+encrypted information, a field which is usually covered by safeguards against
+self-incrimination.  However there have been moves in both the US and the UK to
+pass legislation which would compromise the integrity of encrypted information,
+or which would remove protection against self-incrimination.  In either case
+this would allow agencies to compel users of cryptographic software to reveal
+the very information they are trying to protect, often without the users even
+being aware that their privacy is being compromised.
+
+The approach taken in the US, in the form of the Clipper initiative, is to have
+all encryption keys held by the government.  If disclosure of the information
+is required, the key is retrieved from storage and used to decrypt the
+information.  A side effect of this is that any data which has ever encrypted
+with the key, and any data which will ever be encrypted in the future, has now
+been rendered unsafe.  This system is best viewed as uncontrolled disclosure.
+
+SFS includes a built-in mechanism for controlled disclosure so that, if
+disclosure is ever required by law, only the information for which access is
+authorized may be revealed.  All other encrypted data remains as secure as it
+was previously.
+
+This is achieved by encrypting each disk volume with a unique disk key which is
+completely unrelated to the users passphrase.  When the passphrase is entered,
+it is transformed by iterating a one-way hash function over it several hundred
+times to create an intermediate key which is used to decrypt the disk key
+itself.  The disk volume is then en/decrypted with the disk key rather than the
+unmodified encyrption key supplied by the user.  There is no correlation
+between the user/intermediate key and the disk key
+
+If disclosure of the encrypted information is required, the disk key can be
+revealed without compromising the security of the user key (since it is
+unrelated to the user key), or the integrity of any other data encrypted with
+the user key (since the disk key is unique for each disk volume, so that
+knowledge of a particular disk key allows only the one volume it corresponds to
+to be decrypted).
+
+The controlled disclosure option is handled by the two mountsfs options `-d'
+and `-c'.  The `-d' option will disclose the unique key for a given disk
+volume, and the `-c' option will accept this key instead of the usual password.
+For example to disclose the disk key for the SFS volume "Data", the command
+would be:
+
+  mountsfs -d vol=data
+
+mountsfs will then ask for the password in the usual manner, and then prompt:
+
+  You are about to disclose the encryption key for this SFS volume.
+  Are you sure you want to do this [y/n]
+
+At this point a response of 'Y' will continue and a response of 'N' will exit
+the program without disclosing the disk key.  A response of 'Y' will print the
+disk key in the following format:
+
+  Disk key is
+
+      2D 96 B1 06 6D E8 30 21 D5 DB 1B CC 3E 0E C7 CF D6 D1 0C 97 75 DC
+      06 74 BC 2F E6 A0 3C 56 80 5F 0D 30 DA 54 D3 0D 28 F3 14 DE 79 67
+      6E 1A 75 DC 33 87 86 29 BA A5 B1 64 5B 79 67 8C 8A 1B D1 27 5B 79
+      73 6B 45 7B DA 54 43 6C C1 AB 06 67 7E 94 86 F2 50 22 09 8D 21 D5
+      E7 3A 80 5F 0D 30 DA 54 D3 0D 28 FF 6D E8 30 21 33 87 86 29 C0 ED
+      4A 22 96 B1 06 6D E8 30 21 D5 1C 2D E6 A0 3C 56 DA 54 43 6C 56 80
+
+This is the unique key needed to access the particular encrypted volume.
+
+To use this key instead of the usual one with mountsfs, the command would be:
+
+  mountsfs -c vol=data
+
+mountsfs will then ask for this disk key instead of the usual password:
+
+  Please enter 264-digit disk key, [ESC] to exit:
+
+At this point the disk key should be entered.  mountsfs will automatically
+format the data as it is entered to conform to the above layout.  The ESC key
+can be used at any point to exit the process.
+
+Once the key has been entered, the program will perform a validity check on the
+key.  If this test fails, mountsfs will display the message:
+
+  Error: Incorrect disk key entered
+
+and exit.  Otherwise it will mount the volume as usual.  Since each volume has
+its own unique disk key, revealing the key for one volume gives access to that
+volume and no others.  Even if 20 volumes are all encrypted with the same user
+password, only one volume can be accessed using a given disk key.
+
+
+Password Lifetimes and Scope
+
+An SFS password which is used over a long period of time makes a very tempting
+target for an attacker.  The longer a particular password is used, the greater
+the chance that it is compromised.  A password used for a year has a far
+greater chance of being compromised than one used for a day.  If a password is
+used for a long period of time, the temptation for an attacker to spend the
+effort necessary to break it is far greater than if the password is only a
+short-term one.
+
+The scope of a password is also important.  If a password is used to encrypt a
+single drive containing business correspondence, it's compromise is only mildly
+serious.  If it is employed to protect dozens of disk volumes or a large file
+server holding considerable amounts of confidential information, the compromise
+of the password could be devastating.  Again, the temptation to attack the
+master password for an entire file server is far greater than for the password
+protecting data contained on a single floppy disk.
+
+SFS attacks this problem in two ways.  First, it uses unique disk keys to
+protect each SFS volume.  The disk key is a 1024-bit cryptographically strong
+random key generated from nondeterministic values acquired from system
+hardware, system software, and user input (see the subsection "Generating
+Random Numbers" below).  The data on each disk volume is encrypted using this
+unique disk key, which is stored in encrypted form in the SFS volume header
+(this works somewhat like session keys in PEM or PGP, except that a
+conventional-key algorithm is used instead of a public-key one).  To access the
+disk, the encrypted disk key is first decrypted with the user password, and the
+disk key itself is used to access the disk.  This denies an attacker any known
+plaintext to work with (as the plaintext consists of the random disk key).  To
+check whether a given password is valid, an attacker must use it to decrypt the
+disk key, rekey the encryption system with the decrypted disk key, and try to
+decrypt the disk data.  Only then will they know that whether their password
+guess was correct or not.  This moves the target of an attack from a (possibly
+simple) user password to a 1024-bit random disk key.
+
+The other way in which SFS tries to ameliorate the problem of password
+lifetimes and scope is by making the changing of a password a very simple
+operation.  Since the only thing which needs to be changed when a password
+change is made is the encrypted disk key, the entire password change operation
+can be made in a matter of seconds, rather than the many minutes it would take
+to decrypt and re-encrypt an entire disk.  It is hoped that the ease with which
+passwords can be changed will encourage the frequent changing of passwords by
+users.
+
+
+An Introduction to Encryption Systems
+-------------------------------------
+
+For space reasons the following introduction to encryption systems is very
+brief.  Anyone requiring more in-depth coverage is urged to consult the texts
+mentioned in the references at the end of this document.
+
+Encryption algorithms (ciphers) are generally one of two types, block ciphers
+and stream ciphers.  A block cipher takes a block of plaintext and converts the
+entire block into ciphertext.  A stream cipher takes a single bit or byte of
+plaintext at a time and converts it into ciphertext.  There also exist means of
+converting block ciphers to stream ciphers, and vice versa.  Usually a stream
+cipher is preferred, as it doesn't require data to be quantised to the block
+size of the cipher in use.  Unfortunately, stream ciphers, although more
+convenient, are usually harder to get right than block ciphers.  Many practical
+stream ciphers are in fact simply block ciphers pretending to be stream
+ciphers.
+
+Virtually all good conventional-key ciphers are so-called product ciphers, in
+which several (relatively) weak transformations such as substitution,
+transposition, modular addition/multiplication, and linear transformation are
+iterated over a piece of data, gaining more and more strength with each
+iteration (usually referred to as a round).  These types of ciphers have been
+extensively studied and are reasonably well understood.  The following table
+compares the main parameters of several product ciphers.  Lucifer is the
+immediate precursor to the US Data Encryption Standard (DES).  Loki is a
+proposed alternative to DES.  FEAL is a fast block cipher designed in Japan.
+IDEA is a relatively new Swiss block cipher which has been proposed as a
+successor to DES and which has (so far) proven more resistant to attack then
+DES.  MDC/SHS is a cipher based on the SHS one-way hash function (more on this
+later).
+
+   +-----------+------------+----------+-----------+---------------+
+   |  Cipher   | Block size | Key size | Number of | Complexity of |
+   |           |            |  (bits)  |   rounds  |  Best Attack  |
+   +-----------+------------+----------+-----------+---------------+
+   |  Lucifer  |    128     |    128   |     16    |     2^21      |
+   |    DES    |     64     |     56   |     16    |     2^43      |
+   |  Loki91   |     64     |     64   |     16    |     2^48      |
+   |  FEAL-8   |     64     |    128   |      8    |    10,000     |
+   |   IDEA    |     64     |    128   |      8    |     2^128     |
+   |  MDC/SHS  |    160     |    512   |     80    |     2^512     |
+   +-----------+------------+----------+-----------+---------------+
+
+The complexity of the best known attack is the number of operations necessary
+to allow the cipher to be broken.  Note how the block size, key size, and
+number of rounds don't necessarily give a good indication of how secure the
+algorithm itself is.  Lucifer, although it has twice the block size and over
+twice the key size of DES, is rather simple to break (the key size of DES is
+discussed later on in the section on insecurities).  DES is the result of
+several years of work improving on Lucifer.  FEAL has been continually changed
+every year or so when the previous version was broken.  Due to this, current
+versions are treated with some scepticism.  Both IDEA and MDC have so far
+resisted all forms of attack, although recently a class of weak keys have been
+discovered in IDEA (and a simple change in the algorithm will eliminate these
+weak keys).  Note that in the case of the last two algorithms the given
+complexity is for a brute-force attack (explained below), which is the most
+pessimistic kind possible.  There may be much better attacks available,
+although if anyone knows of any they're not saying anything.  Of the algorithms
+listed above, DES has been attacked the hardest, and IDEA and MDC the least,
+which may go some way to explaining the fact that brute force is the best known
+attack.
+
+There are a large number of modes of operation in which these block ciphers can
+be used.  The simplest is the electronic codebook (ECB) mode, in which the data
+to be encrypted is broken up into seperate subblocks which correspond to the
+size of the block cipher being used, and each subblock is encrypted
+individually.  Unfortunately ECB has a number of weaknesses (some of which are
+outlined below), and would never be used in a well-designed cryptosystem.
+Using P[] to denote a plaintext block, C[] to denote a ciphertext block, e() to
+denote encryption, d() to denote decryption, and ^ for the exclusive-or
+operation, ECB mode encryption can be given as:
+
+    C[ n ] = e( P[ n ] )
+
+with decryption being:
+
+    P[ n ] = d( C[ n ] )
+
+A better encryption mode is cipher block chaining (CBC), in which the first
+data subblock is exclusive-ored with an initialization vector (IV) and then
+encrypted.  The resulting ciphertext is exclusive-ored with the next data
+subblock, and the result encrypted.  This process is repeated until all the
+data has been encrypted.  Because the ciphertext form of each subblock is a
+function of the IV and all preceding subblocks, many of the problems inherent
+in the ECB encryption mode are avoided.  CBC-mode encryption is:
+
+    C[ 1 ] = e( P[ 1 ] ^ IV )
+    C[ n ] = e( P[ n ] ^ C[ n-1 ] )
+
+and decryption is:
+
+    P[ 1 ] = d( C[ 1 ] ) ^ IV
+    P[ n ] = d( C[ n ] ) ^ C[ n-1 ]
+
+Another encryption mode is cipher feedback (CFB), in which the IV is encrypted
+and then exclusive-ored with the first data subblock to provide the ciphertext.
+The resulting ciphertext is then encrypted and exclusive-ored with the next
+data subblock to provide the next ciphertext block.  This process is repeated
+until all the data has been encrypted.  Because the ciphertext form of each
+subblock is a function of the IV and all preceding subblocks (as is also the
+case for CBC-mode encryption), many of the problems inherent in the ECB
+encryption mode are avoided.  CFB-mode encryption is:
+
+    C[ 1 ] = P[ 1 ] ^ e( IV )
+    C[ n ] = P[ n ] ^ e( C[ n-1 ] )
+
+and decryption is:
+
+    P[ 1 ] = C[ 1 ] ^ e( IV )
+    P[ n ] = C[ n ] ^ e( C[ n-1 ] )
+
+There are several other modes of operation which are not covered here.  More
+details can be found in the texts given in the references.
+
+One point worth noting is that by using a different IV for each message in CBC
+and CFB mode, the ciphertext will be different each time, even if the same
+piece of data is encrypted with the same key.  This can't be done in ECB mode,
+and is one of its many weaknesses.
+
+There are several standard types of attack which can be performed on a
+cryptosystem.  The most restricted of these is a ciphertext-only attack, in
+which the contents of the message are unknown.  This kind of attack virtually
+never occurs, as there is always some regularity or known data in the message
+which can be exploited by an attacker.
+
+This leads to the next kind of attack, the known-plaintext attack.  In this
+case some (or all) of the plaintext of the message is known.  This type of
+attack is fairly easy to mount, since most data consists of well-known,
+fixed-format messages containing standard headers, a fixed layout, or data
+conforming to a certain probability distribution such as ASCII text.
+
+Finally, in a chosen-plaintext attack the attacker is able to select plaintext
+and obtain the corresponding ciphertext.  This attack is also moderately easy
+to mount, since it simply involves fooling the victim into transmitting a
+message or encrypting a piece of data chosen by the attacker.  This kind of
+attack was used to help break the Japanese "Purple" cipher during WWII by
+including in a news release a certain piece of information which it was known
+the Japanese would encrypt and transmit to their superiors.
+
+However attacks of this kind are usually entirely unnecessary.  Too many
+cryptosystems in everyday use today are very easy to break, either because the
+algorithms themselves are weak, because the implementations are incorrect, or
+because the way they are used is incorrect.  Often amateurs think they can
+design secure systems, and are not aware of what an expert cryptanalyst could
+do.  Sometimes there is insufficient motivation for anybody to invest the work
+needed to produce a secure system.  Many implementations contain flaws which
+aren't immediately obvious to a non-expert.  Some of the possible problems
+include:
+
+- Use of easily-searched keyspaces.  Some algorithms depend for their security
+  on the fact that a search of all possible encryption keys (a so-called brute
+  force attack) would take too long to be practical.  Or at least, it took too
+  long to be practical when the algorithm was designed.  The Unix password
+  encryption algorithm is a prime example of this.  The DES key space is
+  another example.  Recent research has indicated that the DES was not in fact
+  weakened by having only 56 bits of key material (as has often been claimed),
+  since the inherent strength of the algorithm itself only provides this many
+  bits of security (that is, that increasing the key size would have no effect
+  since other attacks which don't involve knowing the key can be used to break
+  the encryption in far less than 2^56 operations).  The encryption used in the
+  Pkzip archiver can usually be broken automatically in less time than it takes
+  to type the password in for authorized access to the data since, although it
+  allows longer keys than DES, it makes the check for valid decryption keys
+  exceedingly easy for an attacker.
+
+- Use of insecure algorithms designed by amateurs.  This covers the algorithms
+  used in the majority of commercial database, spreadsheet, and wordprocessing
+  programs such as Lotus 123, Lotus Symphony, Microsoft Excel, Microsoft Word,
+  Paradox, Quattro Pro, WordPerfect, and many others.  These systems are so
+  simple to break that the author of at least one package which does so added
+  several delay loops to his code simply to make it look as if there was
+  actually some work involved.
+
+- Use of insecure algorithms designed by "experts".  An example is the standard
+  Unix crypt command, which is an implementation of a rotor machine much like
+  the German Enigma cipher which was broken during WWII.  There is a program
+  called cbw (for `crypt breakers workbench') which can automatically decrypt
+  data encrypted with crypt.  After the war, the US government even sold Enigma
+  cipher machines to third-world governments without telling them that they
+  knew how to break this form of encryption.
+
+- Use of incorrectly-implemented algorithms.  Some encryption programs use the
+  DES algorithm, which consists of a series of complicated and arbitrary-
+  seeming bit transformations controlled by complex lookup tables.  These
+  transformations and tables are very easy to get wrong.
+
+  A well-known fact about the DES algorithm is that even the slightest
+  deviation from the correct implementation significantly weakens the algorithm
+  itself.  In other words any implementation which doesn't conform 100% to the
+  standard may encrypt and decrypt data perfectly, but is in practice rather
+  easier to break than the real thing.
+
+  The US National Bureau of Standards (now the National Institute of Standards
+  and Technology) provides a reference standard for DES encryption.  A
+  disappointingly large number of commercial implementations fail this test.
+
+- Use of badly-implemented algorithms.  This is another problem which besets
+  many DES implementations.  DES can be used in several modes of operation,
+  some of them better than others.  The simplest of these is the Electronic
+  Codebook (ECB) mode, in which a block of data is broken up into seperate
+  subblocks which correspond to the unit of data which DES can encrypt or
+  decrypt in one operation, and each subblock is then encrypted seperately.
+
+  There also exist other modes such as CBC in which one block of encrypted data
+  is chained to the next (such that the ciphertext block n depends not only on
+  the corresponding plaintext but also on all preceding ciphertext blocks
+  0..n-1), and CFB, which is a means of converting a block cipher to a stream
+  cipher with similar chaining properties.
+
+  There are several forms of attack which can be used when an encrypted message
+  consists of a large number of completely independant message blocks.  It is
+  often possible to identify by inspection repeated blocks of data, which may
+  correspond to patterns like long strings of spaces in text.  This can be used
+  as the basis for a known-plaintext attack.
+
+  ECB mode is also open to so-called message modification attacks.  Lets assume
+  that Bob asks his bank to deposit $10,000 in account number 12-3456-789012-3.
+  The bank encrypts the message `Deposit $10,000 in account number
+  12-3456-789012-3' and sends it to its central office.  Encrypted in ECB mode
+  this looks as follows:
+
+    E( Deposit $10,000 in acct. number 12-3456-789012-3 )
+
+  Bob intercepts this message, and records it.  The encrypted message looks as
+  follows:
+
+    H+2nx/GHEKgvldSbqGQHbrUfotYFtUk6gS4CpMIuH7e2MPZCe
+
+  Later on in the day, he intercepts the following a message:
+
+    H+2nx/GHEKgvldSbqGQHbrUfotYFtUk61Pts2LtOHa8oaNWpj
+
+  Since each block of text is completely independant of any surrounding block,
+  he can simply insert the blocks corresponding to his account number:
+
+    ................................gS4CpMIuH7e2MPZCe
+
+  in place of the existing blocks, and thus alter the encrypted data without
+  any knowledge of the encryption key used.  Bob has since gone on to early
+  retirement in his new Hawaiian villa.
+
+  ECB mode, and the more secure modes such as CBC and CFB are described in
+  several standards.  Some of these standards make a reference to the
+  insecurity of ECB mode, and recommend the use of the stronger CBC or CFB
+  modes.  Usually implementors stop reading at the section on ECB, with the
+  result being that many commercial packages which use DES and which do manage
+  to get it correct end up using it in ECB mode.
+
+- Protocol errors.  Even if a more secure encryption mode such as CBC or CFB
+  mode is used, there can still be problems.  If a standard message format
+  (such as the one shown above) is used, modification is still possible, except
+  that now instead of changing individual parts of a message the entire message
+  must be altered, since each piece of data is dependant on all previous parts.
+  This can be avoided by prepending a random initialisation vector (IV) to each
+  message, which propagates through the message itself to generate a completely
+  different ciphertext each time the same message is encrypted.  The use of the
+  salt in Unix password encryption is an example of an IV, although the range
+  of only 4096 values is too small to provide real security.
+
+In some ways, cryptography is like pharmaceuticals.  Its integrity is
+important.  Bad penicillin looks just the same as good penicillin.  Determining
+whether most software is correct or not is simple - just look at the output.
+However the ciphertext produced by a weak encryption algorithm looks no
+different from the ciphertext produced by a strong algorithm.... until an
+opponent starts using your supposedly secure data against you, or you find your
+money transfers are ending up in an account somewhere in Switzerland, or
+financing Hawaiian villas.
+
+
+Design Details
+--------------
+
+This section goes into a few of the more obscure details not covered in the
+section on security analysis, such as the encryption algorithm used by SFS, the
+generation of random numbers, the handling of initialization vectors (IV's),
+and a brief overview on the deletion of sensitive information retained in
+memory after a program has terminated (this is covered in more detail in the
+section "Security Analysis" above).
+
+
+The Encryption Algorithm used in SFS
+
+Great care must be taken when choosing an encryption algorithm for use in
+security software.  For example, the standard Unix crypt(1) command is based on
+a software implementation of a rotor machine encryption device of the kind
+which was broken by mathematicians using pencil and paper in the late 1930's.
+Indeed, there exists a program called `crypt breaker's workbench' which allows
+the automated breaking of data encrypted using the crypt(1) command.  The
+insecurity of various other programs has been mentioned elsewhere.  It is
+therefore imperative that a reliable encryption system, based on world-wide
+security standards, and easily verifiable by consulting these standards, be
+used.
+
+When a block cipher is used as a stream cipher by running it in CFB (cipher
+feedback) mode, there is no need for the cipher's block transformation to be a
+reversible one as it is only ever run in one direction (generally
+encrypt-only).  Therefore the use of a reversible cipher such as DES or IDEA is
+unnecessary, and any secure one-way block transformation can be substituted.
+This fact allows the use of one-way hash functions, which have much larger
+block sizes (128 or more bits) and key spaces (512 or more bits) than most
+reversible block ciphers in use today.
+
+The transformation involved in a one-way hash function takes an initial hash
+value H and a data block D, and hashes it to create a new hash value H':
+
+    hash( H, D ) -> H'
+
+or, more specifically, in the function used in SFS:
+
+    H + hash( D ) -> H'
+
+This operation is explained in more detail in FIPS Pub. 180 which defines the
+Secure Hash Standard.  By using H as the data block to be encrypted and D as
+the key, we can make the output value H' dependant on a user-supplied key.
+That is, when H is the plaintext, D is the encryption key, and H' is the
+ciphertext:
+
+     plaintext H
+         |
+         v
+    +---------+
+    |   SHS   |<- key D
+    +---------+
+         |
+         v
+    ciphertext H'
+
+If we regard it as a block cipher, the above becomes:
+
+    H' = SHS( H )
+
+which is actually:
+
+    C  =   e( P )
+
+Since we can only ever "encrypt" using a one-way hash function, we need to run
+the "cipher" in cipher feedback mode, which doesn't require a reversible
+encryption algorithm.
+
+By the properties of the hash function, it is computationally infeasible to
+either recover the key D or to control the transformation H -> H' (in other
+words given a value for H' we cannot predict the H which generated it, and
+given control over the value H we cannot generate an arbitrary H' from it).
+
+The MDC encryption algorithm is a general encryption system which will take any
+one-way hash function and turn it into a stream cipher running in CFB mode.
+The recommended one-way hash function for MDC is the Secure Hash Standard as
+specified in Federal Information Processing Standards (FIPS) Publication 180.
+SHS is used as the block transformation in a block cipher run in CFB mode as
+detailed in AS 2805.5.2 section 8 and ISO 10116:1991 section 6, with the two
+parameters (the size of the feedback and plaintext variables) j and k both
+being set to the SHS block size of 160 bits.  The properties of this mode of
+operation are given in Appendix A3 of AS 2805.5.2 and Annex A.3 of ISO
+10116:1991.  The CFB mode of operation is also detailed in a number of other
+standards such as FIPS Publication 81 and USSR Government Standard GOST
+28147-89, Section 4.  The use of an initialization vector (IV) is as given in
+ISO 10126-2:1991 section 4.2, except that the size of the IV is increased to
+160 bits from the 48 or 64 bits value given in the standard. This is again
+detailed in a number of other standards such as GOST 28147-89 Section 3.1.2.
+The derivation of the IV is given in the section "Encryption Considerations"
+below.
+
+The key setup for the MDC encryption algorithm is performed by running the
+cipher over the encryption key (in effect encrypting the key with MDC using
+itself as the key) and using the encrypted value as the new encryption key.
+This procedure is then repeated a number of times to make a "brute-force"
+decryption attack more difficult, as per the recommendation in the Public-Key
+Cryptography Standard (PKCS), part 1.  This reduces any input key, even one
+which contains regular data patterns, to a block of white noise equal in size
+to the MDC key data.
+
+The exact key scheduling process for MDC is as follows:
+
+ Initialization:
+
+ - The SHS hash value H is set to the key IV[1].
+ - The SHS data block D is set to all zeroes.
+ - The key data of length 2048 bits is set to a 16-bit big-endian value
+   containing the length of the user key in bytes, followed by up to 2032 bits
+   of user key.
+
+   SHS hash value H = key IV;
+   SHS data block D = zeroes;
+   key_data [0:15] = length of user key in bytes;
+   key_data [16:2048 ] = user key, zero-padded;
+
+ Key schedule:
+
+ - The following process is iterated a number of times:
+
+   - The 2048-bit key data block is encrypted using MDC.
+   - Enough of the encrypted key data is copied from the start of the key data
+     block into the SHS data block D to fill it.
+
+   for i = 1 to 200 do
+       encrypted_key = encrypt( key_data );
+       D = encrypted_key;
+
+During the repeated encryptions, the IV is never reset.  This means that the IV
+from the end of the n-1 th data block is re-injected into the start of the n th
+data block.  After 200 iterations, the "randomness" present in the key has been
+diffused throughout the entire key data block.
+
+Although the full length of the key data block is 2048 bits, the SHS algorithm
+only uses 512 bits of this (corresponding to the SHS data block D) per
+iteration.  The remaining 1536 bits take part in the computation (by being
+carried along via the IV) but are not used directly.  By current estimates
+there are around 2^256 atoms in the universe.  Compiling a table of all 2^512
+possible keys which would be necessary for a brute-force attack on MDC would
+therefore be a considerable challenge to an attacker, requiring, at least, the
+creation of another 512 * 2^256 universes to hold all the keys.  Even allowing
+for the current best-case estimate of a creation time of 7 days per universe,
+the mere creation of storage space for all the keys would take an unimaginably
+large amount of time.
+
+The SFS key schedule operation has been deliberately designed to slow down
+special hardware implementations, since the encryption algorithm is rekeyed
+after each iteration.  Normal high-speed password-cracking hardware would (for
+example, with DES) have 16 separate key schedules in a circular buffer, each
+being applied to a different stage of a 16-stage pipeline (one stage per DES
+round) allowing a new result to be obtained in every clock cycle once the
+pipeline is filled.  In MDC the key data is reused multiple times during the 80
+rounds of SHS, requiring 80 separate key schedules for the same performance as
+the 16 DES ones.  However since the algorithm is rekeyed after every iteration
+for a total of 200 iterations, this process must either be repeated 200 times
+(for a corresponding slowdown factor of 200), or the full pipeline must be
+extended to 16,000 stages to allow the one-result-per-cycle performance which
+the 16-stage DES pipeline can deliver (assuming the rekeying operation can be
+performed in a single cycle).  Changing the iteration count to a higher value
+will further slow down this process.
+
+The number of iterations of key encryption is controlled by the user, and is
+generally done some hundreds of times.  The setup process in SFS has been tuned
+to take approximately half a second on a workstation rated at around 15 MIPS
+(corresponding to 200 iterations of the encryption process), making a
+brute-force password attack very time-consuming.  Note that the key IV is
+injected at the earliest possible moment in the key schedule rather than at the
+very end, making the use of a precomputed data attack impossible.  The standard
+method of injecting the encryption IV at the end of the key schedule process
+offers very little protection against an attack using precomputed data, as it
+is still possible to precompute the key schedules and simply drop in the
+encryption IV at the last possible moment.
+
+Footnote [1]: Some sources would refer to this value as a `salt'.  The term
+              `key IV' is used here as this is probably a more accurate
+              description of its function.
+
+
+Generating Random Numbers
+
+One thing which cryptosystems consume in large quantities are random numbers.
+Not just any old random value, but cryptographically strong random numbers.  A
+cryptographically strong random value is one which cannot be predicted by an
+attacker (if the attacker can predict the value, which is usually used to set
+up encryption keys, then they can make a guess at the encryption key itself).
+This automatically rules out all software means of generating random values,
+and means specialised hardware must be used.
+
+Very few PC's are currently equipped with this type of hardware.  However SFS
+requires 1024 random bits for each encrypted disk, in the form of the disk key
+(see the section "[Password Lifetimes and Scope]" above).  SFS therefore uses a
+number of sources of random numbers, both ones present in the hardware of the
+PC and one external source:
+
+  - Various hardware timers which are read occasionally when the program is
+    running (generally after operations which are long and complex and will be
+    heavily affected by external influences such as interrupts, video, screen,
+    and disk I/O, and other factors.
+
+  - The contents and status information of the keyboard buffer
+
+  - Disk driver controller and status information
+
+  - Mouse data and information
+
+  - Video controller registers and status information
+
+[ - The clock skew between two hardware clocks available on the PC.  Due to
+    background system activity such as interrupt servicing, disk activity, and
+    variable-length instruction execution times, these clocks run out-of-phase.
+    SFS uses this phase difference as a source of random numbers].
+
+  - The timing of keystrokes when the password is entered.  SFS reads the
+    high-speed 1.19 MHz hardware timer after each keystroke and uses the timer
+    values as a source of random numbers.  This timer is used both to measure
+    keystroke latency when the password is entered and read at random times
+    during program execution.  Trials have shown that this 16-bit counter
+    yields around 8 bits of random information (the exact information content
+    is difficult to gauge as background interrupts, video updates, disk
+    operations, protected-mode supervisor software, and other factors greatly
+    affect any accesses to this counter, but an estimate of 8 bits is probably
+    close enough[1]).
+
+  - The timing of disk access latency.  The exact operation is as follows:
+
+        Read a timer-based random disk sector
+        Add its contents (8 bits)
+        Read the high-speed 1.19 MHz hardware timer (13 bits)
+        Use the two values for the next random sector
+
+    This is repeated as often as required (in the case of SFS this is 10
+    times).  Assuming a (currently rather optimistic) maximum of 5ms to acquire
+    a sector this provides about 13 bits of randomness per disk operation.  The
+    number of factors which influence this value is rather high, and includes
+    among other things the time it takes the BIOS to process the request, the
+    time it takes the controller to process the request, time to seek to the
+    track on the disk, time to read the data (or, if disk cacheing is used,
+    time for the occasional cache hit), time to send it to the PC, time to
+    switch in and out of protected mode when putting it in the cache, and of
+    course the constant 3-degree background radiation of other interrupts and
+    system activity happening at the same time.  If a solid-state disk were
+    being used, the hardware latency would be significantly reduced, but
+    currently virtually no 386-class PC's have solid-state disks (they're
+    reserved for palmtops and the like), so this isn't a major concern.
+
+An estimate of the number of random bits available from each source is as
+follows:
+
+    Keystroke latency, 8 bits per key      80 bits for minimum 10-char key
+    Second password entry for encryption   80 bits for minimum 10-char key
+    Disk access latency, 13 bits per read 130 bits for 10 reads
+    Disk sector data, 8 bits               80 bits for 10 reads
+    System clocks and timers                3 bits
+    Video controller information            4 bits
+    Keyboard buffer information             4 bits
+    Disk status information                 4 bits
+    General system status                   4 bits
+    Random high-speed timer reads         120 bits for 15 reads
+                                          --------
+    Total                                 509 bits
+
+These figures are very conservative estimates only, and are based on timing
+experiments with typed-in passwords and a careful scrutiny of the PC's hardware
+and system status data.  In practice (especially with longer passwords) the
+number of random bits is increased somewhat (for example with a 30-character
+password the total may be as high as 829 bits of random information).  However
+even the minimal estimate of 509 bits is adequate for the 512-bit key required
+by MDC.
+
+Each quantum of semi-random information is exclusive-ored into a 1024-bit
+buffer which is initially set to all zeroes.  Once 1024 bits of buffer have
+been filled, the data is encrypted with MDC to distribute the information, and
+the first 512 bits of the 1024-bit buffer is used as the key for the next MDC
+encyrption pass.  Then more data is added until, again, 1024 bits of buffer
+have been filled, whereupon the data is again mixed by encrypting it with MDC.
+This process is repeated several times, with the amount of "randomness" in the
+buffer increasing with each iteration.
+
+Before being used, this data is encrypted 10 times over with MDC to ensure a
+complete diffusion of randomness.  Since the IV for the encryption is reused
+for the next pass through the buffer, any information from the end of the
+buffer is thus reinjected at the start of the buffer at the next encryption
+pass.
+
+Although this method of generating random numbers is not perfect, it seems to
+be the best available using the existing hardware.  General estimates of the
+exact amount of truly random information which can be acquired in this manner
+are in the vicinity of several hundred bits.  However these all assume that an
+attacker is in possession of what amounts to a complete hardware trace of
+events on the machine in question.  Allowing for a reasonable amount of
+physical system security, it can be assumed that the random data used in SFS is
+unpredictable enough to provide an adequate amount of security against all but
+the most determined attacker.
+
+Footnote [1]: If an opponent can obtain several hours of keystroke timings and
+              can come up with a good model including serial correlations, they
+              may be able to reduce the likely inputs to the random number
+              accumulator to a somewhat smaller value, or at least bias their
+              guesses to fall within the range of likely values.
+
+
+Encryption Considerations
+
+When a block cipher is converted to handle units of data larger than its
+intrinsic block size, a number of weaknesses can be introduced, depending on
+the mode of operation which is chosen for the block cipher.  For example, if
+two identical ciphertext blocks are present in different locations in a file,
+this may be used to determine the plaintext.  If we can find two identical
+blocks of ciphertext when cipher block chaining (CBC) is used, then we know
+that:
+
+    P[ i ] = d( C[ i ] ) ^ C[ i-1 ]
+    P[ j ] = d( C[ j ] ) ^ C[ j-1 ]
+
+where C is the ciphertext, P is the plaintext, and e() and d() are encryption
+and decryption respectively.  Now if C[ i ] = C[ j ], then d( C[ i ] ) =
+d( C[ j ] ), which cancel out when xor'd so that:
+
+    P[ i ] ^ C[ i-1 ] = P[ j ] ^ C[ j-1 ]
+
+or:
+
+     P[ j ] = P[ i ] ^ C[ i-1 ] ^ C[ j-1 ]
+
+Knowing C[ i ] and C[ j ] we can determine P[ i ] and P[ j ], and knowing
+either P[ i ] or P[ j ] we can determine the other.
+
+Something similar holds when cipher feedback (CFB) mode is used, except that
+now the decryption operation is:
+
+    P[ i ] = e( C[ i-1 ] ) ^ C[ i ]
+    P[ j ] = e( C[ j-1 ] ) ^ C[ j ]
+
+Now if C[ i ] = C[ j ] then e( C[ i ] ) = e( C[ j ] ) (recall that in CFB mode
+the block cipher is only ever used for encryption), so that they again cancel
+out, so:
+
+    P[ i ] ^ e( C[ i-1 ] ) = P[ j ] ^ e( C[ j-1 ] )
+
+or:
+
+    P[ i ] = P[ j ] ^ e( C[ i-1 ] ) ^ e( C[ j-1 ] )
+
+In general this problem is of little consequence since the probability of
+finding two equal blocks of ciphertext when using a 160-bit block cipher on a
+dataset of any practical size is negligible.  More esoteric modes of operation
+such as plaintext feedback (PFB) and ones whose acronyms have more letters than
+Welsh place names tend to have their own special problems and aren't considered
+here.
+
+The problem does become serious, however, in the case of sector-level
+encryption, where the initialization vector cannot be varied.  Although the IV
+may be unique for each sector, it remains constant unless special measures such
+as reserving extra storage for sector IV's which are updated with each sector
+write are taken.  If a sector is read from disk, a small change made to part of
+it (for example changing a word in a text file), and the sector written out to
+disk again, several unchanged ciphertext/plaintext pairs will be present,
+allowing the above attack to be applied.  Running a program such as a disk
+defragmenter will rewrite a large number of sectors while leaving the IV
+unchanged, allowing an opponent access to large quantities of XOR'd plaintext
+blocks simply by recording the disk contents before and after the
+defragmentation process.  Normally this problem would be avoided by using a
+different IV for each encrypted message, but most disk systems don't have the
+room to store an entire sectors worth of data as well as the IV needed to
+en/decrypt it.
+
+An additional disadvantage of the CFB encryption mode is that the data in the
+last block of a dataset may be altered by an attacker to give different
+plaintext without it affecting the rest of the block since the altered
+ciphertext in the last block never enters the feedback loop.  This type of
+attack requires that an opponent possess at least two copies of the ciphertext,
+and that they differ only in the contents of the last block.  In this case the
+last ciphertext block from one copy can be subsituted for the last ciphertext
+block in the other copy, allowing a subtle form of message modification attack.
+In fact in combination with the previously mentioned weakness of CFB, an
+attacker can determine the XOR of the plaintexts in the last block and
+substitute an arbitrary piece of "encrypted" plaintext to replace the existing
+data.
+
+There are several approaches to tackling this problem.  The most simplistic one
+is to permute the plaintext in a key-dependant manner before encryption and
+after decryption.  This solution is unsatisfactory as it simply shuffles the
+data around without necessarily affecting any particular plaintext or
+ciphertext block.  The desired goal of a change in any part of the plaintext
+affecting the entire dataset is not achieved.
+
+A better solution is to encrypt data twice, once from front to back and then
+from back to front[1].  The front-to-back pass propagates any dependencies to
+the back of the dataset, and the back-to-front pass propagates dependencies
+back to the front again.  In this way a single change in any part of the
+plaintext affects the entire dataset.  The disadvantage of this approach is
+that it at least halves the speed of the encryption, as all data must be
+encrypted twice. If the encryption is done in software, this may create an
+unacceptable loss of throughput.  Even with hardware assistance there is a
+noticeable slowdown, as no hardware implementations easily support backwards
+encryption, requiring the data to be reversed in software before the second
+pass is possible.
+
+The best solution is probably to use a word-wise scrambler polynomial like the
+one used in SHA.  With a block of plaintext P this is:
+
+    P[ i ] ^= P[ i-K1 ] ^ P[ i-K2 ]
+
+with suitable values for the constants K1 and K2.  If K2 is chosen to be 5 (the
+SHA block size in words) then the initial values of the 5 words (which can be
+thought of as as P[ -5 ]...P[ -1 ]) are simply the sectorIV.  The value of K1
+is arbitrary, SFS uses a value of 4.
+
+This technique is used by first setting the initial values of the 5 words to
+the sectorIV.  The scrambler function is then run over the entire data block,
+propagating all dependencies to the last 5 words in the block.  These last 5
+words are then used as the IV for the CFB encryption of the entire block.  In
+this way the encryption IV depends on all the bits in the block, and the
+scrambling does a moderately good job of breaking up statistical patterns in
+the plaintext.  No information is lost, so no randomness in the sectorIV is
+misplaced.
+
+This also provides resistance to the selective-modification attack which allows
+an attacker to change selected bits in the last block of a CFB-encrypted
+dataset without damage.  By destroying the IV used in the CFB encryption, the
+first block is completely corrupted, which is unlikely to go unnoticed.
+
+To decrypt a dataset encrypted in this manner, the first 5 words of ciphertext
+are shifted into the feedback path, and the remainder of the dataset is
+decrypted in the standard manner.  The last 5 decrypted words are then used as
+the IV to decrypt the first encrypted block.  Finally, the scrambler is run
+over the recovered plaintext to undo the changes made during the encryption
+scrambling.
+
+The overall en/decryption process used by SFS, in the case of 512-byte sectors
+and 32-bit words (so that each sector contains 128 words), is:
+
+    Encryption:
+
+        using sectorIV[ 0 ]...sectorIV[ 4 ] as the scrambler IV
+            scramble data[ 0 ]...data[ 127 ]
+        using data[ 127-5 ]...data[ 127-1 ] as the encryption IV
+            encrypt data[ 0 ]...data[ 127 ]
+
+    Decryption:
+
+        using data[ 0 ]...data[ 4 ] as the encryption IV
+            decrypt data[ 5 ]...data[ 127 ]
+        using data[ 127-5 ]...data[ 127-1 ] as the encryption IV
+            decrypt data[ 0 ]...data[ 4 ]
+        using sectorIV[ 0 ]...sectorIV[ 4 ] as the scrambler IV
+            scramble data[ 0 ]...data[ 127 ]
+
+where the scrambling operation is:
+
+        data[ i ] ^= data[ i-4 ] ^ data[ i-5 ]
+
+as outlined above.  Note that the i-4 and i-5 th values referred to here are
+the original, scrambled values, not the descrambled values.  The easiest way to
+implement this is to cache the last 5 scrambled values and cyclically overwrite
+them as each word in the data buffer is processed.
+
+Footnote [1]:  To be precise, you need some sort of feedback from the end of
+               a block on the first encryption pass to the start of the block
+               on the next encryption pass.  A block can be encrypted forwards
+               twice as long as the IV is wrapped around back to the start of
+               the block for the second encryption pass.
+
+
+A Discussion of the MDC Encryption Algorithm[1]
+
+(A word on notation:  The notation {0,1}^k is used to mean the set of all bit
+strings of length k, and {0,1}* means the set of all bit strings, including the
+empty string.  Any message can be viewed as a bit string by means of a suitable
+encoding.)
+
+The encryption method used by SFS is somewhat unusual.  In some respects it is
+similar to Merkle's "Meta Method" for obtaining cryptosystems.  The method
+relies on the existence of secure one-way hash functions.  A hash function is a
+function that takes as input an arbitrary number of bits and produces a
+fixed-sized output called the "message digest".  In other words, hash functions
+have the form
+
+    h : {0,1}* --> {0,1}^k              for some fixed k,
+
+and the hash of a message M is defined to be h( M ).  A secure one-way hash
+function is a hash function with the following properties:
+
+    1. For each message M, it is easy to compute h( M ),
+
+    2. Given M, it is computationally infeasible to compute M' with
+       h( M ) = h( M' ) (secure against forgery), and
+
+    3. It is computationally infeasible to compute M and M' with
+       h( M ) = h( M' ) (secure against collisions).
+
+(For a good, although rather technical discussion of hash functions, or indeed
+cryptography in general, see "Contemporary Cryptology. The Science of
+Information Integrity" edited by Gustavus Simmons, IEEE Press, 1992 (ISBN
+0-87942-277-7)).
+
+The terms "easy to compute" and "infeasible to compute" can be made precise,
+but we'll settle for this informal terminology anyway.  Roughly, "easy to
+compute" means that it will take a tolerable amount of time to compute the
+answer, even on a rather small machine; "infeasible to compute" means that it
+should take eons to find out a particular result, even when using millions of
+computers of the fastest conceivable technology in parallel.
+
+Examples of hash functions include the MD2, MD4, and MD5 hash functions,
+developed by Ron Rivest of RSA Data Security, Inc., which have been (at least
+in the case of MD4 and MD5) placed in the public domain, and the Secure Hash
+Standard SHS, developed by NIST (with significant input from the NSA).  The
+existence of secure one-way hash functions has not been proved, although there
+exist some strong candidates, including MD5 and SHS.
+
+The reference implementations of the above hashing functions include one
+interesting aspect which makes it possible to use them as encryption functions.
+Since the hashing of a very large amount of data in one sweep is not desirable
+(because all the data would have to be in memory at the time of hashing), most
+hashing algorithms allow you to hash data incrementally.  This is made possible
+by augmenting the definition of a hash function to include the state of the
+last hashing operation.  In other words, a hash function now has the form
+
+    h : {0,1}^k x {0,1}* --> {0,1}^k,
+
+where the first argument is the previous hash value, and the hash of a message
+M = ( M1, M2, ..., Mn ) is defined to be
+
+    h( h( ...( h( h0, M1 ), M2 ), ... ), Mn ).
+
+(The value of all the h evaluations must not change if the message is broken up
+into blocks of different length, but all of the previously mentioned hash
+functions have that property).  Here, h0 is a fixed, known initial value that
+is used in all hashing calculations.
+
+This is not the way "real" hash functions behave, but it is close enough.  For
+example, the MD5 hashing function has "initialization", "updating", and
+"finalization" parts, where the finalization part appends the number of hashed
+bytes to the message, hashes one final time, and returns the final hash value.
+This means that the hashing "context" must include the number of bytes hashed
+so far, without it being a part of the hash value.  The hash function can be
+said to have "memory".
+
+If we assume that h is a secure one-way hashing function, we can now use such
+an h as a scrambling device.  For example, if we set E( M ) = h( h0, M ) for
+every message M, M will not be recoverable from E( M ), because h is secure by
+definition.  Another method would be to supply M to any standard MSDOS or UNIX
+utility and use the resulting error message as the ciphertext.  (Remember, a
+computer is a device for turning input into error messages).  However, there
+are still two problems to be solved before we can use hash functions as
+encryption functions:
+
+    1. The scrambling process is not controlled by a key, and
+
+    2. The scrambling process is not invertible, so there is no way to
+       decrypt the ciphertext.
+
+Both problems can be solved by interchanging the roles of hash and data and by
+using CFB mode in the encryption process.  In other words, let K be an
+arbitrarily long key, let M = ( M1, ..., Mn ) be a message, broken up in chunks
+of k bits, let IV be an initialization vector, and set
+
+    C1 = M1 xor h( IV, K )
+    Ci = Mi xor h( C( i-1 ), K )        for 1 < i <= n.
+
+This is sent to the recipient, who easily recovers the plaintext by
+
+    P1 = C1 xor h( IV, K )
+    Pi = Ci xor h( C( i-1 ), K )        for 1 < i <= n,
+
+since we have
+
+    P1 = ( M1 xor h( IV, K ) ) xor h( IV, K )
+       = M1 xor ( h( IV, K ) xor h( IV,K ) )    because xor is associative,
+       = M1 xor 0,                      because x xor x = 0,
+       = M1,                            because x xor 0 = x,
+
+and similarly for the Pi's.  This method of encryption also offers more
+security than using ECB mode, assuming that this were possible with hash
+functions, since the plaintext is diffused over the entire ciphertext,
+destroying plaintext statistics, and thus foiling straightforward ciphertext
+correlation attacks.
+
+This method can clearly be used for any hash function which can hash
+incrementally.  Thus, it is a "Meta Method" for turning hash functions into
+encryption functions.  This is called the Message Digest Cipher (MDC) method of
+encryption.  Specific instances of the method have the name of the hash
+function added as a suffix.  For example, the MDC method applied to the MD5
+hash function would be referred to as MDC/MD5.  SFS uses MDC/SHS.
+
+Footnote [1]: This analysis was contributed by Stephan Neuhaus,
+              <neuhaus@informatik.uni-kl.de>
+
+
+Deletion of SFS Volumes
+
+Truly deleting data from magnetic media is very difficult.  The problem lies in
+the fact that when data is written to the medium, the write head sets the
+polarity of most, but not all, of the magnetic domains.  This is partially due
+to the inability of the writing device to write in exactly the same location
+each time, and partially due to the variations in media sensitivity and field
+strength over time and among devices.
+
+In general terms, when a one is written to disk, the media records a one, and
+when a zero is written, the media records a zero.  However the actual effect is
+closer to obtaining something like 0.95 when a zero is overwritten with a one,
+and 1.05 when a one is overwritten with a one.  Normal disk circuitry is set up
+so that both these values are read as ones, but using specialized circuitry it
+is possible to work out what previous `layers' contained (in fact on some
+systems it may be possible to recover previous data with a simple software
+modification to the hardware control code).
+
+This problem is further complicated by the fact that the heads might not pass
+exactly over the same track position when data is rewritten, leaving a trace of
+the old data still intact.  Current-generation drives reduce this problem
+somewhat as track and linear densities have now become so high that the
+traditional optical methods of extracting information from the disk platters
+has become much more difficult, and in some cases impossible, as the linear bit
+cell is below the optical diffraction limit for visible light.  While some data
+patterns can still be discerned, recognizing others would be limited to some
+subset of patterns.
+
+Despite this small respite, when all the above factors are combined it turns
+out that each track on a piece of media contains an image of everything ever
+written to it, but that the contribution from each `layer' gets progressively
+smaller the further back it was made.  Using the same signal-processing
+technology which is used to clean up satellite images, low-level recorded
+speech, and other data, it is possible to recover previous data with a
+remarkable degree of accuracy back to a level limited only by the sensitivity
+of the equipment and the amount of expertise of the organisation attempting the
+recovery.  Intelligence organisations have a *lot* of expertise in this field.
+
+The basic concept behind the overwriting scheme used by SFS is to flip each
+magnetic domain on the disk back and forth as much as possible (this is the
+basic idea behind degaussing - magnetic media are limited in their ability to
+store high-frequency oscillations, so we try to flip the bits as rapidly as
+possible).  This means that the disk head should be run at the highest possible
+frequency, and the same pattern should not be written twice in a row.  If the
+data was encoded directly, that would mean a an alternating pattern of ones and
+zeroes.  However, disks always use a NRZI encoding scheme in which a 1 bit
+signifies an inversion, making the desired pattern a series of one bits.  This
+leads to a further complication as all disks use some form of run-length
+limited (RLL) encoding, so that the adjacent ones won't be written.  This
+encoding is used so that transitions aren't placed too closely together, or too
+far apart, which would mean the drive would lose track of where it was in the
+data.
+
+The basic limitation on disks is the proximity of 1 bits.  Floppies (which are
+a more primitive form of the technology used in hard disks) like to keep the 1
+bits 4us apart.  However they can't be kept too far apart or the read clock
+loses synchronisation.  This "too far" figure depends a lot on the technology
+in the drive, it doesn't depend on the magnetic media much (unlike the "too
+close" figure, which depends a lot on the media involved).  The first
+single-density encoding wrote one user data bit, then one "1" clock bit, taking
+a total of 8us.  This was called FM, since a 1 bit was encoded as two
+transitions (1 wavelength) per 8 us, while a 0 bit was encoded as one
+transition (1/2 wavelength).
+
+Then it was discovered that it was possible to have two 0 bits between adjacent
+1s.  The resulting encoding of 4 bits into 5 was called group code recording
+(GCR) which was (0,2) RLL.  This allowed 4 user data bits to be written in
+5 * 4us = 20 us, for an effective time per user bit of 5 us, which was a big
+improvement over 8 us.
+
+But GCR encoding was somewhat complex.  A different approach was taken in
+modified FM (MFM), which suppressed the 1 clock bit except between adjacent
+0's.  Thus, 0000 turned into 0(1)0(1)0(1)0 (where the ()s are the inserted
+clock bits), 1111 turned into 1(0)1(0)1(0)1, and 1010 turned into
+1(0)0(0)1(0)0.  The maximum time between 1 bits was now three 0 bits.  However,
+there was at least one 0 bit, so it became possible to clock the bits at
+2us/bit and not have more than one 1 bit every 4us.  This achieved one user bit
+per 4 us, a result which was better than GCR and obtainable with simpler
+circuitry.  As can be seen, the effective data rate depends on the bit rate
+(which has been 4 us, 4 us and 2 us in these examples) and the encoding rate, a
+measure of the encoding efficiency. The encoding rates have been 1/2, 4/5 and
+1/2.
+
+There is a (2,7) RLL code with rate 1/2, meaning that 1 user bit goes to 2
+encoded bits (although the mapping involves multi-bit groups and is somewhat
+complex), but there are always at least two 0 bits between 1 bits, so 1 bits
+happen at most every 3 bit times.  This allows the clock to be reduced to
+1.3333 us (this 2/1.33333 = 6/4 = 3/2 is the source of the added capacity gain
+of RLL hard drive controllers over equivalent MFM controllers).  The time per
+user bit is now 2.6666 = 2 2/3 us.
+
+However, the faster clock is finicky.  It is also possible to use a (1,7) RLL
+encoding.  Since this is (1,x), the clock rate is 2 us/bit, but the encoding
+efficiency improves from 1/2 to 2/3.  This allows 2 effective user bits per 6
+us, or 3 us per user bit.  For hard drives, it is easier to increase the clock
+rate by an extra 9/8 than to fiddle with a clock 50% faster, so this is very
+popular with more recent disk drives.
+
+The three most common RLL codes are (1,3) RLL (usually known as MFM), (2,7) RLL
+(the original "RLL" format), and (1,7) RLL (which is popular in newer drives).
+The origins of these codes are explained in more details below.  Fortunately,
+each of these three have commonly-used encoding tables.  A knowledge of these
+tables can be used to design overwrite patterns with lots of transitions after
+being encoded with whatever encoding technique the drive uses.
+
+For MFM, the patterns to write to produce this are 0000 and 1111.  So a couple
+of rounds of this should be included in the overwrite pattern. MFM drives are
+the oldest, lowest-density drives around (this is especially true for the
+very-low-density floppy drives).  As such, they're the easiest to recover data
+from with modern equipment and we need to take the most care with them.
+
+For (1,7) RLL, the patterns to write are 0011 and 1100, or 0x33 and 0xCC when
+expressed as bytes.  To provide some security against bit misalignment, the
+values 0x99 and 0x66 should be included as well (although drive manufacturers
+like to keep things byte-aligned, so this sort of bit misalignment is unlikely
+to happen).
+
+For (2,7) RLL drives, three patterns are necessary, and the problem of byte
+endianness question rears its head.  The previous two cases are not
+significantly affected by shifting the bytes around, but this one is.
+Fortunately, thanks to the strong influence of IBM mainframe drives, everything
+seems to be uniformly big-endian within bytes (that is, the most significant
+bit is written to the disk first).
+
+For (2,7) RLL using the standard tables:
+
+  10   -> 0100
+  11   -> 1000
+  000  -> 00100
+  010  -> 100100
+  011  -> 001000
+  0010 -> 00100100
+  0011 -> 00001000
+
+the bit patterns 100100100..., 010010010... and 001001001... will encode into
+the maximum-frequency encoded strings 010010010010... (0x49, 0x24, 0x92),
+100100100100... (0x92, 0x49, 0x24), and 001001001001.... (0x24, 0x92, 0x49).
+Writing all three of these patterns will cover all the bases.
+
+For the latest crop of high-density drives which use methods like Partial-
+Response Maximum-Likelihood (PRML) methods which may be roughly equated to the
+trellis encoding done by V.32 modems in that it is effective but
+computationally expansive)m all we can do is write a variety of random
+patterns, because the processing inside the drive is too complex to
+second-guess.  Fortunately, these drives push the limits of the magnetic media
+much more than the old MFM drives ever did by encoding data with much smaller
+magnetic domains, closer to the physical capacity of the magnetic media.  If
+these drives require sophisticated signal processing just to read the most
+recently written data, reading overwritten layers is also correspondingly more
+difficult.  A good scrubbing with random data will do about as well as can be
+expected.
+
+To deal with all these types of drives in one overwrite pattern, SFS uses the
+following sequence of 30 consecutive writes to erase data:
+
+   1.  Random
+   2.  0000..., MFM encoded to 01010101...
+   3.  1111..., MFM encoded to 10101010...
+   4.  Random
+   5.  010010..., (2,7) RLL encoded to 100100100100...
+   6.  100100..., (2,7) RLL encoded to 010010010010...
+   7.  001001..., (2,7) RLL encoded to 001001001001...
+   8.  Random
+   9.  00110011..., (1,7) RLL encoded to 010101010101...
+  10.  11001100..., (1,7) RLL encoded to 101010101010...
+  11.  01100110..., (1,7) misaligned RLL encoded to 010101010101...
+  12.  10011001..., (1,7) misaligned RLL encoded to 101010101010...
+  13.  Random
+  14.  1111..., MFM encoded to 10101010...
+  15.  0000..., MFM encoded to 01010101...
+  16.  Random
+  17.  001001..., (2,7) RLL encoded to 001001001001...
+  18.  100100..., (2,7) RLL encoded to 010010010010...
+  19.  010010..., (2,7) RLL encoded to 100100100100...
+  20.  Random
+  21.  11001100..., (1,7) RLL encoded to 101010101010...
+  22.  00110011..., (1,7) RLL encoded to 010101010101...
+  23.  10011001..., (1,7) misaligned RLL encoded to 101010101010...
+  24.  01100110..., (1,7) misaligned RLL encoded to 010101010101...
+  25.  Random
+  26.  0000..., MFM encoded to 01010101...
+  27.  1111..., MFM encoded to 10101010...
+  28.  Random
+  29.  Random
+  30.  Random
+
+All patterns are repeated twice, once in each order, and MFM is repeated three
+times, because MFM drives are generally the lowest density, and thus
+particularly easy to examine.
+
+There is a commonly-held belief that there is a US government standard for
+declassifying magnetic media which involves overwriting it three times.  In
+fact this method is for declassifying core (computer memory) rather than
+magnetic media.  The government standard for declassifying magnetic media
+probably involves concentrated acid, furnaces, belt sanders, or any combination
+of the above.  This is necessary not only because data recovery from the actual
+tracks itself may (with some effort) be possible, but because of factors like
+like intelligent drives which keep so-called "alternative cylinders" on a disk
+free to allow dynamic re-allocation of data to one of these tracks in case a
+disk block develops errors.  The original block is no longer accessible through
+any sort of normal access mechanism, and the data on it can't be destroyed
+without going through some unusual contortions which tend to be highly
+hardware-dependant.  Similarly, drives conforming to some of the more
+high-level protocols such as SCSI are relatively free to interpret commands
+sent to them in whichever way they choose (as long as they still conform to the
+SCSI specification).  Thus some drives, if sent a SCSI Format Media command may
+return immediately without performing any action, may simply perform a read
+test on the entire disk (the most common option), or may actually write data to
+the disk[1].  This is rather common among newer drives which can't directly be
+low-level formatted, unlike older ST-412 and ST-506 MFM or RLL drives.  For
+example trying to format an IDE drive generally has little effect - a low-level
+format generally isn't possible, and the standard DOS `format' command simply
+writes a boot record, FAT, and root directory, and returns.
+
+Therefore if the data is very sensitive and is stored on floppy disk, it can
+best be destroyed by removing the media from the disk liner and burning it.
+Disks are relatively cheap, and can easily be replaced.  Permanently destroying
+data on fixed disks is less simple, but the multiple-overwrite option used by
+SFS at least makes it quite challenging (and expensive) to recover any
+information.
+
+Footnote [1]:  Again it may be possible to bypass this using highly hardware-
+               specific methods.  For example Quantum SCSI drives manufactured
+               a few years ago could be forced to write data to disk during a
+               format by changing the sector filler byte before the format
+               command was issued.

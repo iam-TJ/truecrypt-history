@@ -1,0 +1,167 @@
+Overview
+--------
+
+The SFS 1.0 distribution contains the following files:
+
+    readme.txt          This file
+    sfs.sys             SFS device driver (386 version)
+    sfs486.sys          SFS device driver (486+ version)
+    sfs.sig             \ PGP digital signature for
+    sfs486.sig          / sfs.sys and sfs486.sys
+    mksfs.exe           \
+    mountsfs.exe         | SFS support
+    chsfs.exe            | software
+    adminsfs.exe [1]    /
+    mksfs.sig           \
+    mountsfs.sig         | PGP digital signatures
+    chsfs.sig            | for support software
+    adminsfs.sig [1]     /
+    winsfs.exe          \
+    winsfs.pif           | SFS for Windows
+    winsfs.sig          /
+    sfs1.doc            \
+    sfs2.doc             | SFS documentation
+    sfs3.doc            /
+    sfs.ps              Large DOT "SFS Encrypted Data" warning sign
+    sfs_disk.ps [2]     Many smaller versions of the above for floppy disks
+
+                        [1] Currently available only to a few alpha-testers as
+                            some details are still being worked out
+                        [2] Some laser printers won't print this file, possibly
+                            due to the amount of detail contained in it.
+
+Getting Started
+---------------
+
+Before you start, you should read the docs (or at least the first few sections
+which outline how to use the software).  I know that all software says this,
+but with SFS it's especially important.  You should read the section on
+incompatibilities in the docs before you start. Among other things this will
+show you how to run the built-in self-tests to check disk access and make sure
+SFS won't run into any problems with disk I/O.  I recommend *very strongly*
+that you run mksfs with the -c option before you create an encrypted SFS
+partition on your hard drive.
+
+In addition, before you rush into using SFS, if you plan to use it on a hard
+drive I would recommend backing up anything which you regard as valuable.
+People all over the world have been using it for some months without problems,
+but I really can't 100% guarantee that it'll work perfectly on your system -
+there are just too many strange pieces of hardware and software out there for
+that.
+
+OK, now you can go ahead and install it.  I'll wait here.
+
+
+Possible Problems
+-----------------
+
+Finished?  OK.... here are some (rather obscure) possible problems which have
+been reported to date:
+
+There has been a report of problems with a 1.2 GB SCSI drive using an Adaptec
+controller with the sector remapping for > 1 Gb drives enabled and running in
+conjunction with LILO and Linux 0.99 patchlevel 14 or above.  After running
+mksfs, LILO reported some sort of error.  The problem was corrected by
+re-installing LILO.  Despite various tests, no clue as to what's happening here
+has appeared.  A hex dump of the sectors after the SFS partition indicate that
+the following partition was untouched by mksfs, so it may be some interaction
+between LILO and the partition table (maybe LILO writes to the partition table
+like the OS/2 boot manager does, and doesn't expect to find an SFS partition.
+Who knows...).
+
+There seems to be some bizarre interaction with version 6.30 of the Logitech
+Mouse driver and SFS.  In particular, mounting and unmounting SFS volumes can
+disable the mouse driver and even cause it to not recognise the mouse any more.
+With nothing but the mouse driver loaded, simply running mksfs or mountsfs is
+enough to lose the mouse under DOS.  These problems have occurred when using a
+serial mouse and QEMM 7.03 with stealth enabled, but don't seem to occur with a
+bus mouse and no QEMM.  There are no interrupt conflicts, and neither the mouse
+driver nor SFS are overwriting each others data or code areas.  The mouse can
+be reenabled simply by running Windows.  In addition, running mountsfs in a
+secondary shell spawned from Windows (not just a secondary shell under DOS, but
+specifically one where Windows is acting as an intermediary) seems to isolate
+the mouse from mountsfs, and the mouse isn't deactivated.  If anyone has any
+ideas on this, I'd like to hear from them.
+
+There has been a report of some sort of odd problem with an older version of
+QEMM when EMS suport is turned on.  The driver reports an internal consistency
+check failure indicating that something has corrupted it, and the problem goes
+away without EMS support enabled.  Possibly a newer version of QEMM will fix
+this, or it may be that the problem doesn't involve QEMM but is due to some
+other software behaving unusually while under the influence of QEMM with EMS.
+
+If the FAT on an encrypted disk is edited to create artificial bad sectors, and
+the volume subsequently fixed with Norton Disk Doctor, and NDD finds a problem
+on the disk, the SFS volume will be unmounted after NDD has finished fixing the
+problem.  The only way to do this is with a write to the control channel on the
+SFS driver using a special packet format, so how NDD manages to perform this
+unmount is a puzzle.
+
+SFS has been tested with (among other things) Smartdrv 4.0, Windoze 3.1, QEMM
+7.0 (with Stealth), SHARE, Stacker 3.1, and assorted disk utilities such as
+Norton DiskEdit, Norton Disk Doctor, Microsoft and Norton Antivirus (with
+innoculation), Norton Speed Disk, and various others, and has so far not caused
+any problems.  If anyone tests it with any other system software, please let me
+know.
+
+If you need to contact me, you can mail me at pgut1@cs.aukuni.ac.nz.  If you
+need to contact me really badly, try calling +64 9 426-5097 from 9am-2am NZT
+(that's about GMT+13).  I'll leave you to fight with the modem for possession
+of the phone line.
+
+Finally, if anyone ever writes about SFS anywhere (apart from on the internet),
+I'd appreciate hearing about it, since it's annoying sometimes getting
+third-hand references to articles I'll never be able to find which were
+published months beforehand.
+
+Peter.
+
+
+Revision levels
+---------------
+
+0.90 First public beta
+
+0.97 Second public beta
+
+     Explict support for DRDOS large partitions (which differ from MSDOS
+        large partitions).
+     More internal consistency checks in mksfs, mountsfs, chsfs.
+     Major rewrite of SFS library internals.
+     Use of XMS buffering or more conservative write strategy to fix occasional
+        copy-on-write buffering problem in newer versions of DOS.
+     Support for multiple mounted SFS volumes
+     Support for batch mode operation for WinSFS
+     WinSFS - Windows front-end for SFS
+     Fixed (hopefully) problem with race condition of hotkey or timed unmount
+        during disk access
+     Improved overwriting of SFS driver data on unmount
+     Better self-checking in the SFS driver during operation
+
+1.00 Public release
+
+     Fixed some problems in the technical section of the docs
+     Added the Quick-start section to the docs
+     Precomputed the encryption key in SFS.SYS and made assorted other small
+        changes.  This makes the driver run approximately 1.7 times faster, and
+        gives a decrease of about 1K in the overall size.
+     Even better data overwriting based on an analysis of disk data encoding
+        schemes.
+     Added a quick introduction to encryption issues section to the docs.
+     mksfs now asks for a new disk when encrypting floppies, like the DOS
+        format program.
+
+
+Footnote
+--------
+
+Conversation (via email) with a beta-tester:
+
+  Him: The disk mount failed
+  Me : How
+  Him: It just gives garbage
+  Me : What sort of garbage, precisely
+  Him: Well, it mounts OK but then I get garbage
+  Me : I'm writing the definitive work on garbage, so I want you to tell me
+       everything you experience.  And remember, this is for posterity, so be
+       precise.

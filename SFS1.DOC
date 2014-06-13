@@ -1,0 +1,2135 @@
+
+                        sSSSSs      FFFFFFFFFF    sSSSSs
+                       sSSSSSSs     FFFFFFFFF    sSSSSSSs
+                      sSs     sS    FF          sSs     sS
+                      SS            FF          SS
+                      sSs           FF          sSs
+                       sSSSSSSs     FFFFFFF      sSSSSSSs
+                             sSs    FF                 sSs
+                              SS    FF                  SS
+                      Ss      Ss    FF          Ss      Ss
+                       sSSSSSSs     FF           sSSSSSSs
+                        sSSSSs      FF            sSSSSs
+
+
+                       S e c u r e   F i l e S y s t e m
+
+
+                     Copyright Peter C.Gutmann  1993, 1994
+
+
+      "The right to privacy... is the most comprehensive of rights and the
+       right most valued by civilized man"
+                          - Justice Louis Brandeis, US Supreme Court, 1928
+
+
+Ever since Julius Caesar used the cipher which now bears his name to try to
+hide his military dispatches from prying eyes, people have been working on
+various means to keep their confidential information private.  Over the years,
+the art of cryptography (that is, of scrambling information so only those in
+possession of the correct password can unscramble it) has progressed from
+simple pencil-and-paper systems to more sophisticated schemes involving complex
+electromechanical devices and eventually computers.  The means of breaking
+these schemes has progressed on a similar level.  Today, with the
+ever-increasing amount of information stored on computers, good cryptography is
+needed more than ever before.
+
+There are two main areas in which privacy protection of data is required:
+
+  - Protection of bulk data stored on disk or tape.
+  - Protection of messages sent to others.
+
+SFS is intended to solve the problem of protecting bulk data stored on disk.
+The protection of electronic messages is best solved by software packages such
+as PGP (available on sites the world over) or various versions of PEM
+(currently available mainly in the US, although non-US versions are beginning
+to appear).
+
+SFS has the following features:
+
+  - The current implementation runs as a standard DOS device driver, and
+    therefore works with plain old DOS as well as other software such as
+    Windows, QEMM, Share, disk cacheing software, Stacker, and so on.
+
+  - Up to five encrypted volumes can be accessed at any one time, chosen from
+    a selection of as many volumes as there is storage for.
+
+  - Volumes can be quickly unmounted with a user-defined hotkey, or
+    automatically unmounted after a certain amount of time.  They can also be
+    converted back to unencrypted volumes or have their contents destroyed if
+    required.
+
+  - The encryption algorithms used have been selected to be free from any
+    patent restrictions, and the software itself is not covered by US export
+    restrictions as it was developed entirely outside the US (although once a
+    copy is sent into the US it can't be re-exported).
+
+  - SFS complies with a number of national and international data encryption
+    standards, among them ANSI X3.106, Federal Information Processing Standard
+    (FIPS) 180, Australian Standard 2805.5.2, ISO 10116:1991 and ISO
+    10126-2:1991, and is on nodding terms with a several other relevant
+    standards.
+
+  - The documentation includes fairly in-depth analyses of various security
+    aspects of the software, as well as complete design and programming details
+    necessary to both create SFS-compatible software and to verify the
+    algorithms used in SFS.
+
+  - The encryption system provides reasonable performance.  One tester has
+    reported a throughput of 250 K/s for the basic version of SFS, and 260 K/s
+    for the 486+ version on his 486 system, when copying a file with the DOS
+    copy command from one location on an SFS volume to another.  Throughput on
+    a vanilla 386 system was reported at around 160 K/s.
+
+Although the use of DOS is described throughout this document, SFS is not
+limited to any particular operating environment, and can be used to contain
+virtually any type of filesystem.  In the future an SFS driver for OS/2 HPFS
+filesystems may be developed, and there have been discussions on creating a
+Linux SFS driver for Unix machines.  A 68000 version of SFS is also reported to
+be under development.
+
+
+Overview
+--------
+
+This document is organised to give step-by-step instructions on setting up the
+SFS driver, creating an encrypted volume, and using the encrypted volume to
+store information securely.  The first three sections cover each of these
+steps, with a special quick-start section preceding them giving a rapid
+introduction to getting an encrypted disk volume up and running.  The next
+sections provide extra details on topics such as password management,
+incompatibility problems, other encryption software, and the politics of
+cryptography and privacy.  The final sections provide an in-depth security
+analysis, technical information on the SFS driver and data formats for those
+wishing to write SFS-compatible software or wanting to check the security of
+the software for themselves.
+
+The document is divided into sections as follows:
+
+  Terminology
+        An explanation of some of the technical terms use in this
+        document.  Experienced users can skip this section.
+  Quick Start
+        A quick overview of the use of SFS which summarizes the
+        next three sections for people in a hurry
+  Loading the SFS Driver
+        How to set up the SFS driver needed to handle encrypted
+        volumes.
+  Creating an SFS Volume
+        How to prepare an SFS encrypted volume for use.
+  Mounting an SFS Volume
+        How to mount a previously prepared SFS encrypted volume
+        so the operating system can use it.
+  Advanced SFS Driver Options
+        Various advanced options such as how to mount SFS volumes
+        at startup so that they are automatically available when the
+        system is booted, and customzing the SFS driver user
+        interface.
+  Changing the Characteristics of an SFS Volume
+        How to change various characteristics of an SFS volume such
+        as the password, volume name, and serial number, and how to
+        delete SFS volumes.
+  Sharing SFS Volumes Between Multiple Users
+        How to securely share a single encrypted SFS volume between
+        multiple users.
+  Creating Compressed SFS Volumes
+        How to create a compressed drive inside a normal SFS volume
+  WinSFS - Using SFS with Windows
+        An overview of the Windows version of SFS.
+  Command Summary
+        A summary of the commands available with the various SFS
+        programs.
+  Incompatibilities
+        Comments on unusual hardware and software combinations which
+        may create problems for SFS.
+  Authentication of SFS Software
+        How to verify that the SFS distribution you have is indeed the
+        real thing.
+  Applications
+        Various applications and uses for SFS.
+  The Care and Feeding of Passwords
+        Details on how to chose and handle a password to protect
+        an SFS volume.
+  Other Software
+        An overview of other available security software and the
+        weakness and problems present in it.
+  Data Security
+        Various issues in data security which should be taken into
+        consideration when using SFS and similar encryption software.
+  Politics
+        A discussion on the politics of cryptography, the right to
+        privacy, and some of the reasons why SFS was written.
+  Security Analysis
+        An analysis of the level of security offered by SFS and
+        some possible attacks on it.
+  An Introduction to Encryption Systems
+        A brief introduction to encryption systems with an emphasis
+        on the methods used in SFS.
+  Design Details
+        Various in-depth design details not covered in the security
+        analysis.
+  SFS Disk Volume Layout
+        Details on the disk layout used by SFS.
+  Interfacing with SFS
+        How to control the SFS driver through software.
+  Interfacing with mountsfs
+        How to control the mountsfs program from external software such
+        as graphical front-ends.
+  Selected Source Code
+        A walkthrough of selected portions of the source code to allow
+        verification and help implementors.
+  Future Work
+        Various enhancements which may be incorporated into future
+        versions of SFS.
+  Recommended Reading
+        A short list of recommended reading material for those wishing
+        to know more about the design of SFS and encryption in general.
+  Using SFS
+        Conditions and terms for use of SFS.
+  Credits
+  Warranty
+
+
+Terminology
+-----------
+
+Throughout this document a number of specialised terms are used to describe the
+operation of the SFS encryption software.  This section provides a brief
+explanation of the terms used.  Experienced users can skip this material and go
+directly to the "Loading the SFS Driver" section below.
+
+  Disk volume:
+
+    An individual logical disk drive, volume, partition, or filesystem.  A
+    single physical hard disk can (and usually does) contain more than one
+    volume on it.  Under DOS, each of these volumes is assigned its own drive
+    letter and appears as a separate drive, even though they all reside on the
+    same physical hard disk.  Thus a system might have a single 128MB hard disk
+    which contains four 32MB volumes accessed by the drive letters C:, D:, E:,
+    and F:.
+
+    This system is rather confusing and dates back fifteen to twenty years. SFS
+    refers to these volumes by name rather than an arbitrary letter, so that
+    the volumes might be called "Encrypted data", "Personal correspondence", or
+    "Accounts receivable, March 1993".  Unfortunately once SFS has set up the
+    volume for DOS to access, it's back to the old F: to identify your data.
+
+  Password, key:
+
+    The password or encryption key is used to protect the data on an encrypted
+    volume.  Despite its name, a password can (and should) be more than just a
+    single word.  The SFS software will accept up to 100 characters of
+    password, so that perhaps the term "passphrase" would be more appropriate.
+
+    For maximum security, each volume should be protected by its own unique
+    password.  The SFS software takes the password for a volume, adds extra
+    keying information to it, and converts the result into an encryption key
+    which is used to encrypt and decrypt data on a given volume.  Great care
+    should be taken in the choice of passwords and in keeping them secret. More
+    details on this are given in the section "The Care and Feeding of
+    Passwords" below.
+
+  Device driver:
+
+    A device driver is a special piece of software which is used by the
+    operating system to access hardware which it wasn't designed to.  Unless
+    the device driver is loaded, the operating system generally won't recognise
+    that a piece of hardware even exists.  Even the computer's monitor,
+    keyboard, and disk drives are accessed through device drivers, although
+    their presence is hidden by the operating system.
+
+    An example of a visible device driver is the one used to handle a mouse.
+    Networked disk drives may be accessed through a device driver.  RAM disks
+    are implemented as device drivers.  CDROM drives are handled via a device
+    driver.  Finally, encrypted SFS volumes are accessed through a device
+    driver.
+
+  Mount point:
+
+    The locations provided by the SFS driver for mounting encrypted volumes -
+    in other words the number of encrypted volumes which can be accessed by the
+    driver at any one time.  By default the driver provides one mount point,
+    which means one encrypted volume can be accessed through it at any given
+    time.  The exact number of mount points can be specified when the SFS
+    driver is loaded.
+
+
+Quick Start
+-----------
+
+This section contains a condensed version of the next three sections and allows
+a quick start for SFS.  Although it is recommended that the full text be read,
+it should be possible to install and use a minimal SFS setup using only the
+quick-start information.
+
+Initially, the SFS driver must be loaded by adding an entry for it to the
+CONFIG.SYS file.  For example if the SFS.SYS driver was located in the DOS
+directory on drive C: the following line should be added to the CONFIG.SYS
+file:
+
+  DEVICE=C:\DOS\SFS.SYS
+
+Alternatively, the DEVICEHIGH option can be used to load the driver into high
+memory under those versions of DOS which support it.  The system should now be
+rebooted to make sure the driver is installed.
+
+The use of the SFS driver is covered in more detail in the sections "Loading
+the SFS Driver" and "Advanced SFS Driver Options" below.
+
+Once the driver is loaded, the encrypted volume can be created with the "mksfs"
+program.  This is run with the letter of the drive to encrypt, and the name of
+the encrypted volume preceded by the "vol=" option.  For example to encrypt the
+E: drive to create a volume with the name "Encrypted disk", the command would
+be:
+
+  mksfs "vol=Encrypted volume" e:
+
+Note that that "vol=..." option is quoted, as the volume name contains a space.
+Volume names without a space don't need to be quoted.
+
+mksfs will confirm that the given drive is indeed the one to be encrypted, and
+then ask for an encryption password of between 10 and 100 characters.  After
+asking for the password a second time to confirm it, it will encrypt the drive.
+This will take a few minutes, and the program will display a progress bar as
+the encryption takes place.
+
+There are a great many options and special safety checks built into mksfs to
+ensure no data is accidentally destroyed, and it is recommended that the
+section "Creating an SFS Volume" is at least glanced through to provide an
+overview of the functioning of mksfs before it is run.
+
+Once the encrypted volume has been created, it can be mounted with the
+"mountsfs" utility.  Mounting a volume makes it available to DOS as a normal
+disk volume, with all encryption being done transparently by the SFS driver.
+Like mksfs, mountsfs must be told the encrypted volume's name in order to
+access it.  The full name doesn't need to be used, mountsfs will accept any
+part of the name in upper or lower case.  Using the name from the previous
+example, the command to mount the volume would be:
+
+  mountsfs vol=encrypt
+
+mountsfs will match the partial name "encrypt" with the full volume name
+"Encrypted volume", ask for the encryption password for the volume, and mount
+it.  The volume will now be accessible as a normal DOS drive.
+
+More details on the use of mountsfs are contained in the section "Mounting an
+SFS Volume" below.  Other methods for mounting volumes are given in the section
+"Advanced SFS Driver Options" below.
+
+
+Loading the SFS Driver
+----------------------
+
+The SFS device driver SFS.SYS or SFS486.SYS can be loaded in the usual manner
+by specifying it in the CONFIG.SYS file:
+
+  DEVICE=[drive][path]SFS.SYS [/SILENT] [/UNITS=n] [/DRDOS] [/NOXMS]
+                              [/PROMPT=xxxx] [/READONLY] [/READWRITE]
+                              [/AUTOMOUNT=nnnn] [/HOTKEY=xxxx] [/TIMEOUT=nn]
+
+It can also be loaded high under those versions of DOS which support this with:
+
+  DEVICEHIGH=[drive][path]SFS.SYS [/SILENT] [/UNITS=n] [/DRDOS] [/NOXMS]
+                                  [/PROMPT=xxxx] [/READONLY] [/READWRITE]
+                                  [/AUTOMOUNT=nnnn] [/HOTKEY=xxxx] [/TIMEOUT=nn]
+
+The SFS486.SYS driver is loaded the same way.  This driver contains code for
+'486 and higher processors, and is about 400 bytes smaller and 5 percent
+faster.
+
+The arguments to SFS are not case-sensitive, and can be given in upper or lower
+case.  For example if your copy of the SFS.SYS driver was located in the DOS
+directory on drive C: you would add the following line to your CONFIG.SYS file:
+
+  DEVICE=C:\DOS\SFS.SYS
+
+The driver will only work on systems with an 80386 or higher processor.  This
+is because the en/decryption code (over 10,000 lines of assembly language) has
+to have a 32-bit processor to run on.  Virtually all recent PC's fulfil these
+requirements, and a 16-bit version would both be much slower and require about
+three times as much code space to run in[1].
+
+If an attempt is made to load SFS.SYS on a machine which doesn't have a 32-bit
+CPU, the message:
+
+  Error: Processor must be 386 or higher
+
+will be displayed and SFS will de-install itself.
+
+The drive currently recognises ten options, /AUTOMOUNT, /DRDOS, /HOTKEY,
+/NOXMS, /PROMPT, /READONLY, /READWRITE, /SILENT, /TIMEOUT, and /UNITS:
+
+  The /AUTOMOUNT option is used to mount SFS volumes automatically at startup,
+  and is explained in more detail in the section "Advanced SFS Driver Options"
+  below.
+
+  The /DRDOS option is needed when running the SFS driver under Novell/DR-DOS
+  instead of MS-DOS or an MS-DOS derivative.  This tells the driver to use
+  Novell/Digital Researches way of accessing disk volumes larger than 32MB,
+  which is slightly different from the method other versions of DOS use.
+
+  The /HOTKEY option is used to specify the quick-unmount hotkey which can be
+  used to instantly unmount all currently mounted SFS volumes, and is explained
+  in more detail in the sections "Mounting an SFS Volume" and "Advanced SFS
+  Driver Options" below.
+
+  The /NOXMS option is used to disable SFS buffering data in extended memory.
+  By default SFS will allocate a 64K write buffer to speed up disk writes.  If
+  no extended memory is available or if the /NOXMS option is used, SFS will
+  print:
+
+    Warning: No XMS buffers available, slow writes will be used
+
+  The driver will then switch to using slow disk writes which are about half as
+  fast as normal reads and writes.  These are necessary to fix buffering
+  problems in MSDOS 6.x and some disk utilities.  If an extended memory buffer
+  is used, the slow writes aren't necessary.
+
+  The /PROMPT option is used in conjunction with the /AUTOMOUNT option to
+  display a user-defined prompt when asking for the password for the SFS volume
+  to be automounted, and is explained in more detail in the section "Advanced
+  SFS Driver Options" below.
+
+  The /READONLY and /READWRITE options are used in conjunction with the
+  /AUTOMOUNT option to disable write access to the volumes being mounted.
+  The /READONLY option disables write access to all following automounted
+  volumes; the /READWRITE option enables write access to all following
+  automounted volumes.  The default setting is to allow read and write access
+  to all volumes.  More details on read-only access to SFS volumes is given in
+  the section "Mounting an SFS Volume" below.
+
+  The /SILENT option can be used to suppress the printing of the start-up
+  message.
+
+  The /TIMEOUT option is used to specify the time in minutes after which SFS
+  volumes are automatically unmounted if they haven't been accessed during that
+  time, and is explained in more detail in the sections "Mounting an SFS
+  Volume" and "Advanced SFS Driver Options" below.
+
+  The /UNITS=n option specifies the number of mount points (or number of disk
+  volumes) the driver will provide, where `n' is the number of units and can
+  range from 1 to 5.  Each drive mount point requires 384 bytes of extra memory
+  storage.  By default, the driver allocates storage for one mount point.
+
+As an example, to suppress the printing of the start-up message and to specify
+that the driver should handle up to three encrypted volumes, the previously
+given example for loading the driver would be changed to:
+
+  DEVICE=C:\DOS\SFS.SYS /SILENT /UNITS=3
+
+The number of mount points can range from 1 to 5.  If a number outside this
+range is specified, the message:
+
+  Error: Invalid number of units specified
+
+will be displayed and SFS will de-install itself.  Finally, if an invalid
+option is given (such as a misspelled or badly-formatted parameter) SFS will
+again de-install itself after displaying:
+
+  Error: Unknown parameter specified
+
+All the remaining driver options are covered in the section "Advanced SFS
+Driver Options" below.
+
+If the driver installs successfully and unless the /SILENT option is used it
+will, after displaying a general message showing that it has been installed,
+indicate which which drive will be used as the encrypted one.  For example if
+the encrypted drive is made available as E:, the message would be:
+
+  Encrypted volume will be mounted as drive E:
+
+This indicates that once an encrypted volume is mounted, DOS will access it as
+drive E:  If more than one mount point is specified, the range of drives which
+will be made available is shown, so that if the option /UNITS=3 were used the
+message would be:
+
+  Encrypted volumes will be mounted as drives E: - G:
+
+When installed SFS consumes around 6.5K of memory, most of which is encryption
+code.
+
+Footnote [1]: There have been calls for 286 versions of SFS from countries in
+              which 386+ machines are still difficult to obtain.  There may
+              eventually be a 16-bit version, although at the current rate by
+              the time it's written everyone will be using Pentiums anyway.
+
+
+Creating an SFS Volume
+----------------------
+
+Before SFS can use an encrypted volume, it must be converted from a normal DOS
+volume to an encrypted SFS one.  The program which performs this task is mksfs,
+(Make Secure Filesystem) and is very loosely patterned after the Unix mkfs
+utility.  mksfs takes a standard DOS volume (which may be either freshly
+formatted or may already contain files) and turns in into an encrypted SFS
+volume.  The encryption process is non-destructive, so in general no data will
+be lost.  The only case in which a data loss could occur is if there is a power
+cut while the volume is being encrypted (this means that power to the system is
+removed as the disk is being written to, which would cause problems under
+virtually any software).  If the data being encrypted is extremely valuable or
+there is a risk of a power cut occurring, the volume should be backed up
+completely before being encrypted.  This should only be necessary in
+exceptional circumstances, however.
+
+If used on a fixed disk, mksfs will encrypt an entire disk partition rather
+than individual files.  This is necessary because an SFS partition may contain
+a DOS filesystem, or an OS/2 one, or a HPFS one, or an NTFS one, or any one of
+a dozen other possible filesystems.  However, many people have only a single
+large partition on their hard drive which is used entirely for DOS, which would
+require a complete backup of the partition before the FDISK utility can be used
+to create two smaller partitions, followed by a restore of the backup to one of
+the new partitions.  This problem can be avoided by using one of several
+programs which will split an existing partition into two smaller partitions.
+One of them is FIPS, currently at version 0.9 and available as
+garbo.uwasa.fi:/pc/diskutil/fips09.zip and from all garbo mirror sites.  This
+allows a partition to be nondestructively split into two smaller partitions,
+one of which can be used as an SFS volume.
+
+If the hardware or software setup you are using is somewhat unusual (for
+example you have drives which are compressed with DoubleSpace or Stacker, or
+you have unusual drive hardware which needs special software like SpeedStor to
+manage it), you should read the section "Incompatibilities" below.  In
+addition, mksfs may, during normal operation, trigger a number of virus
+detectors which monitor access to certain critical disk and memory areas which
+software would not normally access.  Finally, mksfs will check whether it is
+being run under Quarterdeck's DesqView or Microsoft Windows, as it should in
+general not be run while DesqView, Windows, or some other multitasking software
+is running.  Since mksfs takes an entire disk volume and encrypts it sector by
+sector, any other software which tries to simultaneously access the volume
+while mksfs is running will come to grief.  If mksfs detects that it is being
+run under either DesqView or Windows, it will display a warning message with an
+option to quit and re-run it from DOS only.  Only if there is no chance that
+any other program will access the disk volume being encrypted is it safe to run
+mksfs under multitasking software.
+
+The mksfs program is run in the following manner:
+
+  mksfs [-c] [-o] [-t] [serial=<serial number>] [multiuser]
+        [vol=<volume name>] <drive>
+
+Since all arguments are named, they can be given in any order.  The order shown
+here is merely an example.
+
+The -c and -t options are present to allow integrity checks on the SFS
+encryption code and the operation of mksfs itself, and are covered in more
+detail in the sections "Incompatibilities" and "Security Analysis"
+respectively.
+
+The drive specifies the DOS drive letter for which the SFS volume will be
+created.  For example to create an SFS volume on the disk currently in the A:
+drive the command would be:
+
+  mksfs a:
+
+It is recommended that each SFS volume be given a unique name for
+identification purposes.  Although it is possible to create an unnamed (or
+anonymous) volume, this practice is strongly discouraged for fixed disks which
+may contain multiple SFS volumes.  If the volumes are anonymous then the user
+has no easy way of informing SFS which one it should be accessing apart from
+using the automount option with the SFS driver, which is explained in more
+detail in the section "Advanced SFS Driver Options" below.  mksfs will check
+for the creation of anonyous volumes on fixed disks and print a warning if this
+occurs.
+
+The volume name can be specified with the `vol=' option.  For example if the
+volume name "Secure disk volume" was to be created on drive D: then the create
+command would be:
+
+  mksfs "vol=Secure disk volume" d:
+
+Note that the volume name, which in this case contains spaces, has been quoted.
+This is necessary since DOS will break apart the name into separate words if it
+contains spaces.  If the name is a single word, no quoting is necessary.
+
+The volume serial number can be specified with the `serial=' option.  If no
+serial number is provided, mksfs will generate one itself.  In normal usage
+there is no need for the user to specify a volume serial number, but the option
+has been provided just in case.  If a serial number is specified, it should be
+a unique value since SFS may use it to distinguish between different volumes.
+If mksfs is left to chose the serial number it will automagically use a unique
+value.  The serial number is independant of the volume automount identifier,
+which is explained in the section "Advanced SFS Driver Options" below.
+
+A special option for removable disks only is the `-o' option.  This is
+necessary because some (mostly extinct) variants of DOS treat removable disks
+in a peculiar manner.  If mksfs cannot determine the disk format due to the
+disk having been created with a strange DOS version, it will exit with the
+error message[1]:
+
+  Error: Disk information reports unusual disk format, won't process disk.
+         Use `-o' option to override this check.
+
+If mksfs is re-run, this time with the `-o' option, it will perform a check on
+secondary format information stored on the disk.  If the information checks
+out, it will report (assuming the disk being checked is a 1.2 MB 5 1/4" disk):
+
+  Warning: Disk information reports unusual disk format, performing check on
+           secondary information...
+
+           Disk appears to be in 1.2 MB DSHD format
+
+If mksfs still can't be sure of the disk format, it will exit with an error
+message.
+
+If multiple-user access to the volume is required, the `multiuser' option
+should be set to enable this.  This option records extra information which may
+later be edited with the adminsfs program to allow other users access to the
+volume.  More details on multiuser SFS volumes are given in the section
+"Sharing SFS Volumes Between Multiple Users" below.
+
+If the `multiuser' option is used, mksfs will warn:
+
+  Warning: You have specified that access to the volume for multiple users
+           be enabled.  Are you sure you want to do this [y/n]
+
+At this point a response of 'Y' will continue and a response of 'N' will exit
+the program.
+
+The program will now check to see whether the chosen volume name and serial
+number conflict with the name and serial number of an existing volume.  If both
+the volume name and serial number conflict, this will make future manipulation
+of the volume difficult as there is no real way to uniquely identify it, and
+mksfs will exit with the error message:
+
+  Error: An SFS volume with the given name and serial number already exists.
+         Either a new name or serial number should be chosen, or no serial
+         number at all specified, in which case mksfs will chose a unique
+         serial number for the new volume.
+
+An alternative possibility, if the conflicting volume is on removable media, is
+to temporarily remove the disk from the drive until mksfs has been run.
+However this still creates the problem of accessing the volume in the future.
+A much easier solution is to either chose unique volume names or to let mksfs
+chose the volume serial number - it will always chose a number which doesn't
+conflict with an existing volume serial number.
+
+If only the volume name clashes, mksfs will warn:
+
+  Warning: An SFS volume with the given name already exists.  Are you sure
+           you want to create a new volume with the same name [y/n]
+
+At this point a response of 'Y' will continue and a response of 'N' will exit
+the program.
+
+If an anonymous volume is to be created on a fixed disk, mksfs will warn:
+
+    Warning: You have not specified a name for the volume to be created.
+             This may make future manipulation of the volume difficult.  Are
+             you sure you want to create an anonymous volume [y/n]
+
+At this point a response of 'Y' will continue and a response of 'N' will exit
+the program.
+
+If it's really necessary, these checks can be overridden by using chsfs to
+change the volume's characteristics after it has been created.  Unlike mksfs,
+chsfs is not particular about what the volume name and serial number are set
+to, as it assumes that the user knows what they are doing when they use chsfs.
+
+Once the preliminary processing has been done, mksfs will, in the case of a
+fixed disk, scan it for the volume which is to be converted into an SFS one.
+Along the way it will perform various checks on the volume to make sure the
+volume is accessible, is a standard DOS volume, is not marked as being bootable
+(booting off an encrypted volume is somewhat difficult), is not the one
+currently in use, and can be converted.  Note that the bootability check may
+not be completely foolproof, as some disk managers perform strange tricks with
+bootable volumes to handle multiple operating systems on the same disk.
+
+mksfs performs an additional check if the volume specified for encryption is
+the C: drive, which is usually the primary DOS drive and which should under
+normal circumstances never be encrypted.  If an attempt to encrypt the C: drive
+is made, mksfs will prompt:
+
+  Warning: You have chosen to encrypt the C: drive which is usually the
+           primary DOS drive.  Are you sure you want to do this [y/n]
+
+At this point a response of 'Y' will continue and a response of 'N' will exit
+the program.
+
+If the various checks succeed, it will display an informational message giving
+details on the volume to be created.  An example of the information displayed
+for a fixed drive might be:
+
+  Volume `Encrypted disk' will be created on fixed drive D:
+  This drive has a capacity of 75.2 MB and is labelled `Accounting'
+  Are you sure you want to encrypt this volume [y/n]
+
+If the volume is the one to be converted, a response of 'Y' will proceed with
+the creation of the SFS volume, and a response of 'N' will abort the operation.
+
+It is vitally important that the information printed by mksfs is checked before
+a `yes' response is given.  Due to the vast array of unusual disk systems,
+networked drives, compressed disks, device drivers, and other strangeness, it
+could be that mksfs and DOS disagree on which volume is to be encrypted.  In
+addition it is very easy to specify the wrong drive accidentally when running
+mksfs.  Although this situation will hopefully never occur, it is nevertheless
+a good idea to stop for a second and make absolutely certain that the volume
+being encrypted is the one which should be encrypted.  Treat mksfs the same way
+you would treat the DOS `format' command.
+
+For a floppy drive the information is slightly different:
+
+  Volume `Secure backup' will be created on 1.44MB disk in drive B:
+
+No yes/no prompt is given for removable disks since they contain far less
+information than fixed disk volumes, and will typically be freshly-formatted,
+blank diskettes.  This allows the quick bulk encryption of quantities of
+diskettes without having to answer the same question for each disk.  If
+necessary the encryption operation can be aborted at the password-entry stage.
+
+mksfs will now check the volume to be encrypted for bad sectors.  Most newer
+fixed disks will automatically map out bad sectors (if there are any) and use
+sectors from spare space on the disk instead (all this is invisible to the
+system software and is done internally by the drive itself).  However older
+drives may still explicitly report bad sectors.  The presence of bad sectors on
+a disk may also indicate a virus infection, or may be used by certain kinds of
+(hopefully extinct) copy-protection schemes.  If mksfs finds any of these, it
+will print an advisory message:
+
+  Warning: This disk contains bad sectors which won't be encrypted by SFS.
+
+If the disk being encrypted is a floppy disk, mksfs will print a message
+recommending that another disk be used instead.  If the data is valuable enough
+to need encryption, then it should really be stored on an error-free medium
+rather than its loss risked with defective floppy disks:
+
+  Warning: This disk contains bad sectors.  Use of damaged disks is not
+           recommended as recovery of encrypted data could be difficult if
+           further bad sectors develop.  Are you sure you want to encrypt
+           this disk [y/n]
+
+At this point a response of 'Y' will continue and a response of 'N' will exit
+the program.  SFS will encrypt the disk, but will skip any sectors marked as
+being defective.  A similar message will be printed if any bad sectors are
+found during the encryption process.  Note that if further bad sectors develop
+on the floppy disk, recovery of the data stored in the bad sectors will be
+difficult.  It is strongly recommended that only error-free floppy disks be
+used with SFS[2].
+
+Once the disk checks have been completed, mksfs will ask for a password to use
+when encrypting the volume.  This password can range in length from 10 to 100
+characters, and should be made up of a complete phrase or sentence rather than
+just a single word (mksfs will complain if it thinks the password is of an
+insecure form and request that another one be used).  More details on choosing
+a password are given in the section "The Care and Feeding of Password" below.
+
+When asking for the password, mksfs will prompt:
+
+  Please enter password (10...100 characters), [ESC] to quit:
+
+At this point a password in the given length range can be entered.  For
+security reasons the password is not echoed to the screen.  Any typing errors
+when entering the password can be corrected with the backspace key.  The Esc
+key can be used to quit.  The software will check for a password longer than
+the maximum of 100 characters or an attempt to backspace past the start of the
+password, and beep a warning when either of these conditions occur.
+
+Once the password has been entered, mksfs will again prompt:
+
+  Please reenter password to confirm, [ESC] to quit:
+
+This confirmation is necessary to eliminate any problems with hitting an
+incorrect key when entering the password the first time.  Note that every
+single letter, space, and punctuation mark in the password is critical.  Making
+a single mistake (getting a letter mixed up, typing a letter in upper case
+instead of lower case, or missing a punctuation mark) will completely change
+the encryption key.  For this reason, mksfs performs a double-check on the
+password to ensure it really is the correct one.
+
+Once the password has been entered, there is a brief delay while mksfs performs
+the complex processing needed to turn it into a key suitable for the encryption
+system.  When this has been completed, mksfs will begin converting the disk.
+As it processes the volume, it prints a progress bar going from 0% complete to
+100% complete.  The conversion process will take a few minutes on most disks,
+and is somewhat slower than a standard disk formatting procedure which only
+writes a very small amount of data to the start of the disk, whereas mksfs has
+to read, encrypt, and write the entire disk volume.
+
+As the conversion progresses, the progress bar will gradually fill up until it
+shows that the conversion is complete.  Once this has finished, mksfs will exit
+with the message:
+
+  Encrypted volume created.  You can now mount it with the `mountsfs' command.
+
+If the volume is created on a fixed disk, additional information about mounting
+it using the SFS driver's automount option will be given (this is explained in
+more detail in the section "Advanced SFS Driver Options" below).
+
+If the volume is created on a removable disk, mksfs will ask:
+
+  Do you wish to encrypt another disk [y/n]
+
+At this point a response of 'Y' will continue and a response of 'N' will exit
+the program.  If the 'Y' response is chosen, mksfs will prompt:
+
+  Please insert a new disk in the drive and press a key when ready
+
+and then repeat the disk encryption cycle.
+
+The encrypted volume is now ready to be used.  If it was created on a fixed
+disk, DOS will still think the volume it was created on is a DOS one rather
+than an encrypted SFS one.  It is strongly recommended that you reboot your
+machine at this point to clear any memories of the old volume from the system,
+as any attempt by DOS to access the encrypted volume as a normal DOS volume
+will cause it to become very confused.
+
+Footnote [1]: Certain boot sector viruses also change the information needed by
+              mksfs, so mksfs printing this message may be an indication of a
+              viral infection.
+
+Footnote [2]: Although SFS has been written so that if any data does become
+              corrupted, only the corrupted sector and no others will be lost,
+              if data which is important to the operating system (such as a
+              directory or a file allocation table) is lost, the damage may
+              (just as it would for a normal non-encrypted disk) be more
+              significant.  In this case any standard disk-recovery program can
+              be used to make repairs, just as with a normal DOS disk.
+
+
+Mounting an SFS Volume
+----------------------
+
+When the operating system first starts, it finds all disk volumes it can
+recognise and automatically makes them available as different logical drive
+letters.  However it can't do anything with encrypted SFS volumes, and so they
+are effectively invisible to it.  In order to make them visible, they must be
+mounted using the mountsfs program.  Operating systems such as Unix mount
+filesystems in this manner (in fact the general feel of mountsfs is vaguely
+like the Unix filesystem mount utility).
+
+When the operating system mounts a disk volume, it uses the rather primitive
+mechanism of assigning a letter of the alphabet to it and referring to the
+drive by that letter.  SFS, on the other hand, refers to the volume by the name
+given when the volume is created with mksfs rather than some arbitrary letter
+(although volumes in removable drives can optionally be referred to by the
+driver letter).  Therefore if the encrypted volume was named "Secure disk
+volume", mountsfs would mount "Secure disk volume" rather than, say, "E:".  A
+fixed disk can contain multiple encrypted volumes, mountsfs will chose the
+appropriate one based on the volume name.  When searching for volumes to mount,
+all fixed disks are checked before any removable disks are checked, so that a
+volume with a given name on a fixed disk would override a volume of the same
+name on a floppy disk.
+
+Once the volume is mounted, DOS will still refer to it by a drive letter as
+usual (there's only so much the SFS software can do), so that "Secure disk
+volume" will, after being mounted with SFS, appear as another DOS drive, for
+example E:.
+
+With removable disks it may sometimes be desirable to refer to the volume by
+the drive it is in rather than the volume name.  In this case the drive can be
+specified by the usual letters A: or B:, and the actual volume name will be
+ignored.  As before, once the disk is mounted with SFS, the volume will appear
+as another DOS drive, for example E:.  If the disk is accessed as E:, the SFS
+driver will encrypt and decrypt data being written and read.  If the disk is
+accessed as A: or B:, DOS will either display garbage or report a general
+failure error as it doesn't understand the encrypted disk. The A: or B: drive
+letters can still be used to read normal DOS disks, however.  In order to
+prevent accidental overwriting of disks, the SFS driver will automatically
+unmount a volume if it detects that a disk change has occurred since the last
+time it accessed the drive.
+
+The mountsfs program is run in the following manner:
+
+  mountsfs [+r] [+rw] [status] [unmount] [info] [information]
+           [hotkey=<Ctrl>-<Alt>-<LeftShift>-<RightShift>-<letter>]
+           [timeout=<timeout>] [user=<user name>] [userfile=<user file>]
+           [vol=<volume name>] [<drive>]
+
+Since all arguments are named, they can be given in any order.  The order shown
+here is merely an example.
+
+When mountsfs starts, it first performs a number of checks on the internal
+status of the SFS driver.  If it can't find the driver, it will exit with the
+error message:
+
+    Error: Cannot find SFS driver
+
+This is due to the driver not being loaded, either because it is not being
+specified in the CONFIG.SYS file, or because there was some error when it was
+loaded and it de-installed itself.  More information on this is given in the
+section "Loading the SFS Driver" above.
+
+If the driver reports a general internal consistency check failure or a
+consistency check failure for a particular drive unit (in this case drive F:),
+mountsfs will exit with the error message:
+
+    Error: SFS driver internal consistency check failed
+
+or:
+
+    Error: SFS driver consistency check failed for unit F:
+
+A driver check failure is generally due to some other program or system
+software corrupting the driver's internal state.  Possible solutions to this
+problem can be found in the section "Incompatibilities" below.
+
+In general the volume name would be specified with the `vol=' option.  For
+example if the volume name was "Secure disk volume" then the mount command
+would be:
+
+  mountsfs vol=secure
+
+The volume name can be in upper or lower case, and the full name need not be
+given.  mountsfs will match whatever part of the name is given to any SFS
+volume names found until it finds a match.  The SFS volumes are checked in the
+same order as they are displayed with the `info' or `information' command.
+
+Alternatively, if the SFS volume to be accessed is on a removable disk, the
+drive letter can be specified instead of the volume name.  For example if the
+disk drive was A: then the command to mount whatever volume it contained would
+be:
+
+  mountsfs a:
+
+mountsfs will not mount volumes using the automount ID, as this is reserved for
+use with volumes mounted when the SFS driver is loaded.  More information on
+this is given in the section "Advanced SFS Driver Options" below.
+
+In order to find all available SFS volumes, the `info' option can be used.
+This will by default search the system for available SFS volumes and print a
+list of the volume name, creation date, size, and whether the volume is
+currently mounted. For example on a system with two SFS volumes the output from
+`mountsfs info' might be:
+
+    Date     Size   Type Mount status  Volume Name
+  -------- -------- ---- ------------- ----------------------------------------
+  01/11/93  Floppy  DOS    Unmounted   Data backup
+  06/09/93  10.0 MB DOS  Mounted as E: Personal financial records
+  12/04/93  42.5 MB DOS    Unmounted   Encrypted data disk
+
+This shows three SFS volumes, an unmounted volume in a floppy drive containing
+backup data, a smaller one on a fixed disk containing personal financial
+records which is currently mounted as drive E:, and a larger one containing
+general encrypted data which is currently unmounted.  Note that removable media
+is treated in a special manner and the exact disk size is indeterminate as the
+media may change at any time.  The volume creation date is formatted according
+to the country setting on the machine being used, so that the datestamp is
+day/month/year in Europe and related countries, month/day/year in the US and
+related countries, and year/month/day in Japan.  Both volumes shown here are
+DOS volumes, but future versions of SFS will support other volume types such as
+OS/2 HPFS, Windows NTFS, and Linux Unix ones.
+
+If more information is desired, the longer "information" form of the command
+can be used.  This will display extra information such as the volume serial
+number, the automount parameter (see the section "Advanced SFS Driver Options"
+below for more information), the volume filesystem type, whether multiuser
+volume access is possible, and the volume name character set, as well as the
+other information displayed by the usual `mountsfs info' command.  If, in the
+previous example, we had used `mountsfs information' instead of `mountsfs info'
+the output might have been:
+
+  Volume name  : Data backup
+  Volume date  : 01/11/93, 10:13:01  Volume serial number  : 1234
+  Volume size  : Removable media     Volume filesystem type: DOS
+  Mount status : Unmounted           No automount possible
+  Multiuser access : Disabled        Volume name char.set  : ISO 646/ASCII
+
+  Volume name  : Personal financial records
+  Volume date  : 06/09/93, 11:22:19  Volume serial number  : 177545
+  Volume size  : 10.0 MB             Volume filesystem type: DOS
+  Mount status : Mounted as E:       Automount ID          : 03A12F7B
+  Multiuser access : Disabled        Volume name char.set  : ISO 646/ASCII
+
+  Volume name  : Encrypted data disk
+  Volume date  : 12/04/93, 22:17:00  Volume serial number  : 69231461
+  Volume size  : 42.5 MB             Volume filesystem type: DOS
+  Mount status : Unmounted           Automount ID          : 42DD2536
+  Multiuser access : Enabled         Volume name char.set  : ISO 646/ASCII
+
+By default these two command will display information on all available volumes.
+If information on an individual volume is required, then the volumes' name or
+drive letter can be given in addition to the `info' or `information' option.
+To change the previous use of the `info' command to apply only to the volume
+named "Data backup", the command might be:
+
+  mountsfs info vol=backup
+
+and the output would be as follows:
+
+    Date     Size   Type Mount status  Volume Name
+  -------- -------- ---- ------------- ----------------------------------------
+  01/11/93  Floppy  DOS    Unmounted   Data backup
+
+The `status' option can be used to check whether any volumes are currently
+mounted.  As with the `info' and `informaton' options, by default information
+on all mounted SFS volumes is displayed.  If information on an individual
+volume is required, then the volumes' name or drive letter can be given in
+addition to the `status' option.  Thus the command:
+
+  mountsfs status
+
+will return a list of the status of the volumes on all mount points, as well as
+an indication of the current setting of the quick-unmount hotkey and
+auto-unmount time settings (the latter are explained in more detail below),
+whereas the command:
+
+  mountsfs status f:
+
+will return the above status information only on the volume currently mounted
+as F:.  An example of the output of the `status' command when run on the setup
+shown in the `info' command examples with a total of two mount points available
+might be:
+
+  SFS volume `Personal financial records' is mounted as drive E:
+  Drive F: has no volume mounted
+
+  The quick-unmount hotkey is set to `LeftShift-RightShift'.
+  The auto-unmount timer is deactivated.
+
+The `+r' and `+rw' options specify read and write access to the encrypted
+volume.  `+r' allows read-only access and `+rw' allows read and write access.
+The default is to allow read/write access.  Note that although mounting an SFS
+volume read-only will stop all standard software from writing to it, it may not
+stop some malicious programs such as viruses which have been specially written
+to attack the SFS driver itself, or which are created specifically to destroy
+disk data by bypassing the operating system and accessing the disk hardware
+or firmware directly.  The read-only option is provided mainly to stop any
+accidental overwriting of valuable data on encrypted volumes.
+
+Read-only access can also be specified when an SFS volume is auto-mounted.
+More details on this and on auto-mounting volumes are given in the section
+"Advanced SFS Driver Options" below.
+
+The read/write status of a volume can be changed once it has been mounted by
+running mountsfs with only the '+r' or '+rw' option.  This will change the
+read/write status of the currently mounted volume as appropriate.  For example
+to allow read/write access to the currently mounted SFS volume the command
+would be:
+
+  mountsfs +rw
+
+If the volume allows multiuser access, only the volume administrator can
+directly mount it in the manner described above.  Normal volume users must
+specify their user name with the `user=<username>' command in addition to the
+usual mount parameters in order to mount the volume[1].  The user name is the
+name under which access is granted by the system administrator.  Like the
+volume name, any portion of the user name can be given and mountsfs will match
+whatever part of the name is given to any user names until it finds a match.
+Users can also specify the name of the file to search for user access
+information using the `userfile=<user file>' command.
+
+For example if the volume in the previous example allowed multiuser access and
+one of the users granted access to the volume was "Henry Akely", he could mount
+it with the command:
+
+  mountsfs vol=secure user=henry
+
+If an attempt to mount a volume with no multiuser access capabilities is made,
+mountsfs will exit with the error message:
+
+  Error: This volume has multi-user access disabled
+
+If access information for the given user cannot be found in the user access
+file or files, the program will exit with an error message:
+
+  Error: Cannot find access information for user `henry'
+
+An individual users access rights to the volume, as set by the volume
+administrator, may override certain options specified in mountsfs.  More
+details on this, and on the operation of shared SFS volumes as a whole, are
+given in the section "Sharing SFS Volumes Between Multiple Users" below.
+
+If mountsfs is asked to mount a volume, it will first check to see whether
+there is room to mount it.  If all available mount points are already occupied,
+the program will print:
+
+  Error: All available drives are allocated - unmount an existing volume first
+
+and exit.  In this case either an existing volume must be unmounted to free up
+a mount point and allow the new volume to be mounted, or the number of mount
+points must be increased with the /UNITS command when the SFS driver is loaded.
+More details on this are given in the section "Loading the SFS Driver" above.
+
+If mountsfs is asked to mount a volume, it will search all available disks for
+the named volume (if the volume is accessed by name), or check the removable
+disk for the volume (if the volume is accessed by disk drive letter).  If the
+volume is already mounted, mountsfs will print:
+
+  Error: Encrypted volume is already mounted
+
+and exit.  Otherwise, it will print a summary of the volume giving the
+read/write status, the drive type, and the volume name and date if one exists:
+
+  Volume will be mounted read-only as fixed drive E:.
+  Encrypted volume is `Personal correspondence', created 12/08/93
+
+Then it will prompt for the encryption password:
+
+  Please enter password (10...100 characters), [ESC] to quit:
+
+At this point a password in the given length range can be entered.  For
+security reasons the password is not echoed to the screen.  Any typing errors
+when entering the password can be corrected with the backspace key.  The Esc
+key can be used to quit.  The software will check for a password longer than
+the maximum of 100 characters or an attempt to backspace past the start of the
+password, and beep a warning when either of these conditions occur.  Once the
+password has been entered, mountsfs will process it and reprogram the SFS
+device driver to reflect the change in status.
+
+If the disk being mounted is a removable one, mountsfs will check that the
+drive being used supports disk change checking.  This is necessary to ensure
+that the wrong disk isn't accidentally accessed by the driver.  If the disk is
+changed without first being unmounted, the SFS driver will automatically
+unmount it the next time an attempt is made to access it[2].  However if the
+drive doesn't support the disk change check (generally only rather old drives
+have this problem), this automatic unmount won't be possible, and mountsfs will
+warn:
+
+  Warning: The floppy drive this volume is mounted on does not support disk
+           change checking.  This means that great care must be taken to ensure
+           the existing volume is unmounted (using either the `mountsfs' utility
+           or the quick-unmount hotkey) when a new disk is inserted.
+
+If the drive does not support the disk change check, it is essential that the
+volume be unmounted when the disk is changed.  The easiest way to unmount a
+volume is through the quick-unmount hotkey, which is explained in more detail
+below.
+
+The `unmount' option is used to unmounts SFS volumes.  This is used to remove
+any access to volumes after any work which requires them has been completed, or
+to free up a mount point so a new volume can be mounted.  If a particular SFS
+volume is contained on a removable disk, it is a good idea to unmount the
+volume if the disk in the drive is changed, although mounting a new volume will
+automatically unmount the old volume.  The unmount operation can also be
+performed using a quick-unmount hotkey which the SFS driver checks for (see
+below).  Like the `status' and `information' command, the `unmount' command can
+either apply to individual mounted volumes which are specified by their drive
+letter, or to all volumes if no drive letter is given.
+
+Unmounting a volume also signals the SFS driver software to write all data
+still held in system buffers to disk and to erase any information it still
+holds in memory.  It is therefore good practice to always unmount volumes as
+soon as they are no longer in use in order to destroy any sensitive information
+which may still be held by the SFS driver or in a system buffer.  For example
+to unmount all currently mounted volumes the command would be:
+
+  mountsfs unmount
+
+To unmount the volume currently mounted as F: the command would be:
+
+  mountsfs unmount f:
+
+A faster way to unmount all volumes is to use the quick-unmount hotkey which
+the SFS driver checks for and accepts in place of the standard unmount command.
+This can be used both as a convenience to quickly and easily unmount all SFS
+volumes, or as a safety feature to allow encrypted volumes to be instantly
+unmounted if there is a danger of the data on them being compromised (this
+option is generally unavailable under Windows - see the section
+"Incompatibilities" below).
+
+If no hotkey is currently set (either from a previous use of the mountsfs
+command or through the use of the `HOTKEY=' option when the SFS driver is
+loaded), mountsfs will install a default quick-unmount hotkey which is a
+combination of the left and right shift keys.  On most keyboards these keys are
+fairly large and easy to reach during normal typing.  When both shift keys are
+pressed and released, all mounted SFS volumes will be unmounted as if a normal
+unmount command had been issued via mountsfs, and a single beep will sound to
+indicate that the unmount was successful.
+
+Occasionally this default hotkey combination may clash with other software, or
+it may be desirable to use another hotkey combination.  This can be set with
+the `hotkey=' option, which may be used to specify any combination of the left
+shift key, right shift key, control key, alt key, and a letter key[3].  The
+keys are specified in the following manner:
+
+    Alt key        = `alt'          Control key     = `ctrl'
+    Left shift key = `leftShift'    Right shift key = `rightShift'
+    Letter key     = `a'...`z'
+
+Key combinations should be separated by hyphens, `-'.  The key names are not
+case sensitive and can be given in upper or lower case, or a mixture of both.
+If an unknown key name is used or the key names are not separated with hyphens,
+mountsfs will complain:
+
+  Error: Bad quick-unmount hotkey format
+
+For example, to specify the use of the left shift and right shift keys as the
+quick-unmount hotkey (the usual default setting), the command used in the
+previous example would be changed to:
+
+  mountsfs hotkey=LeftShift-RightShift vol=secure
+
+To use the Control, Alt, and Z keys as the quick-unmount hotkey the command
+would be:
+
+  mountsfs hotkey=ctrl-alt-Z vol=secure
+
+The hotkey value can also be altered without mounting any volumes.  This will
+merely update the current hotkey without making any other changes.  For example
+to set the right Shift, Control, and I keys as the quick-unmount hotkey (a
+rather unwieldy combination), the command would be:
+
+  mountsfs hotkey=rightshift-CTRL-I
+
+Finally, the hotkey can also be specified when the SFS driver is loaded. More
+details on this are given in the section "Advanced SFS Driver Options" below.
+
+If the hotkey unmount is performed while the driver is accessing a volume, the
+disk access will complete before the volume is unmounted.
+
+The SFS driver can also automatically unmount volumes if they have not been
+accessed for a certain amount of time.  This option is useful if there is a
+chance that an interruption may call you away from a system with mounted SFS
+volumes allowing others access to the encrypted data, or can simply be used as
+a general safety precaution to automatically unmount the volumes after a
+sizeable period of inactivity (this option is unavailable under Windows - see
+the section "Incompatibilities" below).  However, care should be taken to allow
+a large enough safety margin for the timeout, as having a volume take itself
+offline five seconds before work is saved to it can be annoying.
+
+When volumes are mounted using mountsfs, the time until they are automatically
+unmounted can be set with the `timeout=' option, which is used to specify the
+delay in minutes until the unmount takes place.  By default, no auto-unmount
+timer is set.  For example, using the previous mount command but to have all
+volumes automatically unmounted after 15 minutes of inactivity the command
+would be:
+
+  mountsfs timeout=15 vol=secure
+
+The timeout period must be between 1 and 30,000 minutes (this means the upper
+timeout limit is around three weeks).  If a timeout value of less than 1 minute
+or greater than three weeks is given, mountsfs will exit with the error
+message:
+
+  Error: Timeout value must be between 1 and 30,000 minutes
+
+If no accesses are made to any volumes within the given time period, the
+volumes will be automatically unmounted.  Like the case when a hotkey unmount
+is made, a single beep will sound to indicate that the unmount has taken place.
+
+If the timed unmount is performed while the driver is accessing a volume, the
+disk access will complete before the volume is unmounted.
+
+Finally, if all is OK, mountsfs will print a short summary message for the
+action taken.  For example if the command given was one to unmount all volumes,
+with two volumes F: and G: of which only F: was currently mounted, the summary
+would be:
+
+  Volume F: has been unmounted
+  Volume G: is already unmounted
+
+Footnote [1]: Some versions of SFS will automatically know the users name when
+              a volume is mounted.  Unfortunately the DOS version isn't one of
+              these.
+
+Footnote [2]: The driver checks for a disk change when a disk read or write
+              attempt is made rather than whenever DOS performs a general disk
+              check, as DOS may perform up to half a dozen consecutive disk
+              checks before doing anything, which leads to a significant loss
+              in performance.
+
+Footnote [3]: The letter key is based on the US keyboard since the SFS driver
+              must check for keyboard scan codes rather than actual character
+              codes, which can differ slightly for some keyboards.
+
+
+Advanced SFS Driver Options
+---------------------------
+
+The SFS driver supports several advanced options which can be used to customize
+the operation of SFS.  These include the ability to mount SFS volumes
+automatically when the driver is loaded, and the ability to change the
+quick-unmount hotkey, the auto-unmount timeout, and the password prompt used
+when automounting volumes.
+
+
+Automounting SFS Volumes
+
+SFS volumes can be automatically mounted when the system is started up rather
+than having to be mounted through the mountsfs program.  This can be specified
+using the `/AUTOMOUNT=identification number' option when the SFS driver is
+loaded, in conjunction with the 8-digit volume identification number displayed
+by mksfs when the encrypted volume is created or by using the `mountsfs
+information' command.  The volume identifier is used to tell the SFS driver
+which volume to load.  If the volume allows multiuser access, only the volume
+administrator can automount it.  Normal volume users must follow the standard
+volume mount procedure using mountsfs.  The operation of shared SFS volumes is
+explained in more detail in the section "Sharing SFS Volumes Between Multiple
+Users" below.
+
+For example if mksfs displays the volume identifier `530A17FD' for a particular
+volume then the command to automount this volume would be:
+
+  DEVICE=SFS.SYS /AUTOMOUNT=530A17FD
+
+If an incorrect volume identifier is given, the driver will display
+
+  Error: Invalid automount ID, skipping automount
+
+and skip the automount procedure.  If the volume identifier is correct, the
+driver will locate the required volume on the disk and try to read in the
+information needed to process it.  If this information cannot be read or is
+incorrect, the driver will display:
+
+  Error: Invalid SFS volume information, skipping automount
+
+and skip the automount procedure.  If all is correct the driver will ask for
+the password exactly as mountsfs would:
+
+  Please enter password (10...100 characters), [ESC] to quit:
+
+At this point a password in the given length range can be entered.  For
+security reasons the password is not echoed to the screen.  Any typing errors
+when entering the password can be corrected with the backspace key.  The Esc
+key can be used to quit.  The software will check for a password longer than
+the maximum of 100 characters or an attempt to backspace past the start of the
+password, and beep a warning when either of these conditions occur.  Up to
+three attempts at entering a correct password are allowed before the automount
+is skipped.  If the Esc key is pressed the SFS driver will print:
+
+  Aborted at user request
+
+and skip the automount procedure.  Otherwise, once the password has been
+entered, the SFS driver will process it and, if an incorrect password is
+detected, will print:
+
+  Error: Incorrect password, skipping automount
+
+Otherwise the encrypted volume will be auto-mounted ready for use, with the
+drive letter being the next available DOS drive.  In general the automount
+procedure is the same as the one which mountsfs uses, except that the full
+functionality of mountsfs is not available during the automount.  Once the
+volume has been mounted and after the usual SFS installation message has been
+displayed, the driver will display the DOS drive on which the encrypted volume
+is mounted.  For example if the volume was available as drive G: the message
+would be:
+
+  Encrypted volume is now mounted as drive G:
+
+If multiple volumes are to be automounted then then automount ID's should be
+given in the order in which the mounts are to take place.  For example if a
+second SFS volume with the volume identifier `4850414B' were to be automounted
+then the previous example would change to:
+
+  DEVICE=SFS.SYS /AUTOMOUNT=530A17FD /AUTOMOUNT=4850414B
+
+As more volumes are mounted, the driver will automatically increase the mount
+point allocation until the maximum number of 5 mount points has been reached.
+If an attempt is made to automount more than 5 volumes, the driver will print:
+
+  Error: No more disk units available for automount
+
+and skip the automount procedure.
+
+
+Setting the Quick-Unmount Hotkey Value
+
+When a volume is mounted, the quick-unmount hotkey is by default set to a
+combination of the left and right shift keys.  However, like the mountsfs
+`hotkey=' option, the SFS driver supports user-defined hotkeys with the
+`/HOTKEY=quick-unmount hotkey' command.  This may be used to specify any
+combination of the left shift key, right shift key, control key, alt key, and a
+letter key, in the following manner:
+
+    Alt key        = `alt'          Control key     = `ctrl'
+    Left shift key = `leftShift'    Right shift key = `rightShift'
+    Letter key     = `a'...`z'
+
+Key combinations should be separated by hyphens, `-'.  The key names are not
+case sensitive and can be given in upper or lower case, or a mixture of both.
+If an unknown key name is used or the key names are not separated with hyphens,
+the SFS driver will complain:
+
+  Error: Bad quick-unmount hotkey format
+
+For example, to specify the use of the left shift and right shift keys as the
+quick-unmount hotkey (the usual default setting), the command used in the
+previous example would be changed to:
+
+  DEVICE=SFS.SYS /AUTOMOUNT=530A17FD /HOTKEY=LEFTSHIFT-RIGHTSHIFT
+
+To use the Control, Alt, and Z keys as the quick-unmount hotkey without
+automounting any volumes the command would be:
+
+  DEVICE=SFS.SYS /HOTKEY=CTRL-ALT-Z
+
+
+Changing the Automount Password Prompt
+
+In some environments it may be undesirable to alert others to the fact that
+disk encryption is being used.  Using the /SILENT option with the driver
+removes most indications of the presence of SFS, but if volumes are automounted
+the appearance of the password prompt may still give things away.  To correct
+this problem, the SFS driver supports user-definable prompts with the
+`/PROMPT=user-prompt' command.  This may be used to specify any single-word
+prompt, or, if the prompt is surrounded by quotation marks `"', any combination
+of characters until another `"' is encountered.  For example to make the SFS
+automount procedure appear like a network login, the previous automount example
+might be changed to:
+
+  DEVICE=SFS.SYS /SILENT /PROMPT=Login: /AUTOMOUNT=530A17FD
+
+Instead of the usual password prompt, the driver would now display:
+
+  Login:
+
+when the password was required.
+
+If a prompt containing multiple words is required, the prompt itself would be
+surrounded with quotation marks:
+
+  DEVICE=SFS.SYS /SILENT /PROMPT="Please log on:" /AUTOMOUNT=530A17FD
+
+To print a line break as part of a prompt, the escape code '\n' may be used,
+allowing prompts to be split over multiple lines, or simply to have blank lines
+as part of the prompt.  An extended form of the above prompt, split over two
+lines, could be given as:
+
+  DEVICE=SFS.SYS /SILENT /PROMPT="Network logon\nPlease enter password:"
+                         /AUTOMOUNT=530A17FD
+
+which would be printed as:
+
+  Network logon
+  Please enter password:
+
+The order in which these arguments are given is important, since an option only
+takes effect once the driver has processed it.  If the /PROMPT option is given
+after the /AUTOMOUNT option, the driver won't use the new prompt until after
+the automount has taken place.  This can be used to allow multiple independant
+prompts when several volumes are mounted, so that in the following example:
+
+  DEVICE=SFS.SYS /SILENT /PROMPT="Local server logon: " /AUTOMOUNT=130D2C17
+                         /PROMPT="Printer server logon: " /AUTOMOUNT=2A1102D3
+
+the prompt "Local server logon: " would be used for the first volume to be
+automounted and the prompt "Printer server logon: " would be used for the
+second volume to be automounted.
+
+
+Changing the Automount Read/Write Access Status
+
+Write access to an automounted volume can be disabled in the same manner as
+using the `mountsfs +r' options would (more information on read-only access to
+SFS volume is given in the section "Mounting an SFS Volume" above).  For
+example to automount the volume used in the previous example read-only the
+command would be:
+
+  DEVICE=SFS.SYS /READONLY /AUTOMOUNT=530A17FD
+
+Like the automount /PROMPT option, the /READONLY option must be given before
+the /AUTOMOUNT which it is to affect.
+
+Read/write and readonly access to multiple automounted volumes can be
+selectively turned on and off using the /READWRITE and /READONLY commands.  A
+/READWRITE or /READONLY command applies for all automounts which follow it
+until another /READWRITE or /READONLY command is encountered.  For example to
+mount the first volume in the previous example read-only and the second one
+with normal write access the command would be:
+
+  DEVICE=SFS.SYS /READONLY /AUTOMOUNT=530A17FD /READWRITE /AUTOMOUNT=4850414B
+
+
+Setting the Auto-unmount Timeout value
+
+The auto-unmount timeout value functions just like the mountsfs `timeout='
+option, and is used to tell the SFS driver to unmount volumes automatically if
+they have not been accessed for a certain amount of time.  The time until
+volume are automatically unmounted can be set with the `/TIMEOUT=' option,
+which is used to specify the delay in minutes until the unmount takes place.
+This option can only be used in conjunction with the `/AUTOMOUNT=' option, and
+by default no auto-unmount timer is set.
+
+Using the previous automount example, but to have volumes automatically
+unmounted after 15 minutes of inactivity, the command would be:
+
+  DEVICE=SFS.SYS /AUTOMOUNT=530A17FD /TIMEOUT=15
+
+The timeout period must be between 1 and 30,000 minutes (this means the upper
+timeout limit is around three weeks).  If a timeout value of less than 1 minute
+or greater than three weeks is given, mountsfs will exit with the error
+message:
+
+  Error: Timeout value must be between 1 and 30,000 minutes
+
+If no accesses are made to any volume within the given time period, all volumes
+will be automatically unmounted.  Like the case when a hotkey unmount is made,
+a single beep will sound to indicate that the unmount has taken place.
+
+
+Changing the Characteristics of an SFS Volume
+---------------------------------------------
+
+Once an SFS volume has been created, various characteristics of the volume and
+the entire volume itself can be altered using the chsfs program.  This allows
+the SFS volume password, volume name, and volume serial number to be changed,
+allows SFS volumes to be quickly deleted, and allows the reversion of SFS
+volumes to their original unencrypted form.
+
+The chsfs program is run in the following manner:
+
+  chsfs [newpass] [newvol=<new volume name>] [newserial=<new serial no>]
+        [delete] [convert] [vol=<volume name>] [<drive>]
+
+Since all arguments are named, they can be given in any order.  The order shown
+here is merely an example.
+
+In general the volume name would be specified with the `vol=' option.  For
+example if the volume name was "Secure disk volume" then the command would be:
+
+  chsfs <command> vol=secure
+
+The volume name can be in upper or lower case, and the full name need not be
+given.  chsfs will match whatever part of the name is given to any SFS
+volume names found until it finds a match.
+
+Alternatively, if the SFS volume to be accessed is on a removable disk, the
+drive letter can be specified instead of the volume name.  For example if the
+disk drive was A: then the command would be:
+
+  chsfs <command> a:
+
+In order to find all available SFS volumes on all disks, the `mountsfs info'
+option can be used as outlined in the section "Mounting an SFS Volume" above.
+
+The basic characteristics of the SFS volume can be changed with the `newpass',
+`newserial', and `newvol' commands, which set a new password, new serial
+number, and new volume name respectively.  These commands can each be used
+individually, or two or even all three may be used together (although they
+can't be used in conjunction with the `delete' or `convert' options).  Their
+usage is in general similar to their use with mksfs.  `newpass' takes no
+arguments and will prompt for the original password and then the new password,
+after which it will change the volume password from the original to the new
+one.  `newserial' takes as an argument the new serial number to use for the
+volume'  `newvol' takes as an argument the new volume name.  For example to
+change the name of the SFS volume "Personal data" to "Letters" and the serial
+number to 1234, the command would be:
+
+  chsfs vol=personal newvol=Letters newserial=1234
+
+If the newpass option is used, chsfs will first ask for the old poassword:
+
+  Please enter old password (10...100 characters), [ESC] to quit:
+
+After verifying that the password is correct, chsfs will ask for the new
+password:
+
+  Please enter new password (10...100 characters), [ESC] to quit:
+
+Like mksfs, chsfs will then ask for this password a second time for safety.
+
+Once the details for the new volume name, serial number, or password have been
+obtained and the changes made to the volume, chsfs will display a message
+indicating the changes made.  For the above example the message would be:
+
+  Volume characteristics successfully updated.
+
+  New volume name is `Letters'.
+  New volume serial number is `1234'.
+
+Note that chsfs doesn't perform the checking for duplicate or nonexistant
+volume names and serial numbers which mksfs does.  This is to allow the safe
+choices forced by mksfs to be subsequently overridden using chsfs if
+required[1].
+
+Changes to the SFS volume itself are made using the `convert' and `delete'
+commands.  `convert' converts a volume back to its original unencrypted form,
+and `delete' deletes it entirely, leaving behind what appears to the operating
+system as an unformatted disk filled with random noise.
+
+Since converting or deleting a volume while it is mounted is rather dangerous,
+chsfs checks whether the volume to be converted or deleted is currently
+mounted.  If it is, it will prompt:
+
+  Warning: This volume is currently mounted.  Do you wish to unmount it
+           and continue [y/n]
+
+At this point a response of 'Y' will continue and a response of 'N' will exit
+the program.  If a 'N' response is entered, the volume can be unmounted using
+mountsfs or the quick-unmount hotkey before chsfs is re-run.
+
+The delete option will first print the name and creation date of the SFS volume
+to be deleted.  At this point the exact name and date of the volume should be
+checked to ensure that this is indeed the one to be deleted.  In this example
+the volume information will be displayed as:
+
+  Encrypted volume is `Incriminating evidence', created 04/11/93
+
+chsfs will now prompt for the password in the usual manner.  It uses this to
+check that access to the volume is legitimate, and is needed for chsfs to
+acquire various pieces of information it needs to perform the deletion.  The
+program will then prompt:
+
+  Warning: The deletion operation will permanently destroy all data on this
+           volume.  Are you sure you want to continue with the deletion [y/n]
+
+At this point a response of 'Y' will continue and a response of 'N' will exit
+the program.
+
+If chsfs is told to continue, it will perform multiple overwrite passes over
+the SFS volume header (which contains all the information needed to access the
+volume), printing a progress report as it performs the overwriting:
+
+  Overwriting: Pass 1
+
+In total chsfs will perform 30 separate overwrite passes which have been
+selected to provide the best possible chances of destroying data for various
+disk encoding schemes (the exact details are given in the section "Deletion of
+SFS Volumes" below).  Once the multiple overwrites have completed, chsfs will
+print an informational message about the deletion operation:
+
+  Encrypted volume `Incriminating evidence' has been destroyed
+
+If the volume is on a fixed disk, you may wish to reboot your machine to make
+the newly-deleted volume visible to DOS.  Volumes on floppy disks will
+automatically be visible.  Since the disk volume is now filled with random
+garbage, it will need to be formatted in the same way an unformatted disk would
+be before it can be used by DOS.
+
+The convert option will, like the delete option, first print the name and
+creation date of the SFS volume to be converted.  At this point the exact name
+and date of the volume should be checked to ensure that this is indeed the one
+to be converted.  In this example the volume information will be displayed as:
+
+  Encrypted volume is `Disk data', created 07/12/93
+
+chsfs will prompt for the encryption password exactly as mksfs did when it
+originally created the SFS volume, and will then prompt:
+
+  Warning: You are about to convert this volume from an encrypted SFS one to
+           a normal DOS one.  Are you sure you want to continue with the
+           conversion [y/n]
+
+At this point a response of 'Y' will continue and a response of 'N' will exit
+the program.
+
+Like mksfs, chsfs will then begin converting the disk.  As it processes the
+volume, it prints a progress bar going from 0% complete to 100% complete.  The
+conversion process will take a few minutes on most disks, and is somewhat
+slower than a standard disk formatting procedure which only writes a very small
+amount of data to the start of the disk, whereas chsfs has to read, decrypt,
+and write the entire disk volume.
+
+As the conversion progresses, the progress bar will gradually fill up until it
+shows that the conversion is complete.  Once this has finished, chsfs will
+display the message:
+
+  Encrypted volume `Disk data' has been converted to a normal DOS volume.
+
+The converted volume is now ready to be used as a normal DOS disk again. If the
+volume is on a fixed disk, DOS will still think it is an encrypted SFS one
+rather than a normal DOS one.  It is recommended that you reboot your machine
+at this point to clear any memories of the old volume from the system, as DOS
+will not be able to see the converted volume until the reboot takes place.  As
+a reminder, chsfs will display:
+
+  You may wish to reboot your machine to update the status of the volume,
+  which will become available as a standard DOS disk.
+
+before exiting.  If the volume is on a removable disk, no reboot is necessary
+and chsfs will simply print:
+
+  The volume is now available as a standard DOS disk.
+
+Footnote [1]: This makes the (possibly incorrect) assumption that the chsfs
+              user knows what they are doing.
+
+
+Sharing SFS Volumes Between Multiple Users
+------------------------------------------
+
+At times it may be necessary to share a single encrypted SFS volume between
+multiple users.  For instance several individuals may require access to a
+volume containing confidential business correspondence as part of their
+day-to-day duties.  Usually this would require using a common password which is
+known to every member of the group of people who require access.  The need to
+share passwords is a serious weakness, as the inability to chose individual,
+unique passwords increases the chances that a simple, easy-to-remember (and
+easy-to-guess) password is chosen, or that at least one person writes it down
+if it is too hard to remember.
+
+SFS solves this problem by allowing each member of the group access to an
+encryped volume under their own individual password.  The allocation of access
+rights to a volume is controlled by an administrator who can grant or revoke
+access as required.  The administration process is handled by the adminsfs
+program, which is run in the following manner:
+
+  adminsfs [adduser=<user name>] [deluser=<user name>]
+           [chuser=<user name>] [showuser=<user name>] [showall]
+           [validfrom=<DDMMYY>] [validto=<DDMMYY>] [userfile=<user file>]
+
+Since all arguments are named, they can be given in any order.  The order shown
+here is merely an example.
+
+[!!!! That's all there is at the moment.  adminsfs is still being checked
+      out by beta-testers and parts of it are still under review.  If anyone
+      has any suggestions for it, let me know !!!!]
+
+
+Creating Compressed SFS Volumes
+-------------------------------
+
+Creating a compressed drive inside an SFS volume provides, apart from the usual
+benefit of increasing the apparent disk space, some additional security against
+an attack by breaking up the very regular standard filesystem structure
+containing large quantities of known data at known locations into a compressed
+filesystem whose structure and contents are much harder to guess.
+
+The instructions given here are for Stac Electronics "Stacker"[1], although it
+should be possible to do the same thing with other reasonably advanced disk
+compressors.  Stacker should be installed in the usual manner onto a mounted
+volume.  The Stacker driver can then be loaded in two ways, either from
+CONFIG.SYS onto an automounted SFS volume, or at a later point (which, however,
+means that it loads an extra copy of the command interpreter).  It is also
+possible to load the driver from CONFIG.SYS without activating a compressed
+drive, and activate it later.  This avoids the need to automount an SFS volume
+at startup.
+
+As SFS uses whatever drive letters DOS allocates to it, the stacked drive will
+take over the drive letter used by the SFS volume rather than swapping drive
+letters for the stacked and normal drive as it usually does.  This shouldn't
+provide any problems, the compressed and encrypted drive will simply replace
+the encrypted drive.
+
+Footnote [1]: Specifically, Stacker 3.1
+
+
+WinSFS - Using SFS with Windows
+-------------------------------
+
+WinSFS is a prototype of the Windows version of SFS, and currently runs as a
+front-end for mountsfs, which means that the mountsfs program must be either in
+the DOS path or in the Windows directory for WinSFS to work.  WinSFS also needs
+the Visual Basic library VBRUN200.DLL in order to run.  This file is publicly
+available from a number of sources.
+
+When run, WinSFS will display a window containing a list of SFS volumes
+available to be mounted, a list of currently mounted volumes, and an icon bar
+which is used to control WinSFS.  These icons perform the following functions:
+
+  Cross icon        : Exit WinSFS
+  Disk icon         : Mount an SFS volume
+  Crossed disk icon : Unmount an SFS volume
+  Information icon  : Display detailed information on an SFS volume
+  Write icon        : Enable read/write access on an SFS volume
+  Crossed write icon: Enable read-only access on an SFS volume
+
+
+Mounting a Volume with WinSFS
+
+To mount an SFS volume, click on the volume name in the "Available volumes"
+window, and then click on either the "Mount volume" icon or the "Mount" button
+(eventually this function will also be available by dragging the volume name
+and dropping it into the "Mounted" list).  WinSFS will ask for the volume
+password, and then mount the volume.  Once the volume is mounted, its name will
+disappear from the "Available volumes" list and appear in the "Mounted" list).
+
+
+Unmounting a Volume with WinSFS
+
+To unmount an SFS volume, click on the volume name in the "Mounted" window, and
+then click on either the "Unmount volume" icon or the "Unmount" button
+(eventually this function will also be available by dragging the volume name
+and dropping it into the "Available volumes" list).  WinSFS will unmount the
+volume, and its name will disappear from the "Mounted" list and appear in the
+"Available volumes" list).
+
+
+Getting Information on a Volume with WinSFS
+
+To get detailed information on a volume, click on its name, and then either
+click the right mouse button, or select the "Information" icon.  This will
+bring up a window giving extra information on the volume such as the creation
+time, serial number, size, and automount ID.
+
+
+Setting a Volume's Read/Write Access with WinSFS
+
+To change the read/write status of an SFS volume, click on its name in the
+"Mounted" window, and then click on either the "Read-only" or "Read/write" icon
+in the icon bar to change its access status.
+
+
+Command Summary
+---------------
+
+This section serves as a quick-reference for the options available with the
+various SFS programs.  The available options for mksfs, mountsfs, chsfs, and
+adminsfs are:
+
+MakeSFS - Make Secure Filesystem
+
+  -c = Perform a confidence test on the volume to be encrypted without
+       actually encrypting it
+  -o = Override the disk boot record sanity check - may be necessary for
+       some unusual disk formats
+  -t = Test the integrity of the MDC/SHS encryption code used in SFS
+
+  multiuser       = Allow multiuser access on the volume to be created
+
+  vol=<volume name>      = Specify the name of the volume to be created
+  serial=<serial number> = Specify the serial number of the volume to be created
+  <drive letter>         = Specify the letter of the drive to create the
+                           encrypted volume on
+
+MountSFS - Mount Secure Filesystem
+
+  +r  = Mount the encrypted volume with read-only access
+  +rw = Mount the encrypted volume with read/write access (default)
+
+  info          = Show brief information on all available SFS volumes
+  information   = Show detailed information on all available SFS volumes
+  status        = Show information on mounted volumes only
+  unmount       = Unmount the volume
+
+  hotkey=<hotkeys>    = Set the quick-unmount hotkey combination
+  timeout=<timeout>   = Set the auto-unmount timer value in minutes
+  user=<username>     = Specify the user name for a volume with multiuser access
+  userfile=<filename> = Specify the path to the information file associated with
+                        a volume which allows multiuser access
+  vol=<volume name>   = Specify the name of encrypted volume to mount
+  <drive letter>      = Specify the drive letter of the volume to mount
+                        (For volumes on floppy disks only)
+
+ChangeSFS - Change Secure Filesystem
+
+  newpass               = Set a new volume password
+  newvol=<volume name>  = Specify the new volume name
+  newserial=<serial no> = Specify the new volume serial number
+
+  delete    = Delete SFS volume
+  convert   = Convert volume back to unencrypted form
+
+  vol=<volume name>   = Specify the name of the encrypted volume to change
+  <drive letter>      = Specify the drive letter of the volume to change
+                        (For volumes on floppy disks only)
+
+AdminSFS - Administrate SFS User Database
+
+  adduser=<user name> = Add a new user with the given name to the database
+  deluser=<user name> = Remove user with the given name from the database
+  chuser=<user name>  = Change user database entry for the named user
+  showuser=<user name>= Show access information for a given user
+  showall             = Show access information for all users
+
+  validfrom=<DDMMYY>  = Set date after which access for a user is allowed
+  validto=<DDMMYY>    = Set date at which a users access expires
+
+  userfile=<filename> = Specify the path to the user information file
+
+
+Incompatibilities
+-----------------
+
+Over the years a variety of strange hardware and software setups have been
+created in order to get around some of the shortcomings of the PC hardware and
+DOS (and occasionally other operating systems) software.  Since SFS accesses
+the disk at a level below that normally used by the operating system, it will
+bypass special options like compressed volumes and non-local networked drives,
+and won't recognise nonstandard hardware like drives with more than 1024
+cylinders which require special software patches in order to work with DOS.
+For example, SFS will recognise the uncompressed volumes used by Stacker and
+DoubleSpace, but won't see the compressed volumes as these are an illusion
+created in software and visible only to DOS.  It is therefore not possible to
+encrypt compressed volumes (there would be very little point, as encryption
+would render the data completely uncompressible), although it is possible to
+create a compressed volume inside an encrypted volume (this is covered in the
+section "Creating Compressed SFS Volumes" above).
+
+
+Checking for Problems with mksfs
+
+If your system has an unusual setup, or if you're worried about what SFS may
+do, you can use a special option with the mksfs command to perform a check on
+the drive which is to be encrypted.  This option also bypasses a number of the
+usual checks SFS performs relating to duplicate volume names, anonymous
+volumes, and so on, to allow all types of volume arrangements to be checked.
+
+If the `-c' option is specified along with the drive letter, mksfs will (if the
+volume in question is a fixed disk) first display technical information on all
+available fixed disk volumes, so that the command:
+
+    mksfs -c e:
+
+would produce the following output:
+
+  Drive partition information follows:
+
+  Ph Bt Dr Cyl. Head Sec. Cyl. Head Sec.  Size  ID Type
+  -- -- -- ---- ---- ---- ---- ---- ---- ------ -- ----
+   0  N  C    0    1    0  379   15   39 121600 06 DOS (16-bit FAT, >= 32M)
+   0  Y  -  380    0    0  383   15   39   1280 0A OS/2 boot manager
+   0  N  D  384    1    0  594   15   39  67200 06 DOS (16-bit FAT, >= 32M)
+   0  N  E  595    1    0 1022   15   39 136640 06 DOS (16-bit FAT, >= 32M)
+                                                   This would be the SFS disk
+
+This information is only displayed for fixed disks, as floppy disks don't
+contain this information.  The values in the various columns are Ph = physical
+drive number, Bt = bootable flag, Dr = DOS drive letter, Cyl,Head,Sec =
+partition start, Cyl,Head,Sec = partition end, Size = size in kbytes, ID =
+partition ID byte, and Type = partition type.  The proposed SFS partition will
+be marked as such.  If you don't know what these values mean, don't worry -
+this option is mainly useful in providing technical information for those who
+want it.
+
+In addition, mksfs may display specific information about the drive on which
+the SFS volume is to be created.  Typically the message will be something like:
+
+  The drive is a WDC AC2420 with a dual ported multi-sector
+  cacheing 256K buffer which supports high-speed direct access.
+
+This indicates that the drive will work with a faster direct-access version of
+the SFS driver.  This is still being tested, and should provide a noticeable
+performance improvement over the current version.
+
+Once all drives have been checked, more specific information on the actual
+volume in question is displayed:
+
+  Volume will be checked on fixed drive E:
+  This drive has a capacity of 136.6 MB and is labelled `Data disk'
+  Are you sure you want to check this volume [y/n]
+
+As with the usual mksfs process, typing 'Y' will continue with the volume check
+and typing 'N' will exit.  If you choose to continue, mksfs will first perform
+an initial disk confidence test which consists of some general checks on the
+volume layout to make sure its format is valid, and will then perform a read
+confidence test in which it reads random disk blocks and compares them with the
+data reported by the operating system.  If any errors are encountered, it will
+print a diagnostic message before continuing.  If all is OK, the sequence of
+messages will be:
+
+  Performing disk confidence test...
+  Performing read confidence test...
+  [various test-in-progress messages]
+  Confidence test successfully concluded
+
+If there are problems, the diagnostic message will give more information on the
+nature of the problem.  Once the test has concluded, an error count will be
+displayed.  In either case, mksfs will exit after the tests have concluded
+without creating the encrypted volume.  If used with the `-c' option, mksfs
+will never modify any information on disk, whether the tests are successful or
+not.  This is important, as it allows a confidence test to be performed before
+an encrypted volume is created.
+
+
+Problems with Windows
+
+The timed auto-unmount option and quick-unmount hotkey option are generally
+unavailable under Windows as Windows disables the standard keyboard and timer
+handling when it runs[1].  In order to unmount a volume from within Windows,
+the mountsfs program must be run explicitly.  The one exception to this rule is
+that if a quick-unmount hotkey is set from within a DOS session then it will
+remain available (but only within the DOS session) while that particular DOS
+session is active.
+
+
+Problems with Other Software
+
+The Mitsumi CDROM device driver, if installed before another block driver like
+SFS, will mistakenly try to use the drive letter allocated to the other driver
+as its own one.  There have been reports of other CDROM drivers (in particular
+the Sony one) which display similar traits (CDROM drivers are strange beasts
+which have rather special requirements).  The DTC SCSI driver has a similar
+problem in that it grabs more drive letters than DOS allocates to it, which
+means that any block drivers loaded after it will be allocated drive letters by
+DOS which are already being used by the SCSI driver.  The solution to this
+problem is to make sure that the SFS driver is loaded before any problematic
+CDROM or SCSI drivers by placing the DEVICE=SFS.SYS line before the one which
+loads the CDROM or SCSI driver in the CONFIG.SYS file.
+
+The KEYB driver incorrectly handles the keyboard interrupt, which locks out the
+SFS driver's quick-unmount hotkey handling if the `HOTKEY=' option is used at
+the time the driver is loaded.  If the `HOTKEY=' option is *not* specified when
+the SFS driver is loaded, but is set later (after the KEYB driver has been
+loaded) using mountsfs, everything works fine.
+
+Some (now very rare) device drivers and TSR's will destroy the contents of
+32-bit registers when they are activated, which means that the data in the SFS
+driver will become invalid from one machine instruction to the next.  There
+have been reports of older versions of the PC-Kwik cache and Novell's
+non-dedicated file server version 2.2 doing this.  A program to detect and
+possibly fix this problem is:
+
+    garbo.uwasa.fi:/pc/turbopas/trash.zip
+
+Some of the Borland software development tools don't handle DOS critical errors
+very well (they hang either when the error occurs or soon afterwards).  Since
+trying to access a non-mounted volume is treated by DOS as an error, it may
+cause programs like the IDE and the debugger to hang.  Trying to read a floppy
+drive without a disk in the drive, and any other action which causes a DOS
+critical error, can have the same effect.
+
+
+Problems with hardware
+
+Some floppy drive and system BIOS combinations aren't terribly reliable.  It
+has been reported that a laptop using the Phoenix 1.01 BIOS gives a multitude
+of disk errors when encrypting a disk using mksfs.  The exact error type is
+uncertain since the error code returned when the disk access fails is an
+undefined value.  The Award 3.03 BIOS when used with some floppy drives also
+causes problems, especially with newer versions of DOS (version 6.0 and up),
+which may have great trouble reliably writing disks.  Microsoft's suggested
+solution to the problem is a BIOS upgrade.
+
+Footnote [1]: Windows virtualizes the keyboard and timer interrupts and locks
+              out SFS.  Although it is possible to bypass this, it must be done
+              from within Windows itself, which is not possible for a device
+              driver like SFS.
+
+
+Authentication of SFS Software
+------------------------------
+
+There have been several occasions in the past when fake versions of software
+have been distributed.  Sometimes these fake release are even wrapped up in a
+nice-looking "security envelope" guaranteeing their authenticity.  With
+encryption software like SFS it is all too tempting for an opponent to simply
+create and distribute a compromised version of SFS rather than try to break the
+SFS encryption itself.  In order to avoid any problems in this respect, the
+distributed SFS driver and executables are accompanied by a digital signature
+which can be used to verify that it is indeed an official version.
+
+In order to check the authenticity of the particular version of SFS, you will
+need the PGP encryption package, and my public key, which is included in the
+standard PGP distribution.  My key is signed by Philip Zimmermann, the original
+author of PGP, and several members of the PGP development team.  First, my key
+should be checked for authenticity with the command:
+
+  pgp -kc "Peter Gutmann"
+
+When it performs the key check, PGP should display the following signatures:
+
+  Type bits/keyID     Date    User ID
+  pub  1024/997D47 1992/08/02 Peter Gutmann <pgut1@cs.aukuni.ac.nz>
+  sig!      E722D9 1992/11/26   Branko Lankester <lankeste@fwi.uva.nl>
+  sig!      997D47 1992/10/11   Peter Gutmann <pgut1@cs.aukuni.ac.nz>
+  sig!      7C02F9 1992/09/07   Felipe Rodriquez <nonsenso@utopia.hacktic.nl>
+  sig!      1336F5 1992/09/05   Harry Bush <Harry@castle.riga.lv>
+  sig!      67F70B 1992/09/02   Philip R. Zimmermann <prz@sage.cgd.ucar.edu>
+
+There may be other signatures on there, but these are the ones from the PGP
+development team and are the most important ones.  Version 2.1 and up of PGP
+can, in addition, generate a key fingerprint for a key.  This can be calculated
+with the command:
+
+  pgp -kvc "Peter Gutmann"
+
+PGP should display the following:
+
+  pub  1024/997D47 1992/08/02 Peter Gutmann <pgut1@cs.aukuni.ac.nz>
+            Key fingerprint = 7C 6D 81 DF F2 62 0F 4A  67 0E 86 50 99 7E A6 B1
+
+If the keyID or key fingerprint for my key differs from the one shown above or
+the signatures don't check out, then the key is a probably a fake and shouldn't
+be trusted.  Assuming the key is in order, the authenticity of the device
+driver and the support software can be checked with:
+
+  pgp sfs.sig sfs.sys
+  pgp <program>.sig <program>.exe
+
+where sfs.sig and <program>.sig are the digital signatures included with SFS as
+distributed.  For example to check the authenticity of the mksfs program type:
+
+ pgp mksfs.sig mksfs.exe
+
+When it performs the check, PGP should display:
+
+  Good signature from user Peter Gutmann <pgut1@cs.aukuni.ac.nz> .
+  Signature made <date of signature>
+
+If PGP reports a bad signature then the executable shouldn't be trusted.  A
+new, hopefully untouched, version can be obtained from any archive site, BBS,
+or system which carries the standard SFS distribution, or it can be obtained
+directly from the author.
+
+
+Applications
+------------
+
+Apart from the simple use of SFS for personal and business data privacy, there
+are a number of other possible applications for which it can be used.  Some of
+these are listed below.
+
+
+Secure Information Exchange
+
+If a communications channel is available between two systems which use SFS,
+confidential data can be transferred from one encrypted SFS volume to the other
+by using encryption on the communications channel.  For example a businessman
+whose work involves a lot of travel could read data off the SFS volume on his
+portable computer and encrypt it as it is sent via modem to his place of work.
+At work the data could be decrypted and written to another SFS volume.  The
+only time the data is available in unencrypted form is while it is being read
+off the SFS volume and re-encrypted for transmission, which represents a
+minimal risk as interrupting the transmission will involve stopping the program
+which will (presumably) contain error handlers which erase any sensitive
+information from memory.
+
+Using a package like PGP (Pretty Good Privacy) or PEM (Privacy-Enhanced Mail)
+in conjunction with SFS allows the secure distribution of information through
+an online service like a computer bulletin board.  The online system can
+retreive the public key of the person requesting the information, read the
+required data off the SFS volume into the encryption program where it is
+encrypted with the recipients public key, and transmit it.  At the other end
+the recipient decrypts the data with their private key and writes it straight
+onto their own SFS volume.  Again, the amount of time in which unencrypted data
+is available is minimal, and properly implemented software will destroy any
+sensitive information if interrupted in any way.
+
+
+Defence in Depth
+
+With the increasing strength of cryptographic software which is becoming
+available to the public, means of compromising encryption security which don't
+involve breaking the encryption itself are becoming more and more desirable.
+This may involve things like creating fake versions of the encryption software
+which have trapdoors in them and planting them in a victims system, planting
+versions which save the entered password somewhere and then restore the
+original unaltered copies, or similar tricks.  This means that for maximum
+security it is necessry to not only protect the password, but also to protect
+the encryption software itself, and any software which interacts with it, and
+anything which interacts with that, ad nauseum.  If several encryption and
+security packages are used, every one of these must be protected separately.
+
+By using SFS, some degree of protection is offered against malicious
+manipulation, since an attacker must first get to the software stored on an SFS
+volume in order to compromise it.  Storing other security-related software on
+an encryption volume takes it out of the reach of any attack, but makes the SFS
+software itself more of a target for an attack.  Eventually this problem can be
+reduced somewhat through the use of SFS encryption hardware, which is currently
+under (very gradual) development.  Another possibility is to store duplicate
+copies of the SFS software on an encrypted volume which is initially mounted
+read-only.  The versions on the SFS volume can be compared (using software also
+stored on the SFS volume) with the unencrypted versions, and if they are
+identical to the reference versions, write access to the volume can be enabled
+and the volume used as normal.  Another possibility is to simply store
+checksums or digital signatures for the SFS programs on the encrypted volume,
+and only write-enable it if the checksums or signatures check out.
+
+Using SFS for Virus Protection
+
+SFS can be used as a form of virus protection for large collections of
+computers by using it to create a centralised entry point to the system for all
+data.  Consider a company operating 1,000 separate machines.  Normally this
+would require 1,000 copies of a virus scanner to be installed and updated every
+few months as new viruses appear.  In addition, use of the scanner on every one
+of the 1,000 machines would have to be enforced rigorously.
+
+An alternative is to install SFS on each of the machines, and make a policy
+that only SFS-encrypted disks will be used within the company.  Then a single
+scanner can be installed on a single machine, and all disks brough in from the
+outside scanned and encrypted on that machine.
+
+If every computer is initially virus-free, and all disks are SFS-encrypted,
+then there are two possible means of attack for a virus.  The first is to
+infect a file or a disk when it is outside the company.  However as disks
+originating from within the company are encrypted, no files (or, indeed,
+anything) are visible on it, so there is nothing for a virus to infect (in
+fact, DOS won't even recognise the disk as being formatted).  All disks
+originating from outside the company have to be processed by the single
+controlled computer before they can be used, meaning that any virus on a
+non-company disk should be picked up before the disk is encrypted.
+
+Alternatively, a boot sector virus could infect an SFS-encrypted disk.
+However, if an attempt is made to use the infected disk (which involves
+mounting it), the mount will fail as the boot sector will contain the virus
+rather than the SFS volume header.  The person who tried to mount the volume
+will assume the disk has not been "converted" yet, and will bring it to the
+machine used for processing the disks.  At this point the virus can be found by
+the scanner.
+
+This procedure isn't totally error free.  It won't work if there may already be
+viruses present on one or more of the machines before SFS is installed.  In
+addition, an SFS disk whose volume header is overwritten by a virus is probably
+damaged beyond repair.  However it does provide a reasonable amount of
+protection, and has the pleasant side effect of keeping all the company records
+secure against unauthorized access attempts.
