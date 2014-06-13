@@ -1,0 +1,6 @@
+PROJECT="Secure File System by Peter Gutmann"
+URL_SRC_ARCHIVE="http://ftp.gwdg.de/pub/misc/crypt/msdos/gutmann-secure-file-system-msdos-sfs100.zip"
+RELEASE_DATE="1994-02-20"
+RETRIEVED_DATE="2014-06-13"
+RETRIEVED_BY="TJ <crypto@iam.tj>
+
