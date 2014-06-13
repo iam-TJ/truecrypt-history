@@ -1,0 +1,8 @@
+PROJECT="Secure File System by Peter Gutmann"
+URL="https://www.cs.auckland.ac.nz/~pgut001/sfs/index.html"
+URL_SRC_ARCHIVE="ftp://ftp.franken.de/pub/crypt/misc/sfs110.zip"
+RELEASE_DATE="1994-08-01"
+RELEASE_VERSION="1.10"
+RETRIEVED_DATE="2014-06-13"
+RETRIEVED_BY="TJ <crypto@iam.tj>"
+
