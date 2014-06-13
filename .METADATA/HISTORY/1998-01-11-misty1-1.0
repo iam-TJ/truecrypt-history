@@ -1,0 +1,8 @@
+PROJECT="MISTY1 Cryptographic Algorithm by Hironobu Suziki"
+URL="http://www.pp.iij4u.or.jp/~h2np/"
+URL_ARCHIVE="https://web.archive.org/web/19981203133038/http://www.pp.iij4u.or.jp/~h2np/"
+URL_SRC_ARCHIVE="http://ftp.mirrorservice.org/sites/ftp.wiretapped.net/pub/security/cryptography/algorithms/misty/misty1.tar.gz"
+RELEASE_DATE="1998-01-11"
+RETRIEVED_DATE="2014-06-13"
+RETRIEVED_BY="TJ <crypto@iam.tj>"
+
