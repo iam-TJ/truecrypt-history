@@ -1,0 +1,7 @@
+PROJECT="Secure File System by Peter Gutmann"
+URL_SRC_ARCHIVE="http://ftp.gwdg.de/pub/misc/crypt/msdos/gutmann-secure-file-system-msdos-sfs108.zip"
+RELEASE_VERSION="1.10.beta"
+RELEASE_DATE="1994-07-18"
+RETRIEVED_DATE="2014-06-13"
+RETRIEVED_BY="TJ <crypto@iam.tj>"
+
