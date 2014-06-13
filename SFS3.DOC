@@ -1,0 +1,1431 @@
+SFS Disk Volume Layout
+----------------------
+
+An SFS volume is broken up into two parts, the boot sector which is used to
+identify the volume and store assorted status information, and the encrypted
+volume itself.  If a program tries to read the boot sector, the SFS driver will
+assemble a pseudo-boot sector in memory and return that instead.  If a program
+tries to write to the boot sector, the SFS driver will skip the boot sector
+while still writing any other sectors which may be requested.
+
+All data on the boot sector, both plaintext and encrypted, is stored in
+big-endian format following the convention used by international cryptographic
+standards.  Care should to taken to ensure that the proper endianness is
+maintained when reading and writing the boot sector on little-endian systems
+(the performance of the current implementation was tested against the RS6000
+version to confirm that endianness conversion was being done correctly).
+
+In the following discussion a BYTE is an 8-bit quantity, a WORD is a big-
+endian 16-bit quantity, and a LONG is a big-endian 32-bit quantity.  There are
+no alignment restrictions for the data as stored on disk.  All data is
+close-packed with no need for byte-padding for word or longword boundaries.
+
+
+The SFS Volume Header Record
+
+The boot record is the first sector in a disk volume, and is usually used to
+load a bootstrap code block which loads more code which eventually loads DOS or
+an operating system.  In the case of SFS there is no bootstrap code as SFS
+partitions are not bootable.  Instead, the boot record contains a volume header
+record holding identification information which SFS uses when mounting the
+volume, and encryption information to allow SFS to decrypt the volume.  The
+information is stored as a series of variable-length data packets with fields
+in big-endian order.  Although it might be desirable to store the data as
+DER-encoded ASN.1 (ISO 8824, ISO 8825), the amount of code necessary to decode
+this information is considerable, leading to excessively complicated loaders
+for the encrypted volume.  In particular, it would make the use of automatic
+volume mounts for the SFS device driver virtually impossible.
+
+The SFS volume header may contain multiple data packets, currently up to six
+types are implemented (there is an additional seventh pseudo-packet type which
+is a null data packet).  One packet identifies the volume, one contains
+encryption information needed to en/decrypt the volume, and one contains
+filesystem-specific information needed to access the volume.  These packets
+are mandatory.  Finally, a number of optional packets may be used to hold data
+such as information for volumes accessible by multiple users, information
+needed by the high-speed direct disk access routines in SFS, and information to
+control the conditions under which SFS volumes are unmounted.  Each packet
+consists of a packet type identifier followed by the length of the data in the
+packet, and then by the packet data itself.
+
+The volume header is laid out as follows:
+
+    Offset  Size    Type        Description
+
+       0      4     BYTE[ 4 ]   'SFS1' identification string
+       4      2     WORD        Information packet 1 ID
+       6      2     WORD        Information packet 1 data length
+       8     ??     ????        Information packet 1 data
+       n      2     WORD        Information packet 2 ID
+     n+2      2     WORD        Information packet 2 data length
+     n+4     ??     ????        Information packet 2 data
+                      ..........
+       m      2     WORD        Information packet n ID
+     m+2      2     WORD        Information packet n data length
+     m+4     ??     ????        Information packet n data
+
+It is recommended that the order of the information packets be as follows
+
+    1.  Volume information
+    2.  Encryption information
+    3.  Filesystem information
+    4.  Other information (such as multiuser access data, direct disk access
+        information, and information to control the conditions under which SFS
+        volumes are unmounted)
+
+although this is not essential.  However some volume mount software which must
+run with severely limited resources may run into problems if the order of the
+data packets is not as expected.  The remainder of the sector is filled with
+zeroes.  Currently defined packet types are:
+
+    Name                    Value       Information type
+
+    SFS_PACKET_NONE           0         Null packet
+    SFS_PACKET_VOLUMEINFO     1         Volume information
+    SFS_PACKET_ENCRINFO       2         Encryption information
+    SFS_PACKET_DISK_BPB       3         Filesystem information
+    SFS_PACKET_MULTIUSER      4         Multiuser access information
+    SFS_PACKET_FASTACCESS     5         Direct disk access information
+    SFS_PACKET_UNMOUNT        6         Volume unmount information
+
+
+Packet 0 - Null Packet
+
+This packet contains no information and is never explicitly set in an SFS
+volume header.  However since the remainder of the header after the actual data
+is padded out with zeroes, it can be viewed as containing a succession of null
+packets.
+
+
+Packet 1 - Volume Information Packet
+
+The volume information packet contains the volume name, the volume creation
+time, and the volume serial number.  The packet layout is as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Volume information packet ID = 1
+       2      2     WORD        Volume information packet data length
+       4      2     WORD        Volume name character set identifier
+       6      2     WORD        Volume name length
+       8     ??     BYTE[]      Volume name
+       n      4     LONG        Volume date, stored as seconds since 1970 GMT
+     n+4      4     LONG        Volume serial number
+
+The character set identifier is one of the following:
+
+    Value   Type
+
+      0     ISO 646 character set
+      1     ISO 8859-1 character set
+      2     ISO 8859-2 charcater set
+      3     ISO 8859-3 character set
+      4     ISO 8859-4 character set
+      5     ISO 8859-5 character set
+      6     ISO 8859-6 character set
+      7     ISO 8859-7 character set
+      8     ISO 8859-8 character set
+      9     ISO 8859-9 character set
+     ??     Reserved for future use
+
+The volume name is stored as an octet string immediately following the
+character set and length values.  The recommended maximum length for the volume
+name field is 100 octets, in order to allow room for the remainder of the
+volume header.
+
+The volume creation data is stored as a count of seconds since midnight on 1st
+January 1970.  Times are stored relative to GMT, although some operating
+systems may have trouble with time zones.
+
+The volume serial number is used mainly for identification purposes and has no
+special characteristics, but should be unique across volumes.
+
+
+Packet 2 - Encryption Information Packet
+
+The encryption information packet contains the algorithm identifier of the
+encryption algorithm being used, the iteration count used when setting up the
+keying information, the initialisation vector (IV) for the disk key, the
+encrypted disk key for the volume, and a key check value which may be used to
+verify that the correct decryption key has been given. The packet layout is as
+follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Encryption packet ID = 2
+       2      2     WORD        Encryption packet data length
+       4      2     WORD        Encryption algorithm identifier
+       6      2     WORD        Encryption key setup iteration count
+       8     ??     BYTE[]      Disk key IV
+       n    128     BYTE[]      Encrypted disk key
+   n+128      2     WORD        Key check value
+
+The encryption algorithm identifier is one of the following:
+
+    Value   Type
+      0     MDC/SHS
+     ??     Reserved for future use
+
+The MDC/SHS algorithm uses the Secure Hash Standard as the block transformation
+in the MDC encryption algorithm.
+
+The size of the disk key IV depends on the encryption algorithm, and is equal
+to the block size of the encryption algorithm being used.  In the case of
+MDC/SHS this is 160 bits or 20 bytes.
+
+The encrypted disk key contains 128 bytes of cryptographically strong random
+information whose derivation is given in the section "Generating Random
+Numbers" above.  This data may be utilized as required by the encryption
+algorithm used for the particular disk volume.  In the case of MDC/SHS the
+first 160 bits are used as the master disk IV from which individual sector IV's
+are generated as described in the section "The Use of an Initialization
+Vector", the next 512 bits are used as the en/decryption key, and the remaining
+352 bits are ignored.  Other algorithms with larger or smaller key spaces may
+use this data differently.
+
+The key check value is provided to give some warning about an incorrect
+password, and should be derived from the encryption key in some nontrivial
+manner which makes using the key check in an attack no easier than a standard
+known plaintext attack.  In the case of MDC/SHS it is the last two octets in
+the key data buffer after the key setup operation has been performed (this
+value is never used as part of the encryption key, and is the product of 200
+iterations of MDC/SHS over the user key).
+
+
+Packet 3 - Filesystem Information Packet
+
+The filesystem information packet contains identification information for the
+filesystem contained on the encrypted volume followed by encrypted
+filesystem-specific information needed to handle the volume.  This information
+is highly system-specific.  The packet layout is as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Filesystem information packet ID = 3
+       2      2     WORD        Filesystem information packet data length
+       4      2     WORD        Filesystem type identifier
+       6     ??     BYTE[]      Encrypted filesystem information
+
+The filesystem type identifier is one of the following:
+
+    Value   Type
+
+      0     MSDOS FAT filesystem - BPB data
+     ??     Reserved for future use
+
+The encrypted MSDOS BPB data record corresponds directly to a standard BIOS
+parameter block and is laid out as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Sector size in bytes
+       2      1     BYTE        Sectors per cluster
+       3      2     WORD        Number of boot sectors
+       5      1     BYTE        Number of FAT copies
+       6      2     WORD        Number of entries in root directory
+       8      2     WORD        16-bit number of sectors on disk
+      10      1     BYTE        Media descriptor byte
+      11      2     WORD        Number of sectors per FAT
+      13      2     WORD        Number of sectors per track
+      15      2     WORD        Number of heads
+      17      4     LONG        Number of hidden sectors
+      21      4     LONG        32-bit number of sectors on disk
+
+
+Packet 4 - Multiuser Access Information
+
+The multiuser access information packet contains an identification number for
+the multiuser access data file needed to access the volume.  This value is
+checked against an equivalent one in the access data file to ensure that the
+data file corresponds to the volume in question.  In addition the presence of
+this packet signals to the user software that the volume has multiuser access
+enabled.  The packet layout is as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Multiuser access information packet ID = 4
+       2      2     WORD        Multiuser access information packet data length
+       4      4     LONG        Multiuser access data file ID
+
+
+Packet 5 - Direct Disk Access Information
+
+The direct disk access information packet contains information needed by the
+disk access routines in SFS to bypass the normal BIOS disk access methods and
+interface directly with the drive.  This leads to a significant speed
+improvement with disk types which support this access mode, since SFS can
+perform en/decryption operations while waiting for disk I/O to complete.  The
+packet layout is as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Direct access information packet ID = 5
+       2      2     WORD        Direct access information packet data length
+       4      2     WORD        Direct access method
+       6     ??     ??          Extra information needed for direct access
+
+The direct access method is one of the following:
+
+    Value   Type
+
+      0     BIOS disk access (default)
+      1     IDE single-sector programmed I/O access
+      2     SCSI device access via ASPI interface
+     ??     Reserved for future use
+
+Some of the high-speed access modes are not used automatically since it is
+unsafe to assume that all hardware will support them.  Therefore if the direct
+disk access information packet is absent and if BIOS access to the drive is
+possible, slower BIOS accesses are used by default.  If it has been determined
+by external software that a fast access mode is possible, the software should
+write (or update) a direct disk access information packet to reflect this.  If
+no access to the drive other than with a fast direct access mode is possible,
+then the fast access mode will always be used.
+
+
+Packet 6 - Volume Unmount Information
+
+The volume unmount information packet contains information on conditions under
+which SFS volumes are unmounted by the SFS driver.  These may be in response to
+external stimuli, or due to internal conditions monitored by the driver.  In
+the absence of this packet, the settings used for volume unmounts are the
+defaults set by the driver, although these can generally be overridden under
+user control.
+
+Currently only one parameter, the auto-unmount timeout value, is defined.  This
+contains the default setting for the auto- unmount timer for this volume.  If
+no disk access takes place in the specified time, the volume is automatically
+unmounted.  A value of 0 in this field indicates that no auto-unmount timer is
+to be set (although this is better accomplished by simply deleting the volume
+unmount information packet).
+
+The packet layout is as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Volume unmount information packet ID = 6
+       2      2     WORD        Volume unmount information packet data length
+       4      2     WORD        Auto-unmount timeout in minutes, 0 = none set
+
+
+SFS Multiuser Access File Layout
+--------------------------------
+
+[The following information is preliminary and is bound to change at a moments
+ notice]
+
+Associated with each SFS volume which has multiuser access enabled are one or
+more database files containing information on each user who has access to that
+volume.  This consists of identification information for each user (in the case
+of a named database), access control information, and keying information needed
+to access the actual volume.
+
+The file is laid out as a simple flat database, which is adequate for its
+intended use since a user record is only retrieved once per database access,
+and generally the databases will be quite small.
+
+On a system with proper access control this file will be read-only for everyone
+but the volume administrator, but unfortunately under some operating systems
+and also DOS there is little access control and anyone with access to a sector
+editor can change their access rights.  However at this level they can also
+change the SFS volume header and the behaviour of mountsfs and the SFS driver,
+so little is gained by attempting to plug this hole.  In any case, the basic
+access to the volume is cryptographically controlled, and bypassing this goes
+beyond simply editing a file.
+
+In the future it may be worthwhile implementing more heavy-duty controls, such
+as using public-key signed access permission tokens from the volume
+administrator to grant access for networked use.
+
+All data in the multiuser access database is stored in big-endian format
+following the convention used by international cryptographic standards.  Care
+should to taken to ensure that the proper endianness is maintained when reading
+and writing the boot sector on little-endian systems (the performance of the
+current implementation was tested against the RS6000 version to confirm that
+endianness conversion was being done correctly).
+
+In the following discussion a BYTE is an 8-bit quantity, a WORD is a big-
+endian 16-bit quantity, and a LONG is a big-endian 32-bit quantity.  There are
+no alignment restrictions for the data as stored in the database.  All data is
+close-packed with no need for byte-padding for word or longword boundaries.
+
+An access database is broken up into two sections, a header record containing
+details on the database as a whole, and one or more individual user records.
+
+
+Database Header
+
+The database header is laid out as follows:
+
+    Offset  Size    Type        Description
+
+       0      4     BYTE[4]     'SFS1' identification string
+       4      2     WORD        Database type identifier
+       6      4     LONG        Encrypted volume serial number
+      10      2     WORD        Number of user records in database
+      12      2     WORD        Database name character set identifier
+      14      2     WORD        Database name length
+      16     ??     BYTE[]      Database name
+
+The identification string and database type identifier serve to identify the
+general database format.  The type identifier is one of the following:
+
+    Value   Type
+
+      0     Anonymous database containing date, access, keyinfo records
+      1     Named database containing user name, date, access, keyinfo records
+     ??     Reserved for future use
+
+An anonymous database contains no identification for any of the user records.
+Each keyinfo record is decrypted in turn until a valid record is found, and
+this keying information is then used to access the encrypted volume.
+
+A named database contains an idetifier for each user record.  Lookup of the
+database is performed directly by user name, and then access proceeds as for
+the anonymous database.
+
+The encrypted volume serial number is the serial number of the volume this
+database is used to access.
+
+[Problem: Should be able to set to zero to keep corresponding volume anonymous]
+[Problem: Can lead to trouble if chsfs is used to change volume serial number.
+          Perhaps change chsfs to disallow serial number change without also
+          changing database serial number]
+
+The database name is the collective name for the database and the users in it.
+Example database names might be "Ancient Illuminated Seers of Bavaria" or
+"Trilateral Commission".  The name is optional, and may be omitted by
+specifying a name with a length of 0 characters.
+
+
+Database Records
+
+Each record in the database is laid out as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Record type identifier
+       2      2     WORD        User name character set identifier
+       4      2     WORD        User name length
+       6     ??     BYTE[]      User name
+       n      4     LONG        Access valid from date
+     n+4      4     LONG        Access valid to date
+     n+8      4     LONG        Access rights bitstring
+    n+12     ??     BYTE[]      Keying information
+
+The record type identifier is one of the following:
+
+    Value   Type
+
+      0     Anonymous record containing date, access, and keyinfo
+      1     Named record containing user name, date, access, and keyinfo
+     ??     Reserved for future use
+
+The user name is the name of the user entitled to access the SFS volume the
+database corresponds to.  Under multiuser operating systems this will simply
+correspond to the userID which the user is known to the operating system under.
+Otherwise, the userID can be the user's name or some similar identifying method
+capable of distinguishing users.  If the record type is an anonymous record,
+the user name fields will not be present.
+
+[Problem: One user with many accounts.  Allow multiple userID's per record?
+          This could encourage password sharing though]
+
+The access valid date pair contains the date after which access to the SFS
+volume is permitted, and the date at which access rights to the volume expire.
+These are stored in the Unix seconds-since-1970 format.
+
+The access rights bitstring contains the access rights the user has to the SFS
+volume.
+
+[Problem: How?  Use RWXRWXRWX?  Or ASN.1-type strings with complex FTAM-type
+          rights?  ACL's?]
+
+The keying information is [what?  Same as single-user keying information]
+
+
+Interfacing with SFS
+--------------------
+
+The SFS device driver has a sophisticated control interface which allows
+complete configurability through the standard DOS IOCTL read and write calls,
+which are used to transfer data to and from the control channel of a device.
+It is recommended that you consult a system programming guide or your compilers
+documentation for more information on making DOS IOCTL calls.  Many compilers
+provide standard routines for making these calls.
+
+In the following discussion a BYTE is an 8-bit quantity, a WORD is a little-
+endian 16-bit quantity, and a LONG is a little-endian 32-bit quantity.  These
+values will need endianness conversion after being read from the SFS volume
+header.
+
+
+How SFS Identifies Drives
+
+For floppy disk drives, a value of 0 usually corresponds to drive A: and a
+value of 1 usually corresponds to drive B:.  For fixed disk drives accessible
+through the system BIOS, a value of 0 with the high bit set (giving an actual
+value of 0x80) usually corresponds to the first physical drive and a value of 1
+with the high bit set (giving an actual value of 0x81) usually corresponds to
+the second physical drive.  These values correspond to physical drives as
+accessed through the BIOS, and not logical volumes (SFS can also access drives
+not normally accessible through the BIOS).  A single physical drive may contain
+a number of logical volumes. Since the SFS driver runs below the level at which
+most operating systems operate, it will ignore the DOS drive mappings (in fact
+DOS can't even see the encrypted disk volume) and access the drive directly.
+Thus if there are more than the DOS standard of two floppy drives and two
+physical hard drives connected to the system it should still be able to access
+the drives and present them to the operating system as normal disk volumes.
+
+If the physical drive contains more than one logical volume, the offset of the
+start of the logical volume from the start of the physical drive is specified
+as a sector or disk block count.  If the physical drive contains only one
+logical volume, this value is set to zero.  Finding the start of the logical
+volume will usually entail parsing the partition table of the physical drive.
+Floppy drives have only one logical volume which is equivalent in size to the
+physical drive, fixed disks have one or more logical volumes on each physical
+volume.  These logical volumes can contain different filesystems and operating
+systems, and not all may be accessible or visible to DOS.  For more information
+on disk organization, refer to a good technical reference which covers disk
+drives, and then spend several days figuring out all the DOS quirks never
+mentioned in any reference.
+
+In the following text the term `drive number' is used to refer to a value which
+identifies a particular drive (which depends on the drive type, since BIOS, IDE
+and SCSI drive access identifies drives in different ways), the term `physical
+volume' is used to refer to the physical drive being accessed and the term
+`logical volume' is used to refer to the drive as DOS sees it.
+
+
+Reading from the SFS Driver:
+
+The SFS driver processes both control channel read and control channel write
+requests.  Initially, the drive number of the logical volume being used by the
+SFS driver must be found.  This can be done by checking each possible logical
+drive as follows:
+
+    for( driveNumber = 0; driveNumber <= 'Z' - 'A'; driveNumber++ )
+        {
+        /* Try and read data from the device's control channel */
+        data <- ioctlRead( driveNumber );
+
+        /* Check for the SFS identification string */
+        if( first 4 bytes of data = 'SFS1' )
+            exit loop;
+        }
+
+If, at the end of the loop's execution, the driveNumber is greater than the
+total number of drives in the system, the SFS driver has not been found,
+probably because it isn't present in the system.  Otherwise, driveNumber
+contains the drive number of the logical volume which the SFS driver is making
+available, and the data packet contains assorted status information about the
+SFS volume corresponding to the driveNumber.
+
+The data packet returned by the SFS driver is as follows:
+
+    Offset  Size    Type        Description
+
+       0      4     BYTE[ 4 ]   'SFS1' identification string
+       4      2     WORD        SFS unit number, starting from 0
+       6      2     WORD        Drive the SFS volume is mounted on.
+                                Interpretation of this value depends on the
+                                disk access mode.
+       8      4     LONG        Sector or disk block offset of logical volume
+                                from start of physical volume, or 0 if logical
+                                volume corresponds to physical volume
+      12      2     WORD        0 = no disk mounted, 1 = disk mounted, 2 = disk
+                                mounted in non-removable mode
+      14      2     WORD        0 = disk is read/write, 1 = disk is read-only
+      16      2     WORD        Quick-unmount hotkey value (high byte = shift
+                                value, low byte = optional keyboard scan code)
+      18      2     WORD        Auto-unmount time.  -1 = no unmount timer set,
+                                0 = timer set but expired, any other value =
+                                total unmount time in minutes
+      20      2     WORD        Auto-unmount timeout actual minutes remaining
+                                before the unmount takes place
+      22      2     WORD        Internal driver check code.  0 = no error, 1 =
+                                driver consistency check failed, 2 = individual
+                                unit consistency check failed.
+      24      4     DWORD       Last I/O error status.
+
+The unit number is used by SFS to handle multiple encrypted drives.  This value
+starts at zero for the first unit, and identifies the volume being accessed.
+
+The last I/O error status value provides more details on the last read or write
+error encountered by the SFS driver for the drive in question.  This value is
+divided into 4 bytes, of which the first contains the access mode in use when
+the error occurred, the the remaining three contain error information.  The
+possible values are as follows:
+
+    First byte  Access mode     Remaining bytes
+
+        0          BIOS         Byte 1 = 0
+                                Byte 2 = 0
+                                Byte 3 = BIOS error code
+        1          IDE          Byte 1 = 0
+                                Byte 2 = controller status
+                                Byte 3 = controller error code
+        2          SCSI         Byte 1 = sense key
+                                Byte 2 = auxiliary sense key
+                                Byte 3 = auxiliary sense key qualifier
+       ??        Reserved       Reserved for future use
+
+In all cases a value of all ones in bytes 2 and 3 indicate a controller or host
+device timeout.
+
+If queried via an IOCTL call on the volume's removability, the SFS driver will
+always indicate that the media is removable, even if the volume is on a fixed
+disk.  This is because some disk cacheing software won't invalidate a drive's
+data, even if the driver signals that the media has changed, unless the volume
+is marked as being removable.
+
+This status information can be returned to the user in the form of a status
+message or an information dialog if desired (the drive and offset information
+can be used to read the volume name, date, and serial number from the encrypted
+volume).
+
+
+Writing to the SFS Driver
+
+Once the driver has been found, several types of data packet can be sent to the
+driver to control its operation.  Each control packet begins with a WORD
+containing the magic value 'C0' which the SFS driver checks to ensure the
+packet is meant for it, and a WORD identifying the data packet type.  The data
+packet types are:
+
+    Name                    Value       Information type
+
+    PACKET_SET_DISKINFO       0         Disk parameters
+    PACKET_SET_KEYINFO        1         Keying information
+    PACKET_SET_READONLY       2         Set disk read-only status
+    PACKET_SET_DRIVENO        3         Drive number to mount
+    PACKET_SET_MOUNTSTATUS    4         Set mount status
+    PACKET_SET_UNMOUNT        5         Set/clear quick-unmount hotkey value
+    PACKET_SET_TIMEOUT        6         Set/clear timed unmount value
+
+These packets are explained in more detail below.  All other values are
+reserved for future use.
+
+
+Packet 0 - Disk Parameters:
+
+This packet type is used to convey to the SFS driver various pieces of
+information about the physical characteristics of the disk drive, including the
+sector size, number of heads, total number of sectors, and so on.  The packet
+layout is as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Magic value 'C0'
+       2      2     WORD        Packet type 0
+       4      2     WORD        Sector size in bytes
+       6      1     BYTE        Sectors per cluster
+       7      2     WORD        Number of boot sectors
+       9      1     BYTE        Number of FAT copies
+      10      2     WORD        Number of entries in root dir
+      12      2     WORD        Number of sectors on disk
+      14      1     BYTE        Media descriptor byte
+      15      2     WORD        Number of sectors per FAT
+      17      2     WORD        Number of sectors per track
+      19      2     WORD        Number of heads
+      21      4     LONG        Number of hidden sectors
+      25      4     LONG        Number of sectors per disk, 32-bit
+
+Sending this data packet to the driver automatically unmounts the encrypted
+volume.
+
+
+Packet 1 - Keying information
+
+This packet type sets up the encryption information in the driver.  It contains
+the en/decryption key, and the master IV for the encrypted volume.  The packet
+layout is as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Magic value 'C0'
+       2      2     WORD        Packet type 1
+       4     20     BYTE[ 20 ]  Master IV for encrypted volume
+      24     64     BYTE[ 64 ]  MDC/SHS keying information
+
+Sending this data packet to the driver automatically unmounts the encrypted
+volume.
+
+
+Packet 2 - Set disk Read-only Status
+
+This packet type sets the read-only status of the disk.  Sending a value of 0
+makes the disk read-only.  Sending a value of 1 makes the disk read/write.  The
+packet layout is as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Magic value 'C0'
+       2      2     WORD        Packet type 2
+       4      2     WORD        Read-only status: 0 = read-only, 1 = read/write
+
+Sending this packet type has no effect on the mount status of the volume.
+
+
+Packet 3 - Drive Number to Mount
+
+This packet type sets the drive number and the offset of the logical volume on
+the physical drive, which the driver will en/decrypt.  The packet layout is as
+follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Magic value 'C0'
+       2      2     WORD        Packet type 3
+       4      2     WORD        Drive number.  Interpretation of this value
+                                depends on the disk access mode.
+       6      4     LONG        Sector or disk block offset of logical volume
+                                from start of physical volume, or 0 if logical
+                                volume corresponds to physical volume
+
+The drive number contains information allowing the driver to locate the
+physical drive on which the SFS volume is located.  The drive access mode and
+drive identifying information are encoded into a 16-bit word as follows:
+
+    Bits 15-12: Disk access mode
+    Bits 11-0 : Drive identifying information
+
+The drive identifying information is laid out as follows:
+
+    Access mode     Drive identifying informtion
+
+         0          Bits 11-8: 0
+                    Bits 7-0 : BIOS drive number
+         1          Bits 11-8: 0
+                    Bits 7-0 : IDE drive number
+         2          Bits 11-8: SCSI host number
+                    Bits 7-4 : SCSI target ID
+                    Bits 3-0 : SCSI logical unit number
+
+Sending this data packet to the driver automatically unmounts the encrypted
+volume.
+
+
+Packet 4 - Set mount Status
+
+This packet type sets the mount status of the drive.  A value of 0 unmounts the
+drive, a value of 1 mounts the drive.  The packet layout is as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Magic value 'C0'
+       2      2     WORD        Packet type 4
+       4      2     WORD        Mount status (0 = unmount, 1 = mount)
+
+Unmounting the drive using this packet type also destroys the encryption
+information held by the driver and forces all data still held in cache and disk
+buffers to be flushed to disk.  This is the only sure way to erase all the
+encryption information, as it wipes not only the actual keying information but
+also most of the data area used by the driver and any data in cache and disk
+buffers.  Merely sending an empty keying information packet will not perform
+this task.
+
+
+Packet 5 - Set/clear Quick-Unmount Hotkey Value
+
+This packet is used to set the hotkey value which the SFS driver checks for to
+quickly unmount an SFS volume, or to clear the hotkey handling.  The packet
+layout is as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Magic value 'C0'
+       2      2     WORD        Packet type 5
+       4      2     WORD        Hotkey value (see below)
+
+The hotkey which the driver checks for can be any combination of the alt key,
+control key, left shift, and right shift (referred to as the shift code), and
+an arbitrary keyboard scan code.  The recommended default value is a
+combination of the left and right shift keys.  This information is encoded in
+the hotkey WORD as follows:
+
+  The high 8 bits contain the shift code.  This contains a set of bitflags
+  which specify the shift keys the driver checks for, possibly in addition to
+  an optional character code.  The values are:
+
+        Shift key       Value (binary)      Value (hex)
+
+           Alt             00001000             08
+         Control           00000100             04
+       Left Shift          00000010             02
+      Right Shift          00000001             01
+
+  The encoding for the shift code portion of the default left+right shift
+  hotkey is therefore 00000011 binary or 03 hex.
+
+  The low 8 bits contain an optional keyboard scan code which the driver will
+  check for in addition to the shift code.  This value is used in combination
+  with the shift code to specify a key combination to the driver, so that for
+  example Alt-Z would be used as the quick-unmount hotkey, although care should
+  be taken to ensure that none of a large number of existing special key
+  combinations is reused for this.
+
+  If the low 8 bits contain zeroes, the driver does not check for a keyboard
+  scan code in addition to a shift code.  The encoding for the keyboard scan
+  code portion of the default left+right shift hotkey is therefore 00000000
+  binary or 00 hex.
+
+  The overall value is the combination of the shift code and keyboard scan
+  code, or 0300 hex for the default hotkey.
+
+Specifying a value of 0 in this word will disable hotkey checking in the
+driver.
+
+The hotkey quick-unmount is handled by hooking the int 9h keyboard interrupt.
+The interrupt handler which performs this task is installed either when the
+driver is loaded (if there is a volume to be mounted or a hotkey code is
+specified), or when mountsfs is run (which transmits a quick-unmount control
+packet to the driver).  The interrupt handler checks for the programmed hotkey
+and unmounts the volume if it is detected.  Subsequent quick-unmount control
+packets can be sent to the driver to change the actual hotkey value.  Sending a
+value of 0 will disable hotkey checking and deinstall the keyboard interrupt
+handler.
+
+
+Packet 6 - Set/clear Timed Unmount Value
+
+This packet is used to set the unmount time after which an SFS volume is
+unmounted if no accesses are made to it.  The packet layout is as follows:
+
+    Offset  Size    Type        Description
+
+       0      2     WORD        Magic value 'C0'
+       2      2     WORD        Packet type 5
+       4      2     WORD        Timeout value in minutes before unmount
+                                takes place
+
+Specifying a value of 0 as the timeout value will disable the timed unmount
+feature in the driver.
+
+The timed unmount is handled by hooking the int 1Ch timer interrupt.  The
+interrupt handler which performs this task is installed either when the driver
+is loaded (if a timeout value is specified at this time), or when mountsfs is
+run and a timeout value is specified (which transmits a timed unmount control
+packet to the driver).  The interrupt handler decrements the timer and unmounts
+the volume if it expires.  The timer is reset every time a media check packet
+is received by the driver, which allows normal DOS accesses to be detected but
+doesn't cause false triggering due to device driver control functions.
+Subsequent timed unmount control packets can be sent to the driver to change
+the actual timeout value for a volume.  Sending a value of 0 will disable the
+timer and, if no more volumes have timers set, deinstall the timer interrupt
+handler.
+
+
+Controlling the Driver
+
+The SFS driver is initialized by sending it a series of control packets giving
+the disk information, the keying information, the drive number and logical
+volume offset to access, the read/write status, and finally the mount command.
+The sequence of operations for mounting a volume is as follows:
+
+    driveNumber <- find SFS drive number as outlined above;
+    ioctlWrite( driveNumber, PACKET_SET_DISKINFO, \
+                disk information - packet type 0 );
+    ioctlWrite( driveNumber, PACKET_SET_KEYINFO, \
+                keying information - packet type 1 );
+    ioctlWrite( driveNumber, PACKET_SET_READONLY, \
+                read-only status - packet type 2 );
+    ioctlWrite( driveNumber, PACKET_SET_DRIVENO, \
+                drive to mount and vol.offs - packet type 3 );
+    ioctlWrite( driveNumber, PACKET_SET_MOUNTSTATUS, \
+                mount status TRUE - packet type 4 );
+
+To mount a new volume on the same drive:
+
+    driveNumber <- find SFS drive number as outlined above;
+    ioctlWrite( driveNumber, PACKET_SET_KEYINFO, \
+                keying information - packet type 1 );
+    ioctlWrite( driveNumber, PACKET_SET_MOUNTSTATUS, \
+                mount status TRUE - packet type 4 );
+
+To unmount a volume, erasing the keying information held by the device driver:
+
+    driveNumber <- find SFS drive number as outlined above;
+    ioctlWrite( driverNumber, PACKET_SET_MOUNTSTATUS, \
+                mount status FALSE - packet type 4 );
+
+
+Interfacing with mountsfs
+-------------------------
+
+In order to facilitate the use of SFS with other software such as graphical
+front-ends, mountsfs can be run in batch mode in which it accepts abbreviated
+forms of the usual commands and outputs more complex results to fixed-record
+data files instead of the screen.
+
+
+Controlling mountsfs in Batch Mode
+
+In order to enable these features, the first option given to mountsfs must be
+the keyword `batch'.  This allows it to recognise alternative single-letter
+forms of the normal commands.  These single-letter options and their equivalent
+commands are as follows:
+
+    Letter      Full command
+
+      f         user file
+      h         hotkey
+      i         info or informaion
+      n         user name
+      p         password entry
+      s         status
+      t         timeout
+      u         unmount
+      v         volume name
+
+The volume name, hotkey, timeout, user name, and user file options must be
+followed by the appropriate extra information in the usual format.  The
+password entry option should be followed by the password for the encrypted
+volume.  For example to mount the volume "Test" with a quick-unmount hotkey of
+Ctrl-Alt-Z, an auto-unmount timeout of 10 minutes, and a password of "secret
+data" the command would be:
+
+    mountsfs batch vTest hCtrlAltZ t10 "psecret data"
+
+which is equivalent to the usual:
+
+    mountsfs vol=test hotkey=ctrlAltZ timeout=10
+
+
+mountsfs Output in Batch Mode
+
+During normal operation mountsfs may print several lines of information to the
+screen giving details on the status of the operation being performed and
+details on currently mounted and unmounted SFS volumes.  When mountsfs is run
+in batch mode, this information is written to a fixed-record data file named
+"sfs.tmp" instead of to the screen.  The location of the file is given by the
+"TMP" environment variable; if this variable does not exist, the file is
+written to the root directory of the C: drive.  If the TMP environment variable
+points to a drive without a path, the file is written to the root directory of
+that drive.  Thus if the TMP environment variable were set as:
+
+    set tmp=e:\data\
+
+then mountsfs would output the results of the status or info/information
+command to the file "e:\data\sfs.tmp".  If the variable were set as:
+
+    set tmp=a:
+
+then mountsfs would output its data to the file "a:\sfs.tmp".
+
+The mountsfs output is written to the file as a series of fixed records.  Each
+record is in ASCII text format with individual fields beginning on new lines,
+making parsing by external software a simple task.  All control fields are in
+uppercase text.  The exact record format is determined by the record type which
+is specified in the first line.  In most cases the only record written will be
+the result from the mountsfs execution, although the status and
+info/information commands produce one or more extra output records which are
+detailed in the section "The Status and Info Commands in Batch Mode" below.
+
+The mountsfs result record is laid out as follows:
+
+    Field               Field contents
+
+    Record type         "RESULT"
+    Success status      "TRUE" or "FALSE"
+    Error message       <string : error message, or empty string>
+
+The record type field identifies the following record as being a mountsfs
+result record.
+
+The success status field gives the success status of the mountsfs command.  A
+value of "TRUE" indicates the command succeeded, a value of "FALSE" indicates
+the command failed.
+
+The error message field gives the error message generated by mountsfs if the
+success status field is set to FALSE, or an empty string if the success status
+field is set to TRUE.
+
+A successful mountsfs command result record would be as follows:
+
+    Field                   Field data
+
+    Record type             RESULT
+    Success status          TRUE
+    Error message
+
+A failed mountsfs command result record might be as follows:
+
+    Field                   Field data
+
+    Record type             RESULT
+    Success status          FALSE
+    Error message           Cannot find SFS driver
+
+
+The Status and Info Commands in Batch Mode
+
+Apart from the result record, mountsfs produces two other types of output
+records, the output from a status command and the output from an info/
+information command.  As with the RESULT record, each record is in ASCII text
+format with individual fields beginning on new lines, making parsing by
+external software a simple task.  All control fields are in uppercase text.
+The exact record format is determined by the record type which is specified in
+the first line.  This is either "STATUS" for the output from a status command,
+or "INFORMATION" for the output from an info/information command.
+
+The status command output record is laid out as follows:
+
+    Field               Field contents
+
+    Record type         "STATUS"
+    Unit number         <number : drive unit number>
+    Mount status        "TRUE" or "FALSE"
+    Volume name         <string : volume name, or empty string>
+    R/W access allowed  "TRUE" or "FALSE"
+    Drive letter        <character : uppercase driver letter>
+    Hotkey              <Ctrl, Alt, LeftShift, RightShift = 'c', 'a', 'l', 'r'>
+                        <Letter = uppercase letter. Example: Ctrl-Alt-Z = "caZ">
+                        <or "FALSE">
+    Timeout total time  <number : time in minutes, or "FALSE">
+    Timeout time left   <number : time in minutes, or "FALSE">
+
+The record type field identifies the following record as being from the output
+of the status command.
+
+The unit number field is the drive unit number used by the SFS driver.
+
+The mount status field contains "TRUE" if there is a volume mounted, or "FALSE"
+if there are no volumes mounted.  If this field contains the value "FALSE" then
+the following fields will contain null values (either the value "FALSE" or
+blank fields as appropriate).
+
+The volume name field contains the name of the volume.  This may contain any
+type of character, or may be an empty string if no volume name is present.
+
+The R/W access allowed field contains "TRUE" if read/write access to the volume
+is allowed, or "FALSE" if write access is disabled and the volume is mounted
+read-only.
+
+The drive letter field contains the uppercase drive letter which the mounted
+SFS volume corresponds to.
+
+The hotkey field contains the quick-unmount hotkey value or "FALSE" if none is
+set.  The shift keys (if any) are given in lowercase and the ASCII key value
+(if any) is given in uppercase.  The shift key codes are Ctrl = 'c', Alt = 'a',
+leftShift = 'l', rightShift = 'r'.  These are followed by the ASCII key value,
+if there is one.  Thus the code for the default quick-unmount hotkey
+combination leftShift-rightShift would be "lr", and the code for the hotkey
+combaination Ctrl-Alt-Z would be "caZ".
+
+The timeout total time and timeout time left fields contain either the
+auto-unmount total time in minutes and the time left before the unmount takes
+place in minutes, or the control string "FALSE" if no timeout is set.
+
+A typical status command output record might be as follows:
+
+    Field                   Field data
+
+    Record type             STATUS
+    Unit number             0
+    Mount status            TRUE
+    Volume name             Encrypted data
+    R/W access allowed      TRUE
+    Drive letter            G
+    Hotkey                  lr
+    Timeout total time      15
+    Timeout time left       4
+
+This would then usually be followed by a RESULT record.
+
+The information command output record is laid out as follows:
+
+    Field               Field contents
+
+    Record type         "INFORMATION"
+    Volume name charset <string : character set name, or "FALSE">
+    Volume name         <string : volume name, or empty string>
+    Volume date         <string : date in YYMMDDHHMMSS format>
+    Volume ID           <number : volume serial number>
+    Volume size         <number : volume size in kilobytes, or "FALSE">
+    Filesystem type     <string : filesystem type, or "FALSE">
+    Mount ID            <string[8] : mount ID, or "FALSE">
+    Multiuser access    "TRUE" or "FALSE"
+    Mount status        <character : uppercase driver letter, or "FALSE">
+    Fast access mode    <number : access mode, or "FALSE">
+    Current access mode <number : access mode, or "FALSE">
+    Timeout             <number : timeout in minutes, or "FALSE">
+
+The record type field identifies the following record as being from the output
+of the info/information command.
+
+The volume name character set field contains the name of the character set used
+in the volume name.  This is either "ISO 646", "ISO 8859-1", "ISO 8859-2", "ISO
+8859-3", "ISO 8859-4", "ISO 8859-5", "ISO 8859-6", "ISO 8859-7", "ISO 8859-8",
+"ISO 8859-9", or "FALSE" if the character set is unknown.
+
+The volume name field contains the name of the volume.  This may contain any
+character from the character set given in the Volume name character set field,
+or may be an empty string if no volume name is present.
+
+The volume date field contains the volume date in YYMMDDHHMMSS (two-digit year,
+month, day, hour, minute, second) format.
+
+The volume ID field contains the volume serial number.
+
+The volume size field contains the volume size in kilobytes, or "FALSE" if the
+volume is removable media.
+
+The filesystem type field contains the name of the filesystem the volume
+contains.  This is either "DOS", or "FALSE" if the filesystem is unknown.
+
+The mount identifier field contains the 8-character mount identifier for the
+volume if the volume is on a fixed disk, or "FALSE" if the volume is on a
+removable disk and no mount at system startup is possible.
+
+The multiuser access field contains "TRUE" if multiuser access to the volume is
+possible or "FALSE" if only single-user access is possible.
+
+The mount status field contains the uppercase drive letter which the mounted
+SFS volume corresponds to if the volume is mounted, or "FALSE" if it is
+unmounted.
+
+The fast access mode field contains the fast disk access mode which SFS will
+use if possible when accessing this volume, or "FALSE" if the default (slower)
+access mode will be used.  The current access mode contains the actual access
+mode being used to access the volume, or "FALSE" if the default (slower) access
+mode is being used.
+
+The timeout field contains the default time in minutes before a volume is
+auto-unmounted.  This value may be overridden by mountsfs or the SFS driver.
+
+The information command output records corresponding to the volumes given in
+the section "Mounting an SFS Volume" above would be as follows:
+
+    Field                   Field data
+
+    Record type             INFORMATION
+    Volume name charset     ISO 646
+    Volume name             Data backup
+    Volume date             931101101301
+    Volume ID               1234
+    Volume size             FALSE
+    Filesystem type         DOS
+    Mount ID                FALSE
+    Multiuser access        FALSE
+    Mount status            FALSE
+    Fast access mode        FALSE
+    Current access mode     FALSE
+    Timeout                 FALSE
+    Record type             INFORMATION
+    Volume name charset     ISO 646
+    Volume name             Personal financial records
+    Volume date             930906112219
+    Volume ID               177545
+    Volume size             10000
+    Filesystem type         DOS
+    Mount ID                03A12F7B
+    Multiuser access        FALSE
+    Mount status            E
+    Fast access mode        FALSE
+    Current access mode     FALSE
+    Timeout                 30
+    Record type             INFORMATION
+    Volume name charset     ISO 646
+    Volume name             Encrypted data disk
+    Volume date             930412221700
+    Volume ID               69231461
+    Volume size             42456
+    Filesystem type         DOS
+    Mount ID                42DD2536
+    Multiuser access        TRUE
+    Mount status            FALSE
+    Access mode             1
+    Current access mode     1
+    Timeout                 10
+
+This would then usually be followed by a RESULT record.
+
+In order to make use of these records, the controlling program should invoke
+mountsfs in batch mode with either the `s' status or `i' information command.
+mountsfs will run and, if no errors are encountered, write its output to the
+output file.  The controlling program can then read the data from the file,
+delete the file, and handle the information as appropriate.
+
+
+Selected Source Code
+--------------------
+
+This section contains a walkthrough of selected portions of the source code
+(mainly the encryption-related parts) to allow the verification of its
+correctness and to help people wishing to write SFS-compatible software.
+
+[!!!! Not in the early releases to save space and because I haven't had
+      time to add it yet, should be in a later version !!!!]
+
+
+Future Work
+-----------
+
+The following ideas may be incorporated into future versions of SFS if
+requested by users.  In addition reasonable requests for other improvements may
+also find their way into SFS.
+
+ - Improve error recovery for the encryption process.  This is somewhat
+   difficult, and will probably involve keeping a copy of status information
+   and the track currently being encrypted on a local volume to allow a restart
+   in the case of a power failure.  There are problems inherent in this as it
+   involves storing sensitive data in a disk file, and will slow down the
+   processing considerably due to the need to write each track to two
+   physically separate disk volumes instead of one continuous one.  A partial
+   solution is to keep the status information (simply an index of the disk
+   section currently being encrypted) in the volume header while mksfs is
+   running and provide some sort of restart option if power is lost, although
+   what happens if power dies halfway through writing a track is uncertain.
+
+ - A plug-in card which contains a BIOS extension which hooks int 13h and
+   encrypts and entire physical disk (not just one disk volume), from the
+   master boot record at the start to the very last sector at the end.  This
+   means all disk I/O must be done via int 13h and won't work on all systems.
+   Cost for the card is estimated to be about $80-$100 for the basic version an
+   up to $200 for the full hardware version whose throughput it significantly
+   higher than the basic version.
+
+
+Recommended Reading
+-------------------
+
+In recent years a large number of books and articles on crytography have
+appeared.  Many of these are beyond the level of anyone with a casual interest
+in the subject, but a good overview is given by Dorothy Dennings (now somewhat
+dated) "Cryptography and Data Security", published by Addison-Wesley in 1982
+(ISBN 0-201-10150-5).  Bruce Schneier's much more recent "Applied
+Cryptography", published by John Wiley and Sons in 1993 (ISBN 0-471-59756-2),
+is probably the best single text on cryptography currently available, and is
+recommended reading for anyone wanting more information on the principles
+behind SFS.  This book also contains a large list of references to more
+information on all manner of encryption algorithms, protocols, and technology.
+Voydock and Kent's tutorial "Security Mechanisms in High-Level Network
+Procotols", published in the ACM Computing Surveys Vol.15, No.2 (June 1983)
+provides a good overview of design considerations for encryption systems.
+
+The algorithms and techniques used in SFS are laid down in the following
+national and international standards:
+
+    ANSI X3.106, "American National Standard for Information Systems - Data
+        Encryption Algorithm - Modes of Operation"
+
+    ANSI X9.30 Part 2, "The Secure Hash Algorithm (SHA)"
+
+    Australian Standard AS 2805.5.2, "Electronic Funds Transfer - Requirements
+        for Interface", Part 5.2, "Ciphers - Modes of operation for an n-bit
+        block cipher algorithm"
+
+    ISO 10116:1991, "Information technology - Modes of operation for an n-bit
+        block cipher algorithm"[1]
+
+    ISO 10126-2:1991, "Banking - Procedures for message encipherment
+        (wholesale) - DEA Algorithm"[1]
+
+    NBS FIPS pub. 81, "DES Modes of Operation", 1980[2]
+
+    NIST FIPS pub. 180, "Secure Hash Standard", 1993[2]
+
+Information on the weaknesses of some cryptosystems are published in a variety
+of places.  The largest publicly available sources of information are the
+cryptography conference proceedings which are part of the Springer-Verlag
+"Lecture Notes in Computer Science" series.  Eli Biham and Adi Shamir's
+"Differential Cryptanalysis of the Data Encryption Standard", also published by
+Springer-Verlag (ISBN 0-387-97930-1), gives information on the resistance to
+attack of a number of block ciphers.
+
+Charles Pfleegers book "Security in Computing", published by Prentice Hall in
+1989 (ISBN 0-13-798943-1) provides a thorough overview of computer security
+techniques, including coverage of more obscure areas such as ethical issues.
+
+A good technical coverage of smart cards can be found in "Smart Card 2000: The
+Future of IC Cards", published by North-Holland in 1988 (ISBN 0-444-70545-7).
+The physical and interface characteristics of smart cards are covered in the
+following international standard:
+
+    ISO 7816:1991, "Identification cards - Integrated circuit card with
+        contacts"[1]
+
+Finally, James Bamford's "The Puzzle Palace", published by Houghton-Mifflin in
+1982, is a good source of information on the operation of the NSA, albeit
+slightly dated (it predates the widespread availability of encryption for
+personal computers, for example).
+
+This list only scratches the surface of the full range of cryptographic and
+security literature available - a very detailed bibliography can be found in
+the "Applied Cryptography" book.
+
+Footnote [1]: These publications are available for a horribly high price from
+              ISO-affiliated national standards bodies in most countries.
+
+Footnote [2]: These publications are available from the National Technical
+              Information Service, Springfield, Virginia 22161.  NTIS will take
+              telephone orders on +1 (703) 487-4650 (8:30 AM to 5:30 PM Eastern
+              Time), fax +1 (703) 321-8547.  For assistance, call +1 (703)
+              487-4679.
+
+
+
+Using SFS
+---------
+
+In general SFS is free for personal (private) use.  However if you find SFS of
+use then in order to allow continued development of and enhancements to SFS, in
+particular the creation of more user-friendly versions of mksfs and mountsfs,
+of versions for other systems, of a low-cost plug-in card containing whole-disk
+encryption firmware, and the replacement of the drive I fried testing SFS, a
+donation of $25 would be appreciated.  Alternatively, the donation can be used
+to cover the legal costs of those people involved in the current US government
+investigation of the PGP encryption program.
+
+Use of SFS in a commercial, government, or institutional environment or for
+business purposes is allowed for free for 30 days to allow it to be evaluated.
+After this period it should be registered for further use.  The registration
+fee covers use of SFS on any one machine at any one time (so you could, for
+example, use SFS on a machine at work and keep a copy on your notebook PC for
+use while travelling).
+
+If you decide to send a donation or registration, please specify whether you'd
+like it to be used for further SFS development work or if it is to go into the
+PGP legal fund.  Cheques or money orders can be sent to:
+
+        Peter Gutmann
+        24 Durness Pl.
+        Orewa
+        Auckland
+        New Zealand
+
+I can also be contacted through email at (among others) the following
+addresses:
+
+        pgut1@cs.aukuni.ac.nz
+        p.gutmann@cs.auckland.ac.nz
+        peterg@kcbbs.gen.nz
+
+with the first address being the preferred one.  Finally, the fastest way to
+contact me is by phone between about 10am and 1am at the following number
+(remembering that NZ local time is GMT+13, so we're usually about 18-20 hours
+ahead of the US and about 12 hours ahead of Europe):
+
+        +64 9 426-5097
+
+
+Testimony from one of our satisfied customers:
+
+ "I hear this crash and I find a rock, wrapped in paper, next to my living room
+  window.  I open up the note and it says `You want it in writing? You got it.
+  Next time, use a *real* encryption program.  SFS.  We know where you live'".
+
+  So why aren't *you* using SFS?
+
+Here's what reviewers have been saying about SFS:
+
+ "Version 1.1 has several of the advanced features recommended in version 1.0,
+  but not all of the ones I'd like to see in version 1.2.  So, it's pretty good
+  except when it's not.  Three stars.
+
+  You probably won't use half the features anyway.  I'm a little ticked off
+  that it clashes with my most exotic memory-resident programs, but otherwise
+  the software runs just fine on my Turbo Rambuster 586.  It will probably run
+  like molasses on your 386SX.
+
+  It's great value at $25, and I recommend you register it, although that's
+  easy for me to say because reviewers get freebies".
+
+
+Credits
+-------
+
+Thanks to the readers of comp.os.msdos.programmer and comp.os.linux.development
+and in particular Jouni Kosonen, for their valuable advice with low-level DOS
+disk handling and organization, and the users of the Enigma BBS, in particular
+Arne Rohde, for helping test-run several early versions of the low-level disk
+handling code on various drive configurations and for providing useful advice
+on the vagaries of the PC's disk handling.   Thanks also to Steven Altchuler
+for performing all sorts of dangerous tests on SFS volumes and for his heroic
+efforts in finding the obscure mountsfs bug, and to Vadim Vlasov for help with
+various thorny problems with low-level disk and device driver programming.
+
+Matthias Bruestle (the greatest chemist of all time and space) provided
+valuable feedback on assorted problems in mksfs and mountsfs, and risked his
+disk drives testing the SFS driver and other SFS software.  At the behest of
+the author he also risked imprisonment for Datenvergewaltigung by letting mksfs
+near his Linux partition.
+
+Colin Plumb made noises about various problems with CFB-mode encryption,
+corrected me when I tried to explain the need for encrypted IV's in email at
+3am, and provided much useful feedback on SFS's operation in general, including
+the very elegant solution to the CFB-mode encryption problem and help with the
+disk overwriting method.
+
+Vesselin Bontchev sent in long lists of suggested improvements to SFS, and
+provided an ongoing commentary on features and ideas for the software (it seems
+half the functionality provided by SFS is due to his suggestions).  Ralf
+Brown's interrupt list provided help with the haze of obscure interrupts used
+by mksfs in its quest for random information.
+
+Thanks to John Huttley for the loan of a SCSI controller, Peter Shields for the
+loan of a SCSI cable, Stuart Woolford for the loan of a SCSI drive which didn't
+work, and John Huttley for the loan of a SCSI drive which did, in order to get
+the SCSI interface code for SFS going.
+
+Peter Conrad typset the entire set of SFS docs into LaTeX format.
+
+The Beerdigungsinstitut Utzmann (erstes Erlanger Beerdigungsunternehmen) helped
+clean up the casualties from the SFS beta-testing.  Finally, Tony, Geezer,
+Bill, Ozzy, Ron, and Grandos helped me stay awake during many long nights of
+debugging low-level disk access code and encryption routines.
+
+Various other people have at various times offered help and suggestions on
+getting SFS going.  My thanks go to them also.
+
+
+Warranty
+--------
+
+1. Customer Obligations
+
+1.1. Customer assumes full responsibility that this program meets the
+     specifications, capacity, capabilities, and other requirements of said
+     customer, and agrees not to bother the author if the program does not
+     perform as expected, or performs other than expected, or does not perform
+     at all.
+
+1.2. Customer assumes full responsibility for any deaths or injuries that may
+     result from the normal or abnormal operation of this program.  In the
+     event of casualties exceeding 1000 persons or property damage in excess of
+     $10 million, customer agrees that he or she has stolen the program and we
+     didn't even know he or she had it.
+
+1.3. Customer agrees not to say bad things about the program or the author to
+     anyone claiming to be from "60 Minutes".
+
+
+2. Very Limited Warranty and Conditions of Sale
+
+2.1. For a period of 90 minutes, commencing from the time you first thought
+     about getting this program, we warrant that this program may or may not be
+     free of any manufacturing defects.  It will be replaced during the
+     warranty period upon payment of an amount equal to the original purchase
+     price plus $10.00 for handling.  This warranty is void if the program has
+     been examined or run by the user, or if the manual has been read.
+
+2.2. This program is sold on an AS WAS basis.  The author makes no warranty
+     that it is, in fact, what we say it is in our propaganda, or that it will
+     perform any useful function.  We have no obligation whatsoever other than
+     to provide you with this fine disclaimer.
+
+2.3. Some countries do not allow limitations as to how long an implied warranty
+     lasts, so we refuse to imply anything.
+
+2.4. There is an extremely small but nonzero chance that, through a process
+     known as "tunnelling", this program may spontaneously disappear from its
+     present location and reappear at any random place in the universe,
+     including your neighbours computer system.  The author will not be
+     responsible for any damages or inconvenience that may result.
+
+
+3. Limitation of Liability
+
+3.1. We have no liability or responsibility to the customer, the customers
+     agents, our creditors, your creditors, or anyone else.
