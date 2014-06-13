@@ -1,0 +1,321 @@
+        THIS VERSION OF SFS IS A BETA RELEASE!!  DO NOT DISTRIBUTE IT!!
+        ===============================================================
+
+This is the beta release of what will be SFS 1.10.  Changes from 1.00 are given
+at the end of this file.  Before you use this version, as with previous betas,
+you may want to back up all data on your drive.  It's been tested by a number
+of beta testers and it seems to work OK, but it's now become so complex that
+it's virtually impossible to test every possible nuance and interaction,
+especially when I'm constantly making changes, and each change may invalidate
+all the previous tests.
+
+Oh yes, WinSFS may not work any more due to changes in mountsfs, I'll hassle
+the author about it in a minute...
+
+Some points I'd like feedback on:
+
+  Is the use of '/' in front of all SFS.SYS args really necessary?  The only
+  reason for it seems to be that MSDOS 1.0 did it, but I could save space in
+  the command-line by not requiring the otherwise redundant '/'s all over the
+  place.
+
+  What other bugs have I managed to add by making all the changes?  Was there
+  anything I missed out?
+
+SFS 1.1 standardises the keyboard handling during password input to make
+password entry independant of keyboard layout.  This means that users of non-US
+keyboards may find that their passwords from SFS 1.0 are no longer accepted by
+SFS 1.1.  The solution to this is to use the SFS 1.0 software to change the
+password to some simple format, then use the SFS 1.1 software to change it back
+to the actual password.  This can be done as follows:
+
+    1. Use chsfs 1.0 to change the password from the real password to
+       something like ". . . . . " (5 dots and spaces).
+    2. Use chsfs 1.1 to change the password from ". . . . . " back to
+       the real password.
+
+This process will only take a minute or so, and will probably only be necessary
+on a very small number of systems.  The reason the change is necessary is that
+some keyboards rearrange the key layout, but this doesn't take effect until
+different keyboard drivers are loaded.  Therefore a password entered from a
+certain keyboard may change depending on whether it was entered before the
+keyboard driver was loaded (during an automount) or afterwards (with mountsfs).
+SFS 1.1 attempts to standardize the key entry to make it independant of the
+keyboard type or layout.
+
+SFS 1.1 can create encrypted volumes on SCSI disks which are normally
+inaccessible from DOS.  If you plan to use a SCSI drive with SFS, please take
+the usual precautions: Run "mksfs -c" first, and back up your data before
+encrypting.  You will need to have some form of ASPI or CAM SCSI manager loaded
+before SFS can access the drive.  If anyone uses an ASPI manager other than
+ASPI2DOS.SYS, ASPI4DOS.SYS, ASPICAM.SYS, ASPIEDOS.SYS, or BTDOSM.SYS, please
+let me know so I can add the information to the docs.
+
+OK, back to the standard stuff...
+
+
+Overview
+--------
+
+The SFS 1.1 distribution contains the following files:
+
+    readme.txt          This file
+    sfs.sys             SFS device driver (386 version)
+    sfs486.sys          SFS device driver (486+ version)
+    sfs.sig             \ PGP digital signature for
+    sfs486.sig          / sfs.sys and sfs486.sys
+    mksfs.exe           \
+    mountsfs.exe         | SFS support
+    chsfs.exe            | software
+    adminsfs.exe [1]    /
+    mksfs.sig           \
+    mountsfs.sig         | PGP digital signatures
+    chsfs.sig            | for support software
+    adminsfs.sig [1]     /
+    winsfs.exe          \
+    winsfs.pif           | SFS for Windows
+    winsfs.sig          /
+    sfs1.doc            \
+    sfs2.doc             | SFS documentation
+    sfs3.doc            /
+    sfs.ps              Large DOT "SFS Encrypted Data" warning sign
+    sfs_disk.ps [2]     Many smaller versions of the above for floppy disks
+
+                        [1] Currently available only to a few alpha-testers as
+                            some details are still being worked out
+                        [2] Some laser printers won't print this file, possibly
+                            due to the amount of detail contained in it.
+
+In addition, the documentation has been typeset into LaTeX format (with a copy
+in Postscript format also included) by Peter Conrad <conrad@unix-ag.uni-kl.de>.
+This is available from garbo.uwasa.fi as /pc/crypt/sfs10tex.zip, and is a 294K
+file.
+
+
+Getting Started
+---------------
+
+Before you start, you should read the docs (or at least the first few sections
+which outline how to use the software).  I know that all software says this,
+but with SFS it's especially important.  You should read the section on
+incompatibilities in the docs before you start. Among other things this will
+show you how to run the built-in self-tests to check disk access and make sure
+SFS won't run into any problems with disk I/O.  I recommend *very strongly*
+that you run mksfs with the -c option before you create an encrypted SFS
+partition on your hard drive.
+
+In addition, before you rush into using SFS, if you plan to use it on a hard
+drive I would recommend backing up anything which you regard as valuable.
+People all over the world have been using it for some months without problems,
+but I really can't 100% guarantee that it'll work perfectly on your system -
+there are just too many strange pieces of hardware and software out there for
+that.
+
+OK, now you can go ahead and install it.  I'll wait here.
+
+
+Possible Problems
+-----------------
+
+Finished?  OK.... here are some (rather obscure) possible problems which have
+been reported to date:
+
+There has been a report of problems with a 1.2 GB SCSI drive using an Adaptec
+controller with the sector remapping for > 1 Gb drives enabled and running in
+conjunction with LILO and Linux 0.99 patchlevel 14 or above.  After running
+mksfs, LILO reported some sort of error.  The problem was corrected by
+re-installing LILO.  Despite various tests, no clue as to what's happening here
+has appeared.  A hex dump of the sectors after the SFS partition indicate that
+the following partition was untouched by mksfs, so it may be some interaction
+between LILO and the partition table (maybe LILO writes to the partition table
+like the OS/2 boot manager does, and doesn't expect to find an SFS partition.
+Who knows...).
+
+There seems to be some bizarre interaction with version 6.30 of the Logitech
+Mouse driver and SFS.  In particular, mounting and unmounting SFS volumes can
+disable the mouse driver and even cause it to not recognise the mouse any more.
+With nothing but the mouse driver loaded, simply running mksfs or mountsfs is
+enough to lose the mouse under DOS.  These problems have occurred when using a
+serial mouse and QEMM 7.03 with stealth enabled, but don't seem to occur with a
+bus mouse and no QEMM.  There are no interrupt conflicts, and neither the mouse
+driver nor SFS are overwriting each others data or code areas.  The mouse can
+be reenabled simply by running Windows.  In addition, running mountsfs in a
+secondary shell spawned from Windows (not just a secondary shell under DOS, but
+specifically one where Windows is acting as an intermediary) seems to isolate
+the mouse from mountsfs, and the mouse isn't deactivated.  If anyone has any
+ideas on this, I'd like to hear from them.
+
+There has been a report of some sort of odd problem with an older version of
+QEMM when EMS suport is turned on.  The driver reports an internal consistency
+check failure indicating that something has corrupted it, and the problem goes
+away without EMS support enabled.  Possibly a newer version of QEMM will fix
+this, or it may be that the problem doesn't involve QEMM but is due to some
+other software behaving unusually while under the influence of QEMM with EMS.
+
+SFS currently doesn't work with Bernoulli drives, because the Bernoulli needs a
+special OAD (Closed Architecture Driver) to access the drive, and Iomega won't
+tell anyone what this driver does or what's needed to talk to a Bernoulli
+drive.
+
+If the FAT on an encrypted disk is edited to create artificial bad sectors, and
+the volume subsequently fixed with Norton Disk Doctor, and NDD finds a problem
+on the disk, the SFS volume will be unmounted after NDD has finished fixing the
+problem.  The only way to do this is with a write to the control channel on the
+SFS driver using a special packet format, so how NDD manages to perform this
+unmount is a puzzle.
+
+SFS has been tested with (among other things) Smartdrv 4.0, Windoze 3.1, QEMM
+7.0 (with Stealth), SHARE, Stacker 3.1, Stacker 4.0, and assorted disk
+utilities such as Norton DiskEdit, Norton Disk Doctor, Microsoft and Norton
+Antivirus (with innoculation), Norton Speed Disk, MS Defrag, VOPT, and various
+others, and has so far not caused any problems.  If anyone tests it with any
+other system software, please let me know.
+
+If you need to contact me, you can mail me at pgut1@cs.aukuni.ac.nz, although
+responses to email I get on Mondays, Thursdays, and Fridays may take awhile.
+If you need to contact me really badly, try calling +64 9 426-5097 from 9am-2am
+NZT (that's about GMT+13) except M, Th, F.  I'll leave you to fight with the
+modem for possession of the phone line.
+
+Finally, if anyone ever writes about SFS anywhere (apart from on the internet),
+I'd appreciate hearing about it, since it's annoying sometimes getting
+third-hand references to articles I'll never be able to find which were
+published months beforehand.
+
+Peter.
+
+
+Revision levels
+---------------
+
+0.90 First public beta
+
+0.97 Second public beta
+
+     Explict support for DRDOS large partitions (which differ from MSDOS
+        large partitions).
+     More internal consistency checks in mksfs, mountsfs, chsfs.
+     Major rewrite of SFS library internals.
+     Use of XMS buffering or more conservative write strategy to fix occasional
+        copy-on-write buffering problem in newer versions of DOS.
+     Support for multiple mounted SFS volumes.
+     WinSFS - Windows front-end for SFS.
+     Support for batch mode operation for WinSFS.
+     Fixed (hopefully) problem with race condition of hotkey or timed unmount
+        during disk access.
+     Improved overwriting of SFS driver data on unmount.
+     Better self-checking in the SFS driver during operation.
+
+1.00 General public release
+
+     Fixed some problems in the technical section of the docs.
+     Added the Quick-start section to the docs.
+     Precomputed the encryption key in SFS.SYS and made assorted other small
+        changes.  This makes the driver run approximately 1.7 times faster, and
+        gives a decrease of about 1K in the overall size.
+     Even better data overwriting based on an analysis of disk data encoding
+        schemes.
+     Added a quick introduction to encryption issues section to the docs.
+     mksfs now asks for a new disk when encrypting floppies, like the DOS
+        format program.
+
+1.10 Maintenance release
+
+     Added faster direct disk access for IDE drives.
+     Fixed an incompatibility with the DOS 6 scandisk.
+     Added timeout to automount password entry routine to allow booting of
+        unattended machines.
+     Changed the error handling to still load the driver if an error occurs
+        during an automount, instead of exiting back to DOS.
+     Added a disk read test when volumes are mounted as an extra check.
+     Fixed a bug in mountsfs where it wouldn't mount or get info on an SFS
+       volume created on a partition which was not the first partition on the
+       second physical hard disk in the system.
+     Fixed a problem with /PROMPT strings containing spaces.
+     Changed the way the drives are scanned to speed mountsfs disk mounts.
+     Added hotkey=none option to disable hotkey unmounts.
+     Added option to transparently wipe the original unencrypted data from the
+       disk during the mksfs encryption process.
+     Added independant unmount timers for each volume instead of using one
+       global timer for all volumes.
+     chsfs now wipes the original volume header when a "newpass" cmd.is used.
+     Added ability to specify default timeout values for each volume.
+     Added handling of more esc.codes and case conversion for /PROMPT strings.
+     Added stealth features to password-handling code to bypass trojan horses.
+     Fixed a problem with the bizarre reverse-logic check used by the
+         DoubleDisk driver (it indirectly affects SFS).
+     Fixed several incompatibility problems with DRDOS.
+     Fixed a problem where a volume decrypted with chsfs and re-encrypted with
+        mksfs couldn't be accessed any more.
+
+
+Availability
+------------
+
+The latest version of SFS (allowing a few days for updates to take place when a
+new release occurs) should always be available from the following locations:
+
+FTP sites:
+
+  Finland:        garbo.uwasa.fi (128.214.87.1)
+                  /pc/crypt
+
+  Australia:      archie.au (139.130.4.6)
+                  /micros/pc/garbo/pc/crypt
+
+  Germany:        ftp.germany.eu.net (192.76.144.75)
+                  /pub/comp/msdos/mirror.garbo/pc/crypt
+
+  Italy:          cnuce_arch.cnr.it (131.114.1.10)
+                  /pub/msdos/garbo.uwasa.fi/pc/crypt
+
+  South Africa (Johannesburg):
+                  ftp.mpd.co.za (196.4.76.53)
+                  /pub/garbo/pc/crypt
+
+  South Africa (Natal):
+                  owl.und.ac.za (146.230.128.40)
+                  /mirrors/garbo/pc/crypt
+
+  Taiwan:         nctuccca.edu.tw (140.111.1.10)
+                  /PC/garbo/pc/crypt
+
+  USA (St. Louis, MO):
+                  wuarchive.wustl.edu (128.252.135.4)
+                  /systems/msdos/garbo.uwasa.fi/pc/crypt
+
+  USA (Walnut Creek, CA):
+                  ftp.cdrom.com (192.153.46.2)
+                  /pub/garbo/pc/crypt
+
+  It's also available to US-only users from:
+
+    csn.org
+    /mpj/I_will_not_export/crypto_???????/secdrv
+
+  where the ??????? is in /mpj/README.MPJ.  This means of access is used to
+  comply with US export restrictions.  Please don't use this site unless you're
+  in the US.
+
+
+BBS's:
+
+  The Ferret Bulletin Board System, Arkansas +1 (501) 791-0124
+    (Log on as "PGP USER" with "PGP" as the password).
+
+  The Colorado Catacombs BBS, Colorado +1 (303) 938-9654.
+
+
+Footnote
+--------
+
+Conversation (via email) with a beta-tester:
+
+  Him: The disk mount failed
+  Me : How
+  Him: It just gives garbage
+  Me : What sort of garbage, precisely
+  Him: Well, it mounts OK but then I get garbage
+  Me : I'm writing the definitive work on garbage, so I want you to tell me
+       everything you experience.  And remember, this is for posterity, so be
+       precise.
