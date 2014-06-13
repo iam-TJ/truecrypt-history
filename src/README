@@ -1,0 +1,43 @@
+
+
+misty1.c  -- module of misty1 algorithm implementation from Internet Draft.
+
+Hironobu SUZUKI <hironobu@h2np.suginami.tokyo.jp>
+
+MISTY1 ALGORITHM
+================
+
+This algorithm came from ...
+--------------------------------------------------------------------------
+INTERNET-DRAFT                                                   H. Ohta
+Expires in six months                                          M. Matsui
+                                         Mitsubishi Electric Corporation
+                                                           December 1997
+
+
+            A Description of the MISTY1 Encryption Algorithm
+
+                     <draft-ohta-misty1desc-00.txt>
+--------------------------------------------------------------------------
+
+
+HOW TO COMPILE
+==============
+
+For only test.
+
+	% gcc -O3 -DTESTMAIN misty1.c
+	% a.out
+	Encryption OK
+	Decryption OK
+
+This message shows your misty1 works fine on your machine.
+
+For speed testing
+	
+	% gcc -O3 misty1.c test2.c
+	% a.out 
+	Time: 1.336sec	Rate: 6279Kbps
+
+This message show a rate of misty1 encryption is 6.27Mbps on your machine.
+
